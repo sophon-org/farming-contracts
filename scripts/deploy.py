@@ -4,9 +4,11 @@ import secrets, pickledb, random
 import sys, os, re, csv, json, shutil
 from pprint import pprint
 
-#from brownie.network import gas_price
-#from brownie.network.gas.strategies import LinearScalingStrategy
-#gas_strategy = LinearScalingStrategy("100 gwei", "120 gwei", 1.1)
+from brownie.network import gas_price
+from brownie.network.gas.strategies import LinearScalingStrategy
+gas_strategy = LinearScalingStrategy("30 gwei", "120 gwei", 1.1)
+
+gas_price(gas_strategy) ## gas_price(20e9)
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 

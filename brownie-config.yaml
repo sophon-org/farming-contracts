@@ -25,7 +25,7 @@ networks:
             block_time: 0
             default_balance: 100
     live:
-        gas_limit: auto
+        gas_limit: 10000000
         gas_buffer: 1.1
         gas_price: auto
         max_fee: null
