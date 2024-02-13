@@ -38,7 +38,7 @@ def dbGet(key):
 
 def getFarm():
     return Contract.from_abi("farm", dbGet("farm"), SophonFarming.abi)
-def getMocks(): ## acct, farm, mock0, mock1, mock2, mocknft0, mocknft1, mocknft2 = run("deploy", "getMocks")
+def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, mock2, mocknft0, mocknft1, mocknft2 = run("deploy", "getMocks")
     farm = getFarm()
     mock0 = Contract.from_abi("mock0", dbGet("mock_0"), MockERC20.abi)
     mock1 = Contract.from_abi("mock1", dbGet("mock_1"), MockERC20.abi)
@@ -47,7 +47,14 @@ def getMocks(): ## acct, farm, mock0, mock1, mock2, mocknft0, mocknft1, mocknft2
     mocknft1 = Contract.from_abi("mockNft1", dbGet("mocknft_1"), MockERC721.abi)
     mocknft2 = Contract.from_abi("mockNft2", dbGet("mocknft_2"), MockERC721.abi)
 
-    return acct, farm, mock0, mock1, mock2, mocknft0, mocknft1, mocknft2
+    if NETWORK == "development":
+        acct1 = accounts[1]
+        acct2 = accounts[2]
+    else:
+        acct1 = acct
+        acct2 = acct
+
+    return acct, acct1, acct2, farm, mock0, mock1, mock2, mocknft0, mocknft1, mocknft2
 
 def createMockSetup():
 
@@ -59,7 +66,7 @@ def createMockSetup():
     createMockNft(2, True)
     createFarm()
 
-    acct, farm, mock0, mock1, mock2, mocknft0, mocknft1, mocknft2 = getMocks()
+    acct, acct1, acct2, farm, mock0, mock1, mock2, mocknft0, mocknft1, mocknft2 = getMocks()
 
     pointsPerBlock = 25*10**18
     startBlock = chain.height
@@ -86,6 +93,56 @@ def createMockSetup():
     farm.depositNFTs(3, [0, 1, 2], {"from": acct})
     farm.depositNFTs(4, [3, 4, 5], {"from": acct})
     farm.depositNFTs(5, [6, 7, 8], {"from": acct})
+
+    if NETWORK == "development":
+        farm.togglePause(False, {"from": acct})
+
+        ## acct1
+
+        mock0.mint(acct1, 1000000e18, {"from": acct})
+        mock1.mint(acct1, 1000000e18, {"from": acct})
+        mock2.mint(acct1, 1000000e18, {"from": acct})
+        mocknft0.mint(acct1, 10, {"from": acct})
+        mocknft1.mint(acct1, 10, {"from": acct})
+        mocknft2.mint(acct1, 10, {"from": acct})
+
+        mock0.approve(farm, 2**256-1, {"from": acct1})
+        mock1.approve(farm, 2**256-1, {"from": acct1})
+        mock2.approve(farm, 2**256-1, {"from": acct1})
+        mocknft0.setApprovalForAll(farm, True, {"from": acct1})
+        mocknft1.setApprovalForAll(farm, True, {"from": acct1})
+        mocknft2.setApprovalForAll(farm, True, {"from": acct1})
+
+        farm.deposit(0, 434e18, {"from": acct1})
+        farm.deposit(1, 5462e18, {"from": acct1})
+        farm.deposit(2, 6656e18, {"from": acct1})
+        farm.depositNFTs(3, [10, 11, 12], {"from": acct1})
+        farm.depositNFTs(4, [13, 14, 15], {"from": acct1})
+        farm.depositNFTs(5, [16, 17, 18], {"from": acct1})
+
+
+        ## acct2
+
+        mock0.mint(acct2, 1000000e18, {"from": acct})
+        mock1.mint(acct2, 1000000e18, {"from": acct})
+        mock2.mint(acct2, 1000000e18, {"from": acct})
+        mocknft0.mint(acct2, 10, {"from": acct})
+        mocknft1.mint(acct2, 10, {"from": acct})
+        mocknft2.mint(acct2, 10, {"from": acct})
+
+        mock0.approve(farm, 2**256-1, {"from": acct2})
+        mock1.approve(farm, 2**256-1, {"from": acct2})
+        mock2.approve(farm, 2**256-1, {"from": acct2})
+        mocknft0.setApprovalForAll(farm, True, {"from": acct2})
+        mocknft1.setApprovalForAll(farm, True, {"from": acct2})
+        mocknft2.setApprovalForAll(farm, True, {"from": acct2})
+
+        farm.deposit(0, 97658e18, {"from": acct2})
+        farm.deposit(1, 232e18, {"from": acct2})
+        farm.deposit(2, 54673e18, {"from": acct2})
+        farm.depositNFTs(3, [20, 21, 22], {"from": acct2})
+        farm.depositNFTs(4, [23, 24, 25], {"from": acct2})
+        farm.depositNFTs(5, [26, 27, 28], {"from": acct2})
 
     return getMocks()
 

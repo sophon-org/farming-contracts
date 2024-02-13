@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.23;
+pragma solidity 0.8.24;
 
 import "@erc721a/ERC721A.sol";
 import "@erc721a/extensions/ERC721AQueryable.sol";

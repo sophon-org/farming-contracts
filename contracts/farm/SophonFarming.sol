@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.23;
+pragma solidity 0.8.24;
 
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../proxies/Upgradeable.sol";
@@ -14,6 +14,8 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event WithdrawNFTs(address indexed user, uint256 indexed pid, uint256 nftCount);
     event EmergencyWithdrawNFTs(address indexed user, uint256 indexed pid, uint256 nftCount);
+
+    error NotFound(address lpToken);
 
     // Info of each user.
     struct UserInfo {
@@ -94,27 +96,17 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
 
     bool public vestingDisabled;
 
-    function initialize(
-        uint256 _pointsPerBlock,
-        uint256 _startBlock,
-        uint256 _bonusEndBlock
-    ) public onlyOwner {
+    function initialize(uint256 _pointsPerBlock, uint256 _startBlock, uint256 _bonusEndBlock) public onlyOwner {
         pointsPerBlock = _pointsPerBlock;
         startBlock = _startBlock;
         bonusEndBlock = _bonusEndBlock;
     }
 
-    function setVestingDuration(uint256 _vestingDuration)
-        external
-        onlyOwner
-    {
+    function setVestingDuration(uint256 _vestingDuration) external onlyOwner {
         vestingDuration = _vestingDuration;
     }
 
-    function setStartVestingStamp(uint256 _startVestingStamp)
-        external
-        onlyOwner
-    {
+    function setStartVestingStamp(uint256 _startVestingStamp) external onlyOwner {
         startVestingStamp = _startVestingStamp;
     }
 
@@ -123,11 +115,7 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
-    function add(uint256 _allocPoint, address _lpToken, bool _withUpdate)
-        public
-        onlyOwner
-        nonDuplicated(_lpToken)
-    {
+    function add(uint256 _allocPoint, address _lpToken, bool _withUpdate) public onlyOwner nonDuplicated(_lpToken) {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -146,10 +134,7 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
     }
 
     // Update the given pool's allocation point. Can only be called by the owner.
-    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate)
-        public
-        onlyOwner
-    {
+    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -164,50 +149,28 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         }
     }
 
-    function setStartBlock(uint256 _startBlock)
-        public
-        onlyOwner
-    {
+    function setStartBlock(uint256 _startBlock) public onlyOwner {
         startBlock = _startBlock;
     }
 
-    function setpointsPerBlock(uint256 _pointsPerBlock)
-        public
-        onlyOwner
-    {
+    function setpointsPerBlock(uint256 _pointsPerBlock) public onlyOwner {
         massUpdatePools();
         pointsPerBlock = _pointsPerBlock;
     }
 
-    function getMultiplierNow()
-        public
-        view
-        returns (uint256)
-    {
+    function getMultiplierNow() public view returns (uint256) {
         return getMultiplier(block.number - 1, block.number);
     }
 
-    function getMultiplier(uint256 _from, uint256 _to)
-        public
-        view
-        returns (uint256)
-    {
+    function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
         return getMultiplierPrecise(_from, _to) / 1e18;
     }
 
-    function getMultiplierPrecise(uint256 _from, uint256 _to)
-        public
-        view
-        returns (uint256)
-    {
+    function getMultiplierPrecise(uint256 _from, uint256 _to) public view returns (uint256) {
         return _getDecliningMultipler(_from, _to, startBlock);
     }
 
-    function _getDecliningMultipler(uint256 _from, uint256 _to, uint256 _bonusStartBlock)
-        internal
-        view
-        returns (uint256)
-    {
+    function _getDecliningMultipler(uint256 _from, uint256 _to, uint256 _bonusStartBlock) internal view returns (uint256) {
         return (_to - _from) * 1e18;
         /*
         // _periodBlocks = 1296000 = 60 * 60 * 24 * 30 / 2 = blocks_in_30_days (assume 2 second blocks)
@@ -253,11 +216,7 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         }*/
     }
 
-    function _pendingPoints(uint256 _pid, address _user)
-        internal
-        view
-        returns (uint256)
-    {
+    function _pendingPoints(uint256 _pid, address _user) internal view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
 
@@ -286,12 +245,7 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
             user.rewardDebt;
     }
 
-    // View function to see pending points on frontend.
-    function pendingPoints(uint256 _pid, address _user)
-        external
-        view
-        returns (uint256)
-    {
+    function pendingPoints(uint256 _pid, address _user) external view returns (uint256) {
         return _pendingPoints(_pid, _user);
     }
 
@@ -367,7 +321,6 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         _deposit(_pid, _amount);
     }
 
-    error NotFound(address lpToken);
     function depositNFTs(uint256 _pid, uint[] memory nftIds) public checkNoPause {
         // Read from storage once
         IERC721 nftContract = IERC721(poolInfo[_pid].lpToken);
@@ -461,7 +414,7 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         require(idx >= _nftCount, "count too high");
 
         for(uint i = 0; i < _nftCount;) {
-            idx--;
+            unchecked { idx--; }
             nftID = heldNFTs[idx];
             nftContract.transferFrom(address(this), msg.sender, nftID);
             heldNFTs.pop();
@@ -511,35 +464,50 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         }
     }
 
-    function getOptimisedUserInfo(address _user) external view returns(uint256[2][] memory userInfos) {
-        uint256 length = poolInfo.length;
-        userInfos = new uint256[2][](length);
-        for(uint256 pid = 0; pid < length;) {
-            userInfos[pid][0] = userInfo[pid][_user].amount;
-            if (userInfo[pid][_user].heldNFTs.length != 0) {
-                userInfos[pid][0] = userInfos[pid][0] / 1e18;
+    function getOptimisedUserInfo(address[] memory _users) external view returns(uint256[2][][] memory userInfos) {
+        userInfos = new uint256[2][][](_users.length);
+        uint256 poolLength = poolInfo.length;
+        for(uint256 i = 0; i < _users.length;) {
+            address _user = _users[i];
+            userInfos[i] = new uint256[2][](poolLength);
+            for(uint256 pid = 0; pid < poolLength;) {
+                userInfos[i][pid][0] = userInfo[pid][_user].amount;
+                if (userInfo[pid][_user].heldNFTs.length != 0) {
+                    userInfos[i][pid][0] = userInfos[i][pid][0] / 1e18;
+                }
+
+                userInfos[i][pid][1] = _pendingPoints(pid, _user);
+                unchecked { ++pid; }
             }
-
-            userInfos[pid][1] = _pendingPoints(pid, _user);
-            unchecked { ++pid; }
+            unchecked { i++; }
         }
     }
 
-    function getUserInfo(address _wallet) external view returns(UserInfo[] memory userInfos) {
-        uint256 length = poolInfo.length;
-        userInfos = new UserInfo[](length);
-        for(uint256 pid = 0; pid < length;) {
-            userInfos[pid] = userInfo[pid][_wallet];
-            unchecked { ++pid; }
+    function getUserInfo(address[] memory _users) external view returns(UserInfo[][] memory userInfos) {
+        userInfos = new UserInfo[][](_users.length);
+        uint256 poolLength = poolInfo.length;
+        for(uint256 i = 0; i < _users.length;) {
+            address _user = _users[i];
+            userInfos[i] = new UserInfo[](poolLength);
+            for(uint256 pid = 0; pid < poolLength;) {
+                userInfos[i][pid] = userInfo[pid][_user];
+                unchecked { ++pid; }
+            }
+            unchecked { i++; }
         }
     }
 
-    function getPendingPoints(address _user) external view returns(uint256[] memory pending) {
-        uint256 length = poolInfo.length;
-        pending = new uint256[](length);
-        for(uint256 pid = 0; pid < length;) {
-            pending[pid] = _pendingPoints(pid, _user);
-            unchecked { ++pid; }
+    function getPendingPoints(address[] memory _users) external view returns(uint256[][] memory pendings) {
+        pendings = new uint256[][](_users.length);
+        uint256 poolLength = poolInfo.length;
+        for(uint256 i = 0; i < _users.length;) {
+            address _user = _users[i];
+            pendings[i] = new uint256[](poolLength);
+            for(uint256 pid = 0; pid < poolLength;) {
+                pendings[i][pid] = _pendingPoints(pid, _user);
+                unchecked { ++pid; }
+            }
+            unchecked { i++; }
         }
     }
 
