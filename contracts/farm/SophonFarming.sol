@@ -464,7 +464,7 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         }
     }
 
-    function getOptimisedUserInfo(address[] memory _users) external view returns(uint256[2][][] memory userInfos) {
+    function getOptimizedUserInfo(address[] memory _users) external view returns(uint256[2][][] memory userInfos) {
         userInfos = new uint256[2][][](_users.length);
         uint256 poolLength = poolInfo.length;
         for(uint256 i = 0; i < _users.length;) {
