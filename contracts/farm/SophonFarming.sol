@@ -10,6 +10,7 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
     using SafeERC20 for IERC20;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
+    event DepositNFTs(address indexed user, uint256 indexed pid, uint256 nftCount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event WithdrawNFTs(address indexed user, uint256 indexed pid, uint256 nftCount);
@@ -318,7 +319,10 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
             address(this),
             _amount
         );
-        _deposit(_pid, _amount);
+        _amount = _deposit(_pid, _amount);
+        if (_amount != 0) {
+            emit Deposit(msg.sender, _pid, _amount);
+        }
     }
 
     function depositNFTs(uint256 _pid, uint[] memory nftIds) public checkNoPause {
@@ -342,7 +346,10 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
             revert("balance mismatch");
         }
 
-        _deposit(_pid, nftCount * 1e18);
+        nftCount = _deposit(_pid, nftCount * 1e18) / 1e18;
+        if (nftCount != 0) {
+            emit DepositNFTs(msg.sender, _pid, nftCount);
+        }
     }
 
     /*function getNFTsHeld() public view returns (uint) {
@@ -350,7 +357,7 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         return heldNFTs.length;
     }*/
 
-    function _deposit(uint256 _pid, uint256 _amount) internal {
+    function _deposit(uint256 _pid, uint256 _amount) internal returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
@@ -369,13 +376,14 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         if (_amount != 0) {
             balanceOf[_pid] = balanceOf[_pid] + _amount;
             userAmount = userAmount + _amount;
-            emit Deposit(msg.sender, _pid, _amount);
         }
         user.rewardDebt = userAmount *
             pool.accPointsPerShare /
             1e12;
 
         user.amount = userAmount;
+
+        return _amount;
     }
 
     // Withdraw LP tokens from SophonFarming.
