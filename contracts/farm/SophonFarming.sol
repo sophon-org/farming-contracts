@@ -3,27 +3,53 @@
 pragma solidity 0.8.24;
 
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "../proxies/Upgradeable.sol";
-import "./interfaces/ERC721Interfaces.sol";
+import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/utils/math/Math.sol";
+import "@chainlink/interfaces/AggregatorV3Interface.sol";
+import "./interfaces/IWeth.sol";
+import "./interfaces/IstETH.sol";
+import "./interfaces/IwstETH.sol";
+import "./interfaces/IsDAI.sol";
+import "../proxies/Upgradeable2Step.sol";
 
-contract SophonFarming is IERC721Receiver, Upgradeable {
+contract SophonFarming is Upgradeable2Step {
     using SafeERC20 for IERC20;
 
+    address public immutable weth;
+    address public immutable stETH;
+    address public immutable wstETH;
+
+    address public immutable dai;
+    address public immutable sDAI;
+
+    uint256 public immutable wstETH_Pool_Id;
+    uint256 public immutable sDAI_Pool_Id;
+
+    mapping(address => address) public priceFeeds;
+    mapping(address => uint) public decimals;
+
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
-    event DepositNFTs(address indexed user, uint256 indexed pid, uint256 nftCount);
-    event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
-    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
-    event WithdrawNFTs(address indexed user, uint256 indexed pid, uint256 nftCount);
-    event EmergencyWithdrawNFTs(address indexed user, uint256 indexed pid, uint256 nftCount);
+    event Exit(address indexed user, uint256 indexed pid, uint256 amount);
 
     error NotFound(address lpToken);
+
+    error AlreadyInitialized();
+    error FarmingIsStarted();
+    error FarmingIsEnded();
+    error FarmingNotEnded();
+    error InvalidStartBlock();
+    error InvalidEndBlock();
+    error InvalidDeposit();
+    error NoEthSent();
+    error FeedMissing();
+    error PriceError();
+    error InvalidDecimals();
 
     // Info of each user.
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardSettled; // Reward settled.
         uint256 rewardDebt; // Reward debt. See explanation below.
-        uint256[] heldNFTs; // Ids of NFTs the user has deposited (n/a for non-NFT pools)
         //
         // We do some fancy math here. Basically, any point in time, the amount of points
         // entitled to a user but is pending to be distributed is:
@@ -39,20 +65,17 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
 
     // Info of each pool.
     struct PoolInfo {
-        address lpToken; // Address of LP token contract.
+        IERC20 lpToken; // Address of LP token contract.
         uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
         uint256 lastRewardBlock; // Last block number that points distribution occurs.
         uint256 accPointsPerShare; // Accumulated points per share, times 1e12. See below.
     }
 
-    // Block number when bonus point period ends.
-    uint256 public bonusEndBlock;
+    // total deposits in a pool
+    mapping(uint256 => uint256) public balanceOf;
 
     // Points created per block.
     uint256 public pointsPerBlock;
-
-    // Bonus muliplier for early point makers.
-    uint256 public constant BONUS_MULTIPLIER = 0;
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -66,6 +89,9 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
     // The block number when point mining starts.
     uint256 public startBlock;
 
+    // The block number when point mining ends.
+    uint256 public endBlock;
+
     mapping(address => bool) public poolExists;
 
     modifier nonDuplicated(address _lpToken) {
@@ -73,50 +99,47 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         _;
     }
 
-    // total deposits in a pool
-    mapping(uint256 => uint256) public balanceOf;
-
     mapping(address => uint256) public points;
     uint256 public totalPoints;
 
-
-    bool public notPaused;
-
-    modifier checkNoPause() {
-        require(notPaused || msg.sender == owner(), "paused");
-        _;
-    }
-
-    // vestingStamp for a user
-    mapping(address => uint256) public userStartVestingStamp;
-
-    //default value if userStartVestingStamp[user] == 0
-    uint256 public startVestingStamp;
-
-    uint256 public vestingDuration; // 15768000 6 months (6 * 365 * 24 * 60 * 60)
-
-    bool public vestingDisabled;
-
-    function initialize(uint256 _pointsPerBlock, uint256 _startBlock, uint256 _bonusEndBlock) public onlyOwner {
-        pointsPerBlock = _pointsPerBlock;
-        startBlock = _startBlock;
-        bonusEndBlock = _bonusEndBlock;
-    }
-
-    function setVestingDuration(uint256 _vestingDuration) external onlyOwner {
-        vestingDuration = _vestingDuration;
-    }
-
-    function setStartVestingStamp(uint256 _startVestingStamp) external onlyOwner {
-        startVestingStamp = _startVestingStamp;
-    }
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
     }
 
+
+    // weth: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+    // stETH: 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
+    // wstETH: 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
+    // DAI: 0x6B175474E89094C44Da98b954EedeAC495271d0F
+    // sDAI: 0x83F20F44975D03b1b09e64809B757c47f942BEeA
+    constructor(address weth_, address stETH_, address wstETH_, address _wstETH_Feed, address dai_, address sDAI_, address _sDAI_Feed, uint256 _pointsPerBlock, uint256 _startBlock) {
+        weth = weth_;
+        stETH = stETH_;
+        wstETH = wstETH_;
+        dai = dai_;
+        sDAI = sDAI_;
+        pointsPerBlock = _pointsPerBlock;
+
+        if (_startBlock == 0) {
+            revert InvalidStartBlock();
+        }
+        startBlock = _startBlock;
+
+        wstETH_Pool_Id = add(10000, wstETH_, false, _wstETH_Feed);
+        poolExists[weth_] = true;
+        poolExists[stETH_] = true;
+        IERC20(stETH_).approve(wstETH_, 2**256-1);
+
+        sDAI_Pool_Id = add(10000, sDAI_, false, _sDAI_Feed);
+        poolExists[dai_] = true;
+    }
+
     // Add a new lp to the pool. Can only be called by the owner.
-    function add(uint256 _allocPoint, address _lpToken, bool _withUpdate) public onlyOwner nonDuplicated(_lpToken) {
+    function add(uint256 _allocPoint, address _lpToken, bool _withUpdate, address _priceFeed) public onlyOwner nonDuplicated(_lpToken) returns (uint256) {
+        if (isFarmingEnded()) {
+            revert FarmingIsEnded();
+        }
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -126,22 +149,31 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         poolExists[_lpToken] = true;
         poolInfo.push(
             PoolInfo({
-                lpToken: _lpToken,
+                lpToken: IERC20(_lpToken),
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
                 accPointsPerShare: 0
             })
         );
+
+        if (_priceFeed != address(0)) {
+            setAssetPriceFeed(_lpToken, _priceFeed);
+        }
+
+        return poolInfo.length - 1;
     }
 
     // Update the given pool's allocation point. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
+        if (isFarmingEnded()) {
+            revert FarmingIsEnded();
+        }
         if (_withUpdate) {
             massUpdatePools();
         }
 
         PoolInfo storage pool = poolInfo[_pid];
-        require(address(pool.lpToken) != address(0) && poolExists[pool.lpToken], "pool not exists");
+        require(address(pool.lpToken) != address(0) && poolExists[address(pool.lpToken)], "pool not exists");
         totalAllocPoint = totalAllocPoint - pool.allocPoint + _allocPoint;
         pool.allocPoint = _allocPoint;
 
@@ -150,71 +182,53 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         }
     }
 
+    function isFarmingEnded() public view returns (bool) {
+        uint256 _endBlock = endBlock;
+        if (_endBlock != 0 && block.number > _endBlock) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     function setStartBlock(uint256 _startBlock) public onlyOwner {
+        if (_startBlock == 0 || (endBlock != 0 && _startBlock >= endBlock)) {
+            revert InvalidStartBlock();
+        }
+        if (block.number > startBlock) {
+            revert FarmingIsStarted();
+        }
         startBlock = _startBlock;
     }
 
-    function setpointsPerBlock(uint256 _pointsPerBlock) public onlyOwner {
+    function setEndBlock(uint256 _endBlock) public onlyOwner {
+        if (endBlock != 0) {
+            if (_endBlock <= startBlock || block.number > _endBlock) {
+                revert InvalidEndBlock();
+            }
+            if (isFarmingEnded()) {
+                revert FarmingIsEnded();
+            }
+        }
+        massUpdatePools();
+        endBlock = _endBlock;
+    }
+
+    function setPointsPerBlock(uint256 _pointsPerBlock) public onlyOwner {
+        if (isFarmingEnded()) {
+            revert FarmingIsEnded();
+        }
         massUpdatePools();
         pointsPerBlock = _pointsPerBlock;
     }
 
-    function getMultiplierNow() public view returns (uint256) {
-        return getMultiplier(block.number - 1, block.number);
-    }
-
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
-        return getMultiplierPrecise(_from, _to) / 1e18;
-    }
-
-    function getMultiplierPrecise(uint256 _from, uint256 _to) public view returns (uint256) {
-        return _getDecliningMultipler(_from, _to, startBlock);
-    }
-
-    function _getDecliningMultipler(uint256 _from, uint256 _to, uint256 _bonusStartBlock) internal view returns (uint256) {
-        return (_to - _from) * 1e18;
-        /*
-        // _periodBlocks = 1296000 = 60 * 60 * 24 * 30 / 2 = blocks_in_30_days (assume 2 second blocks)
-        uint256 _bonusEndBlock = _bonusStartBlock + 1296000;
-
-        // multiplier = 10e18
-        // declinePerBlock = 6944444444444 = (10e18 - 1e18) / _periodBlocks
-
-        uint256 _startMultipler;
-        uint256 _endMultipler;
-        uint256 _avgMultiplier;
-
-        if (_to <= _bonusEndBlock) {
-            _startMultipler = SafeMath.sub(10e18,
-                _from.sub(_bonusStartBlock)
-                    .mul(6944444444444)
-            );
-
-            _endMultipler = SafeMath.sub(10e18,
-                _to.sub(_bonusStartBlock)
-                    .mul(6944444444444)
-            );
-
-            _avgMultiplier = (_startMultipler + _endMultipler) / 2;
-
-            return _to.sub(_from).mul(_avgMultiplier);
-        } else if (_from >= _bonusEndBlock) {
-            return _to.sub(_from).mul(1e18);
+        _to = Math.min(_to, endBlock);
+        if (_to > _from) {
+            return (_to - _from) * 1e18;
         } else {
-
-            _startMultipler = SafeMath.sub(10e18,
-                _from.sub(_bonusStartBlock)
-                    .mul(6944444444444)
-            );
-
-            _endMultipler = 1e18;
-
-            _avgMultiplier = (_startMultipler + _endMultipler) / 2;
-
-            return _bonusEndBlock.sub(_from).mul(_avgMultiplier) + (
-                (_to - _bonusEndBlock) * 1e18)
-            );
-        }*/
+            return 0;
+        }
     }
 
     function _pendingPoints(uint256 _pid, address _user) internal view returns (uint256) {
@@ -225,7 +239,7 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
 
         uint256 lpSupply = balanceOf[_pid];
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 multiplier = getMultiplierPrecise(pool.lastRewardBlock, block.number);
+            uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
 
             uint256 pointReward =
                 multiplier *
@@ -250,16 +264,9 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         return _pendingPoints(_pid, _user);
     }
 
-    function toggleVesting(bool _isEnabled) external onlyOwner {
-        vestingDisabled = !_isEnabled;
-    }
-
-    function togglePause(bool _isPaused) external onlyOwner {
-        notPaused = !_isPaused;
-    }
 
     // Update reward variables for all pools. Be careful of gas spending!
-    function massUpdatePools() public checkNoPause {
+    function massUpdatePools() public {
         uint256 length = poolInfo.length;
         for(uint256 pid = 0; pid < length;) {
             updatePool(pid);
@@ -267,18 +274,8 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
         }
     }
 
-    function massMigrateToBalanceOf() public onlyOwner {
-        require(!notPaused, "!paused");
-        uint256 length = poolInfo.length;
-        for(uint256 pid = 0; pid < length;) {
-            balanceOf[pid] = IERC20(poolInfo[pid].lpToken).balanceOf(address(this));
-            unchecked { ++pid; }
-        }
-        massUpdatePools();
-    }
-
     // Update reward variables of the given pool to be up-to-date.
-    function updatePool(uint256 _pid) public checkNoPause {
+    function updatePool(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         if (block.number <= pool.lastRewardBlock) {
             return;
@@ -290,19 +287,12 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
             pool.lastRewardBlock = block.number;
             return;
         }
-        uint256 multiplier = getMultiplierPrecise(pool.lastRewardBlock, block.number);
+        uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 pointReward =
             multiplier *
             _pointsPerBlock *
             _allocPoint /
             totalAllocPoint;
-        // 250m = 250 * 1e6
-        /*if (totalPoints >= 250*1e6*1e18) {
-            pool.allocPoint = 0;
-            return;
-        }*/
-
-        points[msg.sender] += pointReward / 1e18;
 
         pool.accPointsPerShare = pointReward /
             1e6 /
@@ -313,51 +303,107 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
     }
 
     // Deposit LP tokens to SophonFarming for Point allocation.
-    function deposit(uint256 _pid, uint256 _amount) public checkNoPause {
-        IERC20(poolInfo[_pid].lpToken).safeTransferFrom(
+    function deposit(uint256 _pid, uint256 _amount) external {
+        IERC20 lpToken;
+        (lpToken, _amount) = _deposit(_pid, _amount);
+        if (_amount != 0) {
+            lpToken.safeTransferFrom(
+                msg.sender,
+                address(this),
+                _amount
+            );
+            balanceOf[_pid] = balanceOf[_pid] + _amount;
+        }
+    }
+
+    // Deposit wstEth to SophonFarming for Point allocation after sending ETH
+    function depositEth() external payable {
+        if (msg.value == 0) {
+            revert NoEthSent();
+        }
+
+        // ETH is converted to wstETH
+        uint256 _amount = _stEthTOwstEth(_ethTOstEth(msg.value));
+
+        IERC20 lpToken;
+        (lpToken, _amount) = _deposit(wstETH_Pool_Id, _amount);
+        if (address(lpToken) != wstETH) {
+            revert InvalidDeposit();
+        }
+        if (_amount != 0) {
+            balanceOf[wstETH_Pool_Id] = balanceOf[wstETH_Pool_Id] + _amount;
+        }
+    }
+
+    // Deposit wstEth to SophonFarming for Point allocation after sending WETH
+    function depositWeth(uint256 _amount) external {
+        IERC20(weth).safeTransferFrom(
             msg.sender,
             address(this),
             _amount
         );
-        _amount = _deposit(_pid, _amount);
+
+        // weth is converted to wstETH
+        uint256 _amount = _stEthTOwstEth(_ethTOstEth(_wethTOEth(_amount)));
+
+        IERC20 lpToken;
+        (lpToken, _amount) = _deposit(wstETH_Pool_Id, _amount);
+        if (address(lpToken) != wstETH) {
+            revert InvalidDeposit();
+        }
         if (_amount != 0) {
-            emit Deposit(msg.sender, _pid, _amount);
+            balanceOf[wstETH_Pool_Id] = balanceOf[wstETH_Pool_Id] + _amount;
         }
     }
 
-    function depositNFTs(uint256 _pid, uint[] memory nftIds) public checkNoPause {
-        // Read from storage once
-        IERC721 nftContract = IERC721(poolInfo[_pid].lpToken);
+    // Deposit wstEth to SophonFarming for Point allocation after sending stETH
+    function depositStEth(uint256 _amount) external {
+        IERC20(stETH).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
 
-        UserInfo storage user = userInfo[_pid][msg.sender];
+        // stETH is converted to wstETH
+        uint256 _amount = _stEthTOwstEth(_amount);
 
-        uint balanceBefore = nftContract.balanceOf(address(this));
-
-        uint nftCount = nftIds.length;
-        for(uint i = 0; i < nftCount;) {
-            nftContract.safeTransferFrom(msg.sender, address(this), nftIds[i]);
-            user.heldNFTs.push(nftIds[i]);
-            unchecked { i++; }
+        IERC20 lpToken;
+        (lpToken, _amount) = _deposit(wstETH_Pool_Id, _amount);
+        if (address(lpToken) != wstETH) {
+            revert InvalidDeposit();
         }
-
-        // Calculate the amount that was *actually* transferred
-        uint balanceAfter = nftContract.balanceOf(address(this));
-        if (balanceAfter - balanceBefore != nftCount) {
-            revert("balance mismatch");
-        }
-
-        nftCount = _deposit(_pid, nftCount * 1e18) / 1e18;
-        if (nftCount != 0) {
-            emit DepositNFTs(msg.sender, _pid, nftCount);
+        if (_amount != 0) {
+            balanceOf[wstETH_Pool_Id] = balanceOf[wstETH_Pool_Id] + _amount;
         }
     }
 
-    /*function getNFTsHeld() public view returns (uint) {
-        //return IERC721(underlying).balanceOf(address(this));
-        return heldNFTs.length;
-    }*/
+    // Deposit sDAI to SophonFarming for Point allocation after sending DAI
+    function depositDai(uint256 _amount) external {
+        IERC20(dai).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
 
-    function _deposit(uint256 _pid, uint256 _amount) internal returns (uint256) {
+        // DAI is converted to sDAI
+        uint256 _amount = _daiTOsDai(_amount);
+
+        IERC20 lpToken;
+        (lpToken, _amount) = _deposit(sDAI_Pool_Id, _amount);
+        if (address(lpToken) != sDAI) {
+            revert InvalidDeposit();
+        }
+        if (_amount != 0) {
+            balanceOf[sDAI_Pool_Id] = balanceOf[sDAI_Pool_Id] + _amount;
+        }
+    }
+
+    // Deposit LP tokens to SophonFarming for Point allocation.
+    function _deposit(uint256 _pid, uint256 _amount) internal returns (IERC20, uint256) {
+        if (isFarmingEnded()) {
+            revert FarmingIsEnded();
+        }
+
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
@@ -373,94 +419,82 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
                 user.rewardDebt;
         }
 
-        if (_amount != 0) {
-            balanceOf[_pid] = balanceOf[_pid] + _amount;
-            userAmount = userAmount + _amount;
-        }
+        userAmount = userAmount + _amount;
+
         user.rewardDebt = userAmount *
             pool.accPointsPerShare /
             1e12;
 
         user.amount = userAmount;
 
-        return _amount;
+        emit Deposit(msg.sender, _pid, _amount);
+
+        return (pool.lpToken, _amount);
     }
 
-    // Withdraw LP tokens from SophonFarming.
-    function withdraw(uint256 _pid, uint256 _amount) public checkNoPause {
-        address _lpToken = _withdrawValue(_pid, _amount);
-        IERC20(_lpToken).safeTransfer(msg.sender, _amount);
-        emit Withdraw(msg.sender, _pid, _amount);
-    }
-
-    // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _pid) public checkNoPause {
-        (address _lpToken, uint256 _amount) = _emergencyWithdrawValue(_pid);
-        IERC20(_lpToken).safeTransfer(msg.sender, _amount);
-        emit EmergencyWithdraw(msg.sender, _pid, _amount);
-    }
-
-    // Withdraw NFTs from SophonFarming.
-    function withdrawNFTs(uint256 _pid, uint _nftCount) public checkNoPause {
-        address _lpToken = _withdrawValue(_pid, _nftCount * 1e18);
-        _transferOutNFTs(IERC721(_lpToken), _pid, _nftCount);
-        emit WithdrawNFTs(msg.sender, _pid, _nftCount);
-    }
-
-    // Withdraw NFTS without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdrawNFTs(uint256 _pid) public checkNoPause {
-        (address _lpToken, uint256 _amount) = _emergencyWithdrawValue(_pid);
-        uint256 _nftCount = _amount / 1e18;
-        _transferOutNFTs(IERC721(_lpToken), _pid, _nftCount);
-        emit EmergencyWithdrawNFTs(msg.sender, _pid, _nftCount);
-    }
-
-    function _transferOutNFTs(IERC721 nftContract, uint256 _pid, uint _nftCount) internal {
-        uint256 nftID;
-        uint256[] storage heldNFTs = userInfo[_pid][msg.sender].heldNFTs;
-        uint idx = heldNFTs.length;
-        require(idx >= _nftCount, "count too high");
-
-        for(uint i = 0; i < _nftCount;) {
-            unchecked { idx--; }
-            nftID = heldNFTs[idx];
-            nftContract.transferFrom(address(this), msg.sender, nftID);
-            heldNFTs.pop();
-            unchecked { i++; }
+    // Withdraw LP tokens from SophonFarming and accept a slash on points
+    function exit(uint256 _pid) external {
+        if (!isFarmingEnded()) {
+            revert FarmingNotEnded();
         }
-    }
-
-    function _withdrawValue(uint256 _pid, uint256 _amount) internal returns (address) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        uint256 userAmount = user.amount;
-        require(_amount != 0 && userAmount >= _amount, "withdraw: not good");
+        uint256 _amount = user.amount;
+        require(_amount != 0, "nothing in pool");
         updatePool(_pid);
 
         user.rewardSettled = 
-            userAmount *
+            (_amount *
             pool.accPointsPerShare /
             1e12 +
             user.rewardSettled -
-            user.rewardDebt;
+            user.rewardDebt) / 2;
+
+        user.rewardDebt = 0;
+        user.amount = 0;
 
         balanceOf[_pid] = balanceOf[_pid] - _amount;
-        userAmount = userAmount - _amount;
-        user.rewardDebt = userAmount * pool.accPointsPerShare / 1e12;
-        user.amount = userAmount;
-        return pool.lpToken;
+        pool.lpToken.safeTransfer(address(msg.sender), _amount);
+
+        emit Exit(msg.sender, _pid, _amount);
     }
 
-    function _emergencyWithdrawValue(uint256 _pid) internal returns (address, uint256) {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
+    mapping(address => uint256) internal _boosts;
+    function getBoostMultiplier(address _user) public view returns (uint256) {
+        return _boosts[_user];
+    }
 
-        uint256 _amount = user.amount;
+    // dummy logic - not complete
+    function purchaseBooster() external payable {
+        if (isFarmingEnded()) {
+            revert FarmingIsEnded();
+        }
 
-        balanceOf[_pid] = balanceOf[_pid] - _amount;
-        user.amount = 0;
-        user.rewardDebt = 0;
-        return (pool.lpToken, _amount);
+        _boosts[msg.sender] = 1.7e18;
+        //uint256 dummy_eth_price = 3500;
+        //_boosts[msg.sender] = _boosts[msg.sender] + msg.value * dummy_eth_price / 1000000e18 * 2
+    }
+
+    function _wethTOEth(uint256 _amount) internal returns (uint256) {
+        // unwrap weth to eth
+        IWeth(weth).withdraw(_amount);
+    }
+
+    function _ethTOstEth(uint256 _amount) internal returns (uint256) {
+        // submit function does not return exact amount of stETH so we need to check balances
+        uint256 balanceBefore = IERC20(stETH).balanceOf(address(this));
+        IstETH(stETH).submit{value: _amount}(address(this));
+        return (IERC20(stETH).balanceOf(address(this)) - balanceBefore);
+    }
+
+    function _stEthTOwstEth(uint256 _amount) internal returns (uint256) {
+        // wrap returns exact amount of wstETH
+        return IwstETH(wstETH).wrap(_amount);
+    }
+
+    function _daiTOsDai(uint256 _amount) internal returns (uint256) {
+        // deposit DAI to sDAI
+        return IsDAI(sDAI).deposit(_amount, address(this));
     }
 
     function getPoolInfo() external view returns(PoolInfo[] memory poolInfos) {
@@ -474,16 +508,12 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
 
     function getOptimizedUserInfo(address[] memory _users) external view returns(uint256[2][][] memory userInfos) {
         userInfos = new uint256[2][][](_users.length);
-        uint256 poolLength = poolInfo.length;
+        uint256 len = poolInfo.length;
         for(uint256 i = 0; i < _users.length;) {
             address _user = _users[i];
-            userInfos[i] = new uint256[2][](poolLength);
-            for(uint256 pid = 0; pid < poolLength;) {
+            userInfos[i] = new uint256[2][](len);
+            for(uint256 pid = 0; pid < len;) {
                 userInfos[i][pid][0] = userInfo[pid][_user].amount;
-                if (userInfo[pid][_user].heldNFTs.length != 0) {
-                    userInfos[i][pid][0] = userInfos[i][pid][0] / 1e18;
-                }
-
                 userInfos[i][pid][1] = _pendingPoints(pid, _user);
                 unchecked { ++pid; }
             }
@@ -493,11 +523,11 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
 
     function getUserInfo(address[] memory _users) external view returns(UserInfo[][] memory userInfos) {
         userInfos = new UserInfo[][](_users.length);
-        uint256 poolLength = poolInfo.length;
+        uint256 len = poolInfo.length;
         for(uint256 i = 0; i < _users.length;) {
             address _user = _users[i];
-            userInfos[i] = new UserInfo[](poolLength);
-            for(uint256 pid = 0; pid < poolLength;) {
+            userInfos[i] = new UserInfo[](len);
+            for(uint256 pid = 0; pid < len;) {
                 userInfos[i][pid] = userInfo[pid][_user];
                 unchecked { ++pid; }
             }
@@ -507,11 +537,11 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
 
     function getPendingPoints(address[] memory _users) external view returns(uint256[][] memory pendings) {
         pendings = new uint256[][](_users.length);
-        uint256 poolLength = poolInfo.length;
+        uint256 len = poolInfo.length;
         for(uint256 i = 0; i < _users.length;) {
             address _user = _users[i];
-            pendings[i] = new uint256[](poolLength);
-            for(uint256 pid = 0; pid < poolLength;) {
+            pendings[i] = new uint256[](len);
+            for(uint256 pid = 0; pid < len;) {
                 pendings[i][pid] = _pendingPoints(pid, _user);
                 unchecked { ++pid; }
             }
@@ -520,10 +550,58 @@ contract SophonFarming is IERC721Receiver, Upgradeable {
     }
 
     /**
-     * @notice Requires operator to be this contract
+      * @notice Get the price of an asset
+      * @param asset The asset to get the price of
+      * @return price The asset USD price scaled up by 10 ^ (36 - underlying asset decimals).
+      *  Zero means the price is unavailable.
+      *  Chainlink Asset/USD feeds are scaled to 8 decimal places (asset USD price * 10 ^ 8)
+      */
+    function getAssetPrice(address asset) public view returns (uint price) {
+        AggregatorV3Interface feed = AggregatorV3Interface(priceFeeds[asset]);
+        if (address(feed) == address(0)) {
+            revert FeedMissing();
+        }
+
+        (
+            /*uint80 roundID*/,
+            int rate,
+            /*uint startedAt*/,
+            uint updatedAt,
+            /*uint80 answeredInRound*/
+        ) = feed.latestRoundData();
+        if (rate == 0 || (rate >> 128) != 0) {
+            revert PriceError();
+        }
+
+        // decimals[asset] checked for <= 18 on setting
+        price = uint(rate) * 10**(36 - 8 - decimals[asset]);
+    }
+
+    /**
+     * @notice Set the price feed for the given asset.
+     * @param asset The asset for whose underlying the price feed should be set
+     * @param newFeed The address of the price feed
      */
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external override returns (bytes4) {
-        require(operator == address(this), "unauthorized");
-        return IERC721Receiver.onERC721Received.selector;
+    function setAssetPriceFeed(address asset, address newFeed) public onlyOwner {
+
+        priceFeeds[asset] = newFeed;
+
+        uint _decimals;
+        if (asset != 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+            (bool success, bytes memory data) = asset.call(abi.encodeWithSelector(
+                IERC20Metadata(asset).decimals.selector
+            ));
+            if (success) {
+                (_decimals) = abi.decode(data, (uint256));
+                if (_decimals > 18) {
+                    revert InvalidDecimals();
+                }
+            } else {
+                _decimals = 18;
+            }
+        } else {
+            _decimals = 18;
+        }
+        decimals[asset] = _decimals;
     }
 }

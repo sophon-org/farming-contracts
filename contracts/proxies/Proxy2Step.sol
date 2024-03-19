@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import "./Upgradeable.sol";
+import "./Upgradeable2Step.sol";
 
-contract Proxy is Upgradeable {
+contract Proxy2Step is Upgradeable2Step {
 
     constructor(address impl_) {
-        replaceImplementation(impl_);
+        implementation = impl_;
     }
 
     fallback() external payable {

@@ -23,6 +23,7 @@
 
 pragma solidity 0.8.24;
 import "./ZapInBaseV3.sol";
+import "../farm/interfaces/IWeth.sol";
 
 // import "@uniswap/lib/contracts/libraries/Babylonian.sol";
 library Babylonian {
@@ -39,14 +40,6 @@ library Babylonian {
         }
         // else z = 0
     }
-}
-
-interface IWETH {
-    function deposit() external payable;
-
-    function transfer(address to, uint256 value) external returns (bool);
-
-    function withdraw(uint256) external;
 }
 
 interface IUniswapV2Factory {
@@ -463,7 +456,7 @@ contract UniswapV2_ZapIn_General_V5 is ZapInBaseV3 {
         bytes memory swapData
     ) internal returns (uint256 amountBought, address intermediateToken) {
         if (_swapTarget == wethTokenAddress) {
-            IWETH(wethTokenAddress).deposit{ value: _amount }();
+            IWeth(wethTokenAddress).deposit{ value: _amount }();
             return (_amount, wethTokenAddress);
         }
 

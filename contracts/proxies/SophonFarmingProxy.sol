@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import "./Proxy.sol";
+import "./Proxy2Step.sol";
 
-contract SophonFarmingProxy is Proxy {
-    constructor(address impl_) Proxy(impl_) {}
+contract SophonFarmingProxy is Proxy2Step {
+    constructor(address impl_) Proxy2Step(impl_) {}
 }
