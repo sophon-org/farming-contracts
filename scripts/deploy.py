@@ -118,19 +118,19 @@ def createMockSetup():
     sDAI.deposit(dai.balanceOf(acct) / 2, acct, {"from": acct})
 
     ## Deposit ETH
-    farm.depositEth(200, {"from": acct, "value": 0.01e18})
+    farm.depositEth(0.01e18 * 0.02, {"from": acct, "value": 0.01e18})
 
     ## Deposit Weth
-    farm.depositWeth(weth.balanceOf(acct), 500, {"from": acct})
+    farm.depositWeth(weth.balanceOf(acct), weth.balanceOf(acct) * 0.05, {"from": acct})
 
     ## Deposit stEth
     farm.depositStEth(stETH.balanceOf(acct), 0, {"from": acct})
 
     ## Deposit DAI
-    farm.depositDai(dai.balanceOf(acct), 1000, {"from": acct})
+    farm.depositDai(dai.balanceOf(acct), dai.balanceOf(acct) * 0.1, {"from": acct})
 
     ## Deposit Mock0
-    farm.deposit(2, 1000e18, 100, {"from": acct})
+    farm.deposit(2, 1000e18, 1000e18 * 0.01, {"from": acct})
 
     ## Deposit Mock1
     farm.deposit(3, 1000e18, 0, {"from": acct})
@@ -168,14 +168,13 @@ def createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint,
     return farm
 
 def upgradeFarm():
-    global acct
+    acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = getMocks()
 
-    farm = getFarm()
-
-    impl = SophonFarming.deploy({'from': acct})
+    impl = SophonFarming.deploy(weth, stETH, wstETH, dai, sDAI, {'from': acct})
     dbSet("farmLastImpl", impl.address)
 
     Contract.from_abi("proxy", farm, SophonFarmingProxy.abi).replaceImplementation(impl, {'from': acct})
+    Contract.from_abi("impl", impl, SophonFarming.abi).becomeImplementation(farm, {'from': acct})
 
     return farm
 
@@ -185,5 +184,6 @@ def setLastImpl():
     farm = getFarm()
 
     Contract.from_abi("proxy", farm, SophonFarmingProxy.abi).replaceImplementation(dbGet("farmLastImpl"), {'from': acct})
+    Contract.from_abi("impl", dbGet("farmLastImpl"), SophonFarming.abi).becomeImplementation(farm, {'from': acct})
 
     return farm

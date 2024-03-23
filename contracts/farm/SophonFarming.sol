@@ -24,8 +24,6 @@ contract SophonFarming is Upgradeable2Step {
     uint256 public wstETH_Pool_Id;
     uint256 public sDAI_Pool_Id;
 
-    uint256 public constant BOOST_PERCENT_DENOMINATOR = 10000;
-
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount, uint256 boostAmount);
     event Exit(address indexed user, uint256 indexed pid, uint256 amount);
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
@@ -319,30 +317,33 @@ contract SophonFarming is Upgradeable2Step {
     }
 
     // Deposit LP tokens to SophonFarming for Point allocation.
-    function deposit(uint256 _pid, uint256 _amount, uint256 _boostPercent) external {
+    function deposit(uint256 _pid, uint256 _amount, uint256 _boostAmount) external {
         poolInfo[_pid].lpToken.safeTransferFrom(
             msg.sender,
             address(this),
             _amount
         );
 
-        _deposit(_pid, _amount, _boostPercent);
+        _deposit(_pid, _amount, _boostAmount);
     }
 
     // Deposit wstEth to SophonFarming for Point allocation after sending ETH
-    function depositEth(uint256 _boostPercent) external payable {
+    function depositEth(uint256 _boostAmount) external payable {
         if (msg.value == 0) {
             revert NoEthSent();
         }
 
         // ETH is converted to wstETH
-        uint256 _amount = _stEthTOwstEth(_ethTOstEth(msg.value));
+        uint256 _finalAmount = _stEthTOwstEth(_ethTOstEth(msg.value));
 
-        _deposit(wstETH_Pool_Id, _amount, _boostPercent);
+        // adjust boostAmount for the new asset
+        _boostAmount = _boostAmount * _finalAmount / msg.value;
+
+        _deposit(wstETH_Pool_Id, _finalAmount, _boostAmount);
     }
 
     // Deposit wstEth to SophonFarming for Point allocation after sending WETH
-    function depositWeth(uint256 _amount, uint256 _boostPercent) external {
+    function depositWeth(uint256 _amount, uint256 _boostAmount) external {
         IERC20(weth).safeTransferFrom(
             msg.sender,
             address(this),
@@ -350,13 +351,16 @@ contract SophonFarming is Upgradeable2Step {
         );
 
         // weth is converted to wstETH
-        _amount = _stEthTOwstEth(_ethTOstEth(_wethTOEth(_amount)));
+        uint256 _finalAmount = _stEthTOwstEth(_ethTOstEth(_wethTOEth(_amount)));
 
-        _deposit(wstETH_Pool_Id, _amount, _boostPercent);
+        // adjust boostAmount for the new asset
+        _boostAmount = _boostAmount * _finalAmount / _amount;
+
+        _deposit(wstETH_Pool_Id, _finalAmount, _boostAmount);
     }
 
     // Deposit wstEth to SophonFarming for Point allocation after sending stETH
-    function depositStEth(uint256 _amount, uint256 _boostPercent) external {
+    function depositStEth(uint256 _amount, uint256 _boostAmount) external {
         IERC20(stETH).safeTransferFrom(
             msg.sender,
             address(this),
@@ -364,13 +368,16 @@ contract SophonFarming is Upgradeable2Step {
         );
 
         // stETH is converted to wstETH
-        _amount = _stEthTOwstEth(_amount);
+        uint256 _finalAmount = _stEthTOwstEth(_amount);
 
-        _deposit(wstETH_Pool_Id, _amount, _boostPercent);
+        // adjust boostAmount for the new asset
+        _boostAmount = _boostAmount * _finalAmount / _amount;
+
+        _deposit(wstETH_Pool_Id, _finalAmount, _boostAmount);
     }
 
     // Deposit sDAI to SophonFarming for Point allocation after sending DAI
-    function depositDai(uint256 _amount, uint256 _boostPercent) external {
+    function depositDai(uint256 _amount, uint256 _boostAmount) external {
         IERC20(dai).safeTransferFrom(
             msg.sender,
             address(this),
@@ -378,18 +385,24 @@ contract SophonFarming is Upgradeable2Step {
         );
 
         // DAI is converted to sDAI
-        _amount = _daiTOsDai(_amount);
+        uint256 _finalAmount = _daiTOsDai(_amount);
 
-        _deposit(sDAI_Pool_Id, _amount, _boostPercent);
+        // adjust boostAmount for the new asset
+        _boostAmount = _boostAmount * _finalAmount / _amount;
+
+        _deposit(sDAI_Pool_Id, _finalAmount, _boostAmount);
     }
 
     // Deposit LP tokens to SophonFarming for Point allocation.
-    function _deposit(uint256 _pid, uint256 _amount, uint256 _boostPercent) internal {
+    function _deposit(uint256 _pid, uint256 _amount, uint256 _boostAmount) internal {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_boostPercent > BOOST_PERCENT_DENOMINATOR) {
-            revert BoostTooHigh(BOOST_PERCENT_DENOMINATOR);
+        if (_amount == 0) {
+            revert InvalidDeposit();
+        }
+        if (_boostAmount * 1e18 / _amount > 1e18) {
+            revert BoostTooHigh(_amount);
         }
 
         PoolInfo storage pool = poolInfo[_pid];
@@ -407,7 +420,6 @@ contract SophonFarming is Upgradeable2Step {
                 user.rewardDebt;
         }
 
-        uint256 _boostAmount = _amount * _boostPercent / BOOST_PERCENT_DENOMINATOR;
         user.boostAmount = user.boostAmount + _boostAmount;
 
         userAmount = userAmount + _amount + _boostAmount;
@@ -462,13 +474,13 @@ contract SophonFarming is Upgradeable2Step {
     }
 
     // Increase boost from existing deposits.
-    function increaseBoost(uint256 _pid, uint256 _boostPercent) external {
+    function increaseBoost(uint256 _pid, uint256 _boostAmount) external {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
 
         uint256 maxAdditionalBoost = getMaxAdditionalBoost(msg.sender, _pid);
-        if (_boostPercent > maxAdditionalBoost) {
+        if (_boostAmount > maxAdditionalBoost) {
             revert BoostTooHigh(maxAdditionalBoost);
         }
 
@@ -477,7 +489,6 @@ contract SophonFarming is Upgradeable2Step {
         updatePool(_pid);
 
         uint256 userAmount = user.amount;
-        uint256 userBoostAmount = user.boostAmount;
   
         if (userAmount != 0) {
             user.rewardSettled = 
@@ -488,8 +499,7 @@ contract SophonFarming is Upgradeable2Step {
                 user.rewardDebt;
         }
 
-        uint256 _boostAmount = (userAmount - userBoostAmount) * _boostPercent / BOOST_PERCENT_DENOMINATOR;
-        user.boostAmount = userBoostAmount + _boostAmount;
+        user.boostAmount = user.boostAmount + _boostAmount;
 
         userAmount = userAmount + _boostAmount;
         user.amount = userAmount;
@@ -508,20 +518,16 @@ contract SophonFarming is Upgradeable2Step {
     }
 
 	// total allowed boost is 100% of total deposit
-    // returns max additional percentage allowed to boost current deposits
+    // returns max additional boost amount allowed to boost current deposits
 	function getMaxAdditionalBoost(address _user, uint256 _pid) public view returns (uint256) {
 		UserInfo storage user = userInfo[_pid][_user];
-
-		uint256 userAmount = user.amount;
-		uint256 userBoostAmount = user.boostAmount;
-		uint256 depositTotal = userAmount - userBoostAmount;
-		
-		return (userAmount - 2 * userBoostAmount) / depositTotal * BOOST_PERCENT_DENOMINATOR;
+		return user.amount - 2 * user.boostAmount;
 	}
 
     function _wethTOEth(uint256 _amount) internal returns (uint256) {
         // unwrap weth to eth
         IWeth(weth).withdraw(_amount);
+        return _amount;
     }
 
     function _ethTOstEth(uint256 _amount) internal returns (uint256) {
