@@ -1,15 +1,14 @@
 from brownie import *
-from brownie.network.state import _add_contract
 import secrets, pickledb, random
 import sys, os, re, csv, json, shutil
 from pprint import pprint
 import time
 
-#from brownie.network import gas_price, gas_limit
-#from brownie.network.gas.strategies import LinearScalingStrategy
-#gas_strategy = LinearScalingStrategy("90 gwei", "120 gwei", 1.1)
-#gas_price(gas_strategy) ## gas_price(20e9)
-#gas_limit(5000000)
+from brownie.network import gas_price, gas_limit
+from brownie.network.gas.strategies import LinearScalingStrategy
+gas_strategy = LinearScalingStrategy("2 gwei", "5 gwei", 1.1)
+gas_price(gas_strategy) ## gas_price(20e9)
+gas_limit(5000000)
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -118,8 +117,23 @@ def createMockSetup():
     dai.mint(acct, 1000e18, {"from": acct})
     sDAI.deposit(dai.balanceOf(acct) / 2, acct, {"from": acct})
 
-    ## Deposit to farm
-    farm.deposit(0, 1000e18, {"from": acct})
+    ## Deposit ETH
+    farm.depositEth(200, {"from": acct, "value": 0.01e18})
+
+    ## Deposit Weth
+    farm.depositWeth(weth.balanceOf(acct), 500, {"from": acct})
+
+    ## Deposit stEth
+    farm.depositStEth(stETH.balanceOf(acct), 0, {"from": acct})
+
+    ## Deposit DAI
+    farm.depositDai(dai.balanceOf(acct), 1000, {"from": acct})
+
+    ## Deposit Mock0
+    farm.deposit(2, 1000e18, 100, {"from": acct})
+
+    ## Deposit Mock1
+    farm.deposit(3, 1000e18, 0, {"from": acct})
 
     return getMocks()
 
@@ -142,13 +156,14 @@ def createMockToken(count=0, force=False):
 def createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock):
     global acct
 
-    impl = SophonFarming.deploy(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, {'from': acct})
+    impl = SophonFarming.deploy(weth, stETH, wstETH, dai, sDAI, {'from': acct})
     dbSet("farmLastImpl", impl.address)
 
     proxy = SophonFarmingProxy.deploy(impl, {'from': acct})
     farm = Contract.from_abi("farm", proxy.address, SophonFarming.abi)
-    _add_contract(farm)
     dbSet("farm", farm.address)
+
+    farm.initialize(wstETHAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, {'from': acct})
 
     return farm
 
