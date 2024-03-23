@@ -21,8 +21,8 @@ contract SophonFarming is Upgradeable2Step {
     address public immutable dai;
     address public immutable sDAI;
 
-    uint256 public immutable wstETH_Pool_Id;
-    uint256 public immutable sDAI_Pool_Id;
+    uint256 public wstETH_Pool_Id;
+    uint256 public sDAI_Pool_Id;
 
     uint256 public constant BOOST_PERCENT_DENOMINATOR = 10000;
 
@@ -31,6 +31,7 @@ contract SophonFarming is Upgradeable2Step {
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
     event WithdrawProceeds(uint256 indexed pid, uint256 amount);
 
+    error AlreadyInitialized();
     error NotFound(address lpToken);
     error FarmingIsStarted();
     error FarmingIsEnded();
@@ -63,14 +64,13 @@ contract SophonFarming is Upgradeable2Step {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
+        uint256 amount; // total amount of LP tokens earning yield (deposits + boosts)
+        uint256 boostAmount; // total boosts purchased by users (amount - deposits)
         uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
         uint256 lastRewardBlock; // Last block number that points distribution occurs.
         uint256 accPointsPerShare; // Accumulated points per share, times 1e12. See below.
         string description; // Description of pool.
     }
-
-    // total deposits in a pool
-    mapping(uint256 => uint256) public balanceOf;
 
     // held proceeds from booster sales
     mapping(uint256 => uint256) public heldProceeds;
@@ -85,13 +85,15 @@ contract SophonFarming is Upgradeable2Step {
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
 
     // Total allocation points. Must be the sum of all allocation points in all pools.
-    uint256 public totalAllocPoint = 0;
+    uint256 public totalAllocPoint;
 
     // The block number when point mining starts.
     uint256 public startBlock;
 
     // The block number when point mining ends.
     uint256 public endBlock;
+
+    bool internal _initialized;
 
     mapping(address => bool) public poolExists;
 
@@ -109,17 +111,25 @@ contract SophonFarming is Upgradeable2Step {
     }
 
 
+    // Mainnet ->
     // weth: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
     // stETH: 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
     // wstETH: 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
     // DAI: 0x6B175474E89094C44Da98b954EedeAC495271d0F
     // sDAI: 0x83F20F44975D03b1b09e64809B757c47f942BEeA
-    constructor(address weth_, address stETH_, address wstETH_, uint256 wstETHAllocPoint_, address dai_, address sDAI_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock) {
+    constructor(address weth_, address stETH_, address wstETH_, address dai_, address sDAI_) {
         weth = weth_;
         stETH = stETH_;
         wstETH = wstETH_;
         dai = dai_;
         sDAI = sDAI_;
+    }
+
+    function initialize(uint256 wstETHAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock) external onlyOwner {
+        if (_initialized) {
+            revert AlreadyInitialized();
+        }
+
         pointsPerBlock = _pointsPerBlock;
 
         if (_startBlock == 0) {
@@ -127,13 +137,19 @@ contract SophonFarming is Upgradeable2Step {
         }
         startBlock = _startBlock;
 
-        wstETH_Pool_Id = add(10000, wstETH_, "wstETH", false);
-        poolExists[weth_] = true;
-        poolExists[stETH_] = true;
-        IERC20(stETH_).approve(wstETH_, 2**256-1);
+        wstETH_Pool_Id = add(wstETHAllocPoint_, wstETH, "wstETH", false);
 
-        sDAI_Pool_Id = add(10000, sDAI_, "sDAI", false);
-        poolExists[dai_] = true;
+        poolExists[weth] = true;
+
+        poolExists[stETH] = true;
+        IERC20(stETH).approve(wstETH, 2**256-1);
+
+        sDAI_Pool_Id = add(sDAIAllocPoint_, sDAI, "sDAI", false);
+
+        poolExists[dai] = true;
+        IERC20(dai).approve(sDAI, 2**256-1);
+
+        _initialized = true;
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
@@ -151,6 +167,8 @@ contract SophonFarming is Upgradeable2Step {
         poolInfo.push(
             PoolInfo({
                 lpToken: IERC20(_lpToken),
+                amount: 0,
+                boostAmount: 0,
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
                 accPointsPerShare: 0,
@@ -235,7 +253,7 @@ contract SophonFarming is Upgradeable2Step {
 
         uint256 accPointsPerShare = pool.accPointsPerShare * 1e18;
 
-        uint256 lpSupply = balanceOf[_pid];
+        uint256 lpSupply = pool.amount;
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
 
@@ -278,7 +296,7 @@ contract SophonFarming is Upgradeable2Step {
         if (block.number <= pool.lastRewardBlock) {
             return;
         }
-        uint256 lpSupply = balanceOf[_pid];
+        uint256 lpSupply = pool.amount;
         uint256 _pointsPerBlock = pointsPerBlock;
         uint256 _allocPoint = pool.allocPoint;
         if (lpSupply == 0 || _pointsPerBlock == 0 || _allocPoint == 0) {
@@ -332,7 +350,7 @@ contract SophonFarming is Upgradeable2Step {
         );
 
         // weth is converted to wstETH
-        uint256 _amount = _stEthTOwstEth(_ethTOstEth(_wethTOEth(_amount)));
+        _amount = _stEthTOwstEth(_ethTOstEth(_wethTOEth(_amount)));
 
         _deposit(wstETH_Pool_Id, _amount, _boostPercent);
     }
@@ -346,7 +364,7 @@ contract SophonFarming is Upgradeable2Step {
         );
 
         // stETH is converted to wstETH
-        uint256 _amount = _stEthTOwstEth(_amount);
+        _amount = _stEthTOwstEth(_amount);
 
         _deposit(wstETH_Pool_Id, _amount, _boostPercent);
     }
@@ -360,7 +378,7 @@ contract SophonFarming is Upgradeable2Step {
         );
 
         // DAI is converted to sDAI
-        uint256 _amount = _daiTOsDai(_amount);
+        _amount = _daiTOsDai(_amount);
 
         _deposit(sDAI_Pool_Id, _amount, _boostPercent);
     }
@@ -399,7 +417,8 @@ contract SophonFarming is Upgradeable2Step {
             1e12;
 
         // boosted value added to pool balance
-        balanceOf[_pid] = balanceOf[_pid] + _amount + _boostAmount;
+        pool.amount = pool.amount + _amount + _boostAmount;
+        pool.boostAmount = pool.boostAmount + _boostAmount;
 
         // booster purchase proceeds
         heldProceeds[_pid] = heldProceeds[_pid] + _boostAmount;
@@ -425,10 +444,13 @@ contract SophonFarming is Upgradeable2Step {
             user.rewardSettled -
             user.rewardDebt) / 2;
 
-        balanceOf[_pid] = balanceOf[_pid] - _amount;
+        pool.amount = pool.amount - _amount;
+        
+        uint256 _boostAmount = user.boostAmount;
+        pool.boostAmount = pool.boostAmount - _boostAmount;
 
         // remove boosted value + proceeds from booster purchase
-        _amount = _amount - 2 * user.boostAmount;
+        _amount = _amount - 2 * _boostAmount;
 
         user.rewardDebt = 0;
         user.amount = 0;
@@ -476,7 +498,8 @@ contract SophonFarming is Upgradeable2Step {
             1e12;
 
         // boosted value added to pool balance
-        balanceOf[_pid] = balanceOf[_pid] + _boostAmount;
+        pool.amount = pool.amount + _boostAmount;
+        pool.boostAmount = pool.boostAmount + _boostAmount;
 
         // booster purchase proceeds
         heldProceeds[_pid] = heldProceeds[_pid] + _boostAmount;

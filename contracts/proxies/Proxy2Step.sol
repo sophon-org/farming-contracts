@@ -9,7 +9,7 @@ contract Proxy2Step is Upgradeable2Step {
         implementation = impl_;
     }
 
-    fallback() external payable {
+    fallback() external virtual payable {
         assembly {
             calldatacopy(0, 0, calldatasize())
             let result := delegatecall(gas(), sload(implementation.slot), 0, calldatasize(), 0, 0)

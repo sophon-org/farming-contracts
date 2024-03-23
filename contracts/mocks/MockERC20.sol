@@ -3,13 +3,13 @@ pragma solidity 0.8.24;
 
 contract MockERC20 {
     // --- Auth ---
-    mapping (address => uint) public wards;
+    /*mapping (address => uint) public wards;
     function rely(address guy) external auth { wards[guy] = 1; }
     function deny(address guy) external auth { wards[guy] = 0; }
     modifier auth {
         require(wards[msg.sender] == 1, "not-authorized");
         _;
-    }
+    }*/
 
     event Transfer(address indexed from, address indexed to, uint256 amount);
     event Approval(address indexed owner, address indexed spender, uint256 amount);
@@ -51,7 +51,7 @@ contract MockERC20 {
                 address(this)
             )
         );
-        wards[msg.sender] = 1;
+        //wards[msg.sender] = 1;
     }
 
     // --- Token ---
@@ -71,7 +71,7 @@ contract MockERC20 {
         emit Transfer(src, dst, wad);
         return true;
     }
-    function mint(address usr, uint wad) external virtual auth {
+    function mint(address usr, uint wad) external virtual {
         balanceOf[usr] = add(balanceOf[usr], wad);
         totalSupply    = add(totalSupply, wad);
         emit Transfer(address(0), usr, wad);
