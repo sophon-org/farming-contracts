@@ -3,13 +3,13 @@ from brownie.network.state import _add_contract
 import secrets, pickledb, random
 import sys, os, re, csv, json, shutil
 from pprint import pprint
+import time
 
-from brownie.network import gas_price, gas_limit
-from brownie.network.gas.strategies import LinearScalingStrategy
-gas_strategy = LinearScalingStrategy("90 gwei", "120 gwei", 1.1)
-
-gas_price(gas_strategy) ## gas_price(20e9)
-gas_limit(5000000)
+#from brownie.network import gas_price, gas_limit
+#from brownie.network.gas.strategies import LinearScalingStrategy
+#gas_strategy = LinearScalingStrategy("90 gwei", "120 gwei", 1.1)
+#gas_price(gas_strategy) ## gas_price(20e9)
+#gas_limit(5000000)
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -32,21 +32,24 @@ def dbSet(key, val):
     db.dump()
 def dbGet(key):
     currentNetwork = NETWORK
-    currentNetwork = currentNetwork.replace("-tenderly", "")
-    currentNetwork = currentNetwork.replace("-fork", "")
+    #currentNetwork = currentNetwork.replace("-tenderly", "")
+    #currentNetwork = currentNetwork.replace("-fork", "")
     db = pickledb.load('contracts_'+currentNetwork+'.db', False)
     return db.get(key)
 
 def getFarm():
     return Contract.from_abi("farm", dbGet("farm"), SophonFarming.abi)
-def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, mock2, mocknft0, mocknft1, mocknft2 = run("deploy", "getMocks")
+def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = run("deploy", "getMocks")
     farm = getFarm()
+
     mock0 = Contract.from_abi("mock0", dbGet("mock_0"), MockERC20.abi)
     mock1 = Contract.from_abi("mock1", dbGet("mock_1"), MockERC20.abi)
-    mock2 = Contract.from_abi("mock2", dbGet("mock_2"), MockERC20.abi)
-    mocknft0 = Contract.from_abi("mockNft0", dbGet("mocknft_0"), MockERC721.abi)
-    mocknft1 = Contract.from_abi("mockNft1", dbGet("mocknft_1"), MockERC721.abi)
-    mocknft2 = Contract.from_abi("mockNft2", dbGet("mocknft_2"), MockERC721.abi)
+
+    weth = Contract.from_abi("mock0", "0xDc1808F3994912DB7c9448aF227de231c5251216", interface.IWeth.abi)
+    stETH = Contract.from_abi("stETH", dbGet("mock_steth"), MockStETH.abi)
+    wstETH = Contract.from_abi("wstETH", dbGet("mock_wsteth"), MockWstETH.abi)
+    dai = Contract.from_abi("dai", dbGet("mock_dai"), MockERC20.abi)
+    sDAI = Contract.from_abi("sDAI", dbGet("mock_sdai"), MockSDAI.abi)
 
     if NETWORK == "development":
         acct1 = accounts[1]
@@ -55,95 +58,68 @@ def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, mock2, mocknft0, mock
         acct1 = acct
         acct2 = acct
 
-    return acct, acct1, acct2, farm, mock0, mock1, mock2, mocknft0, mocknft1, mocknft2
+    return acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI
 
 def createMockSetup():
+    global acct
 
     createMockToken(0, True)
     createMockToken(1, True)
-    createMockToken(2, True)
-    createMockNft(0, True)
-    createMockNft(1, True)
-    createMockNft(2, True)
-    createFarm()
 
-    acct, acct1, acct2, farm, mock0, mock1, mock2, mocknft0, mocknft1, mocknft2 = getMocks()
+    ## Sepolia
+    weth = Contract.from_abi("weth", "0xDc1808F3994912DB7c9448aF227de231c5251216", interface.IWeth.abi)
+
+    ## mock stEth
+    stETH = MockStETH.deploy({"from": acct})
+    dbSet("mock_steth", stETH.address)
+
+    ## mock wstEth
+    wstETH = MockWstETH.deploy(stETH, {"from": acct})
+    dbSet("mock_wsteth", wstETH.address)
+    wstETHAllocPoint = 20000
+
+    ## mock DAI
+    dai = MockERC20.deploy("Mock Dai Token", "MockDAI", 18, {"from": acct})
+    dai.mint(acct, 1000000e18, {"from": acct})
+    dbSet("mock_dai", dai.address)
+
+    ## mock sDAI
+    sDAI = MockSDAI.deploy(dai, {"from": acct})
+    dbSet("mock_sdai", sDAI.address)
+    sDAIAllocPoint = 20000
 
     pointsPerBlock = 25*10**18
     startBlock = chain.height
-    bonusEndBlock = chain.height + 400000
-    farm.initialize(pointsPerBlock, startBlock, bonusEndBlock, {"from": acct})
 
-    farm.add(10000, mock0, 1, {"from": acct})
-    farm.add(11000, mock1, 1, {"from": acct})
-    farm.add(12000, mock2, 1, {"from": acct})
-    farm.add(20000, mocknft0, 1, {"from": acct})
-    farm.add(21000, mocknft1, 1, {"from": acct})
-    farm.add(22000, mocknft2, 1, {"from": acct})
+    createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock)
 
+    acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = getMocks()
+
+    farm.add(10000, mock0, "mock0", True, {"from": acct})
+    farm.add(30000, mock1, "mock1", True, {"from": acct})
+
+    ## Approvals
     mock0.approve(farm, 2**256-1, {"from": acct})
     mock1.approve(farm, 2**256-1, {"from": acct})
-    mock2.approve(farm, 2**256-1, {"from": acct})
-    mocknft0.setApprovalForAll(farm, True, {"from": acct})
-    mocknft1.setApprovalForAll(farm, True, {"from": acct})
-    mocknft2.setApprovalForAll(farm, True, {"from": acct})
+    weth.approve(farm, 2**256-1, {"from": acct})
+    stETH.approve(farm, 2**256-1, {"from": acct})
+    wstETH.approve(farm, 2**256-1, {"from": acct})
+    dai.approve(farm, 2**256-1, {"from": acct})
+    sDAI.approve(farm, 2**256-1, {"from": acct})
+    stETH.approve(wstETH, 2**256-1, {"from": acct})
+    dai.approve(sDAI, 2**256-1, {"from": acct})
 
+    ## Mint some of all the assets
+    mock0.mint(acct, 1000e18, {"from": acct})
+    mock1.mint(acct, 1000e18, {"from": acct})
+    weth.deposit({"from": acct, "value": 0.01e18})
+    stETH.submit(farm, {"from": acct, "value": 0.02e18})
+    wstETH.wrap(stETH.balanceOf(acct) / 2, {"from": acct})
+    dai.mint(acct, 1000e18, {"from": acct})
+    sDAI.deposit(dai.balanceOf(acct) / 2, acct, {"from": acct})
+
+    ## Deposit to farm
     farm.deposit(0, 1000e18, {"from": acct})
-    farm.deposit(1, 1000e18, {"from": acct})
-    farm.deposit(2, 1000e18, {"from": acct})
-    farm.depositNFTs(3, [0, 1, 2], {"from": acct})
-    farm.depositNFTs(4, [3, 4, 5], {"from": acct})
-    farm.depositNFTs(5, [6, 7, 8], {"from": acct})
-
-    if NETWORK == "development":
-        farm.togglePause(False, {"from": acct})
-
-        ## acct1
-
-        mock0.mint(acct1, 1000000e18, {"from": acct})
-        mock1.mint(acct1, 1000000e18, {"from": acct})
-        mock2.mint(acct1, 1000000e18, {"from": acct})
-        mocknft0.mint(acct1, 10, {"from": acct})
-        mocknft1.mint(acct1, 10, {"from": acct})
-        mocknft2.mint(acct1, 10, {"from": acct})
-
-        mock0.approve(farm, 2**256-1, {"from": acct1})
-        mock1.approve(farm, 2**256-1, {"from": acct1})
-        mock2.approve(farm, 2**256-1, {"from": acct1})
-        mocknft0.setApprovalForAll(farm, True, {"from": acct1})
-        mocknft1.setApprovalForAll(farm, True, {"from": acct1})
-        mocknft2.setApprovalForAll(farm, True, {"from": acct1})
-
-        farm.deposit(0, 434e18, {"from": acct1})
-        farm.deposit(1, 5462e18, {"from": acct1})
-        farm.deposit(2, 6656e18, {"from": acct1})
-        farm.depositNFTs(3, [10, 11, 12], {"from": acct1})
-        farm.depositNFTs(4, [13, 14, 15], {"from": acct1})
-        farm.depositNFTs(5, [16, 17, 18], {"from": acct1})
-
-
-        ## acct2
-
-        mock0.mint(acct2, 1000000e18, {"from": acct})
-        mock1.mint(acct2, 1000000e18, {"from": acct})
-        mock2.mint(acct2, 1000000e18, {"from": acct})
-        mocknft0.mint(acct2, 10, {"from": acct})
-        mocknft1.mint(acct2, 10, {"from": acct})
-        mocknft2.mint(acct2, 10, {"from": acct})
-
-        mock0.approve(farm, 2**256-1, {"from": acct2})
-        mock1.approve(farm, 2**256-1, {"from": acct2})
-        mock2.approve(farm, 2**256-1, {"from": acct2})
-        mocknft0.setApprovalForAll(farm, True, {"from": acct2})
-        mocknft1.setApprovalForAll(farm, True, {"from": acct2})
-        mocknft2.setApprovalForAll(farm, True, {"from": acct2})
-
-        farm.deposit(0, 97658e18, {"from": acct2})
-        farm.deposit(1, 232e18, {"from": acct2})
-        farm.deposit(2, 54673e18, {"from": acct2})
-        farm.depositNFTs(3, [20, 21, 22], {"from": acct2})
-        farm.depositNFTs(4, [23, 24, 25], {"from": acct2})
-        farm.depositNFTs(5, [26, 27, 28], {"from": acct2})
 
     return getMocks()
 
@@ -163,26 +139,10 @@ def createMockToken(count=0, force=False):
 
     return mock
 
-def createMockNft(count=0, force=False):
+def createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock):
     global acct
 
-    if dbGet("mocknft_"+str(count)) != False:
-        if force == False:
-            print("mocknft_"+str(count)+" already exists! Exiting.")
-            return
-        else:
-            print("mocknft_"+str(count)+" already exists! Overriding.")
-
-    mock = MockERC721.deploy("Mock NFT "+str(count), "MOCKNFT"+(str(count)), {"from": acct})
-    mock.mint(acct, 10, {"from": acct})
-    dbSet("mocknft_"+str(count), mock.address)
-
-    return mock
-
-def createFarm():
-    global acct
-
-    impl = SophonFarming.deploy({'from': acct})
+    impl = SophonFarming.deploy(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, {'from': acct})
     dbSet("farmLastImpl", impl.address)
 
     proxy = SophonFarmingProxy.deploy(impl, {'from': acct})

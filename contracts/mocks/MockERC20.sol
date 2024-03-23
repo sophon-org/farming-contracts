@@ -37,7 +37,7 @@ contract MockERC20 {
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
 
-    constructor(string memory name_, string memory symbol_, uint8 decimals_) public {
+    constructor(string memory name_, string memory symbol_, uint8 decimals_) {
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
@@ -71,12 +71,12 @@ contract MockERC20 {
         emit Transfer(src, dst, wad);
         return true;
     }
-    function mint(address usr, uint wad) external auth {
+    function mint(address usr, uint wad) external virtual auth {
         balanceOf[usr] = add(balanceOf[usr], wad);
         totalSupply    = add(totalSupply, wad);
         emit Transfer(address(0), usr, wad);
     }
-    function burn(address usr, uint wad) external {
+    function burn(address usr, uint wad) external virtual {
         require(balanceOf[usr] >= wad, "insufficient-balance");
         if (usr != msg.sender && allowance[usr][msg.sender] != type(uint).max) {
             require(allowance[usr][msg.sender] >= wad, "insufficient-allowance");
