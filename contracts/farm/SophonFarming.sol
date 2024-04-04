@@ -51,6 +51,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     // weth: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
     // stETH: 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
     // wstETH: 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
+
+    // todo: add LSDs seen here -> https://app.pendle.finance/points
+
     // DAI: 0x6B175474E89094C44Da98b954EedeAC495271d0F
     // sDAI: 0x83F20F44975D03b1b09e64809B757c47f942BEeA
     constructor(address weth_, address stETH_, address wstETH_, address dai_, address sDAI_) {

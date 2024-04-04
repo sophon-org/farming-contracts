@@ -89,8 +89,9 @@ def createMockSetup():
 
     pointsPerBlock = 25*10**18
     startBlock = chain.height
+    boosterMultiplier = 2e18
 
-    createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock)
+    createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
 
     acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = getMocks()
 
@@ -153,7 +154,7 @@ def createMockToken(count=0, force=False):
 
     return mock
 
-def createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock):
+def createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier):
     global acct
 
     impl = SophonFarming.deploy(weth, stETH, wstETH, dai, sDAI, {'from': acct})
@@ -163,7 +164,7 @@ def createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint,
     farm = Contract.from_abi("farm", proxy.address, SophonFarming.abi)
     dbSet("farm", farm.address)
 
-    farm.initialize(wstETHAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, {'from': acct})
+    farm.initialize(wstETHAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier, {'from': acct})
 
     return farm
 
