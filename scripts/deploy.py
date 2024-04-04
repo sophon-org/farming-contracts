@@ -121,6 +121,9 @@ def createMockSetup():
     ## Deposit ETH
     farm.depositEth(0.01e18 * 0.02, {"from": acct, "value": 0.01e18})
 
+    ## Deposit ETH Directly
+    acct.transfer(to=farm.address, amount=0.01e18)
+
     ## Deposit Weth
     farm.depositWeth(weth.balanceOf(acct), weth.balanceOf(acct) * 0.05, {"from": acct})
 
