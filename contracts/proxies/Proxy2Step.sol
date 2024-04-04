@@ -19,4 +19,6 @@ contract Proxy2Step is Upgradeable2Step {
             default { return(0, returndatasize()) }
         }
     }
+
+    receive() external virtual payable {}
 }

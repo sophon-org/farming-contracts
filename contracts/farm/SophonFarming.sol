@@ -64,6 +64,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         sDAI = sDAI_;
     }
 
+    receive() external payable {
+        if (msg.sender == weth) {
+            return;
+        }
+
+        depositEth(0);
+    }
+
     function initialize(uint256 wstETHAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) external onlyOwner {
         if (_initialized) {
             revert AlreadyInitialized();
@@ -280,7 +288,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     }
 
     // Deposit wstEth to SophonFarming for Point allocation after sending ETH
-    function depositEth(uint256 _boostAmount) external payable {
+    function depositEth(uint256 _boostAmount) public payable {
         if (msg.value == 0) {
             revert NoEthSent();
         }
