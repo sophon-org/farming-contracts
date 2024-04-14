@@ -17,6 +17,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount, uint256 boostAmount);
     event Exit(address indexed user, uint256 indexed pid, uint256 amount);
+    event Bridge(address indexed user, uint256 indexed pid, uint256 amount);
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
     event WithdrawProceeds(uint256 indexed pid, uint256 amount);
 
@@ -24,18 +25,28 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error NotFound(address lpToken);
     error FarmingIsStarted();
     error FarmingIsEnded();
-    error FarmingNotEnded();
+    error ExitNotAllowed();
     error InvalidStartBlock();
     error InvalidEndBlock();
     error InvalidDeposit();
     error NoEthSent();
     error BoostTooHigh(uint256 maxAllowed);
+    error BridgeInvalid();
 
     address public immutable weth;
     address public immutable stETH;
     address public immutable wstETH;
     address public immutable dai;
     address public immutable sDAI;
+
+    address public immutable uSDe;
+    address public immutable sUSDe;
+    address public immutable eETH;
+    address public immutable ezETH;
+    address public immutable rsETH;
+    address public immutable rswETH;
+    address public immutable uniETH;
+    address public immutable pufETH;
 
     modifier nonDuplicated(address _lpToken) {
         require(!poolExists[_lpToken], "pool exists");
@@ -53,15 +64,34 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     // wstETH: 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
 
     // todo: add LSDs seen here -> https://app.pendle.finance/points
+    // sUSDe, eETH (Zircuit), eETH (Ether.fi), ezETH (Renzo), ezETH (Zircuit), rsETH (Zircuit), rsETH (Kept Dao), rswETH (Swell), uniETH (Bedrock), pufETH (Puffer)
+
+    // ether.fi ETH (eETH): 0x35fA164735182de50811E8e2E824cFb9B6118ac2
+    // ether.fi Wrapped eETH (weETH): 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee
+    // Renzo ezETH (Renzo Restaked ETH): 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110
+    // Kept Dao rsETH (rsETH): 0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7
+    // Swell swETH (swETH): 0xf951E335afb289353dc249e82926178EaC7DEd78
+    // Swell rswETH (rswETH): 0xFAe103DC9cf190eD75350761e95403b7b8aFa6c0
+    // Bedrock uniETH (Universal ETH): 0xF1376bceF0f78459C0Ed0ba5ddce976F1ddF51F4
+    // Puffer pufETH (pufETH): 0xD9A442856C234a39a81a089C06451EBAa4306a72
+
 
     // DAI: 0x6B175474E89094C44Da98b954EedeAC495271d0F
     // sDAI: 0x83F20F44975D03b1b09e64809B757c47f942BEeA
-    constructor(address weth_, address stETH_, address wstETH_, address dai_, address sDAI_) {
-        weth = weth_;
-        stETH = stETH_;
-        wstETH = wstETH_;
-        dai = dai_;
-        sDAI = sDAI_;
+    constructor(address[13] memory tokens_) {
+        weth = tokens_[0];
+        stETH = tokens_[1];
+        wstETH = tokens_[2];
+        dai = tokens_[3];
+        sDAI = tokens_[4];
+        uSDe = tokens_[5];
+        sUSDe = tokens_[6];
+        eETH = tokens_[7];
+        ezETH = tokens_[8];
+        rsETH = tokens_[9];
+        rswETH = tokens_[10];
+        uniETH = tokens_[11];
+        pufETH = tokens_[12];
     }
 
     receive() external payable {
@@ -116,6 +146,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         poolInfo.push(
             PoolInfo({
                 lpToken: IERC20(_lpToken),
+                l2Token: address(0),
+                l2Farm: address(0),
                 amount: 0,
                 boostAmount: 0,
                 depositAmount: 0,
@@ -157,6 +189,24 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
     }
 
+    function isExitPeriodEnded() public view returns (bool) {
+        uint256 _endBlockForWithdrawals = endBlockForWithdrawals;
+        if (_endBlockForWithdrawals != 0 && block.number > _endBlockForWithdrawals) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function setBridge(BridgeLike _bridge) public onlyOwner {
+        bridge = _bridge;
+    }
+
+    function setBridgeForPool(uint256 _pid, address _l2Token, address _l2Farm) public onlyOwner {
+        poolInfo[_pid].l2Token = _l2Token;
+        poolInfo[_pid].l2Farm = _l2Farm;
+    }
+
     function setStartBlock(uint256 _startBlock) public onlyOwner {
         if (_startBlock == 0 || (endBlock != 0 && _startBlock >= endBlock)) {
             revert InvalidStartBlock();
@@ -167,7 +217,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         startBlock = _startBlock;
     }
 
-    function setEndBlock(uint256 _endBlock) public onlyOwner {
+    function setEndBlocks(uint256 _endBlock, uint256 _withdrawalBlocks) public onlyOwner {
+        uint256 _endBlockForWithdrawals;
         if (endBlock != 0) {
             if (_endBlock <= startBlock || block.number > _endBlock) {
                 revert InvalidEndBlock();
@@ -175,9 +226,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             if (isFarmingEnded()) {
                 revert FarmingIsEnded();
             }
+            _endBlockForWithdrawals = _endBlock + _withdrawalBlocks;
+        } else {
+            // withdrawal blocks needs an endBlock
+            _endBlockForWithdrawals = 0;
         }
         massUpdatePools();
         endBlock = _endBlock;
+        endBlockForWithdrawals = _endBlockForWithdrawals;
     }
 
     function setPointsPerBlock(uint256 _pointsPerBlock) public onlyOwner {
@@ -407,8 +463,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     // Withdraw LP tokens from SophonFarming and accept a slash on points
     function exit(uint256 _pid) external {
-        if (!isFarmingEnded()) {
-            revert FarmingNotEnded();
+        if (!isFarmingEnded() || isExitPeriodEnded()) {
+            revert ExitNotAllowed();
         }
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
@@ -437,6 +493,34 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         pool.lpToken.safeTransfer(msg.sender, depositAmount);
 
         emit Exit(msg.sender, _pid, depositAmount);
+    }
+
+    // TODO: reward for caller
+    // permissionless function to allow anyone to bridge during the correct period
+    function bridgePool(uint256 _pid) external {
+        if (!isFarmingEnded() || !isExitPeriodEnded()) {
+            revert Unauthorized();
+        }
+
+        updatePool(_pid);
+        PoolInfo storage pool = poolInfo[_pid];
+
+        if (pool.depositAmount == 0 || address(bridge) == address(0) || pool.l2Token == address(0) || pool.l2Farm == address(0)) {
+            revert BridgeInvalid();
+        }
+
+        bridge.depositERC20To(
+            address(pool.lpToken),  // _l1Token
+            pool.l2Token,           // _l2Token
+            pool.l2Farm,            // _to
+            pool.depositAmount,     // _amount
+            200000,                 // _minGasLimit
+            ""                      // _extraData
+        );
+
+        pool.depositAmount = 0;
+
+        emit Bridge(msg.sender, _pid, pool.depositAmount);
     }
 
     // Increase boost from existing deposits.

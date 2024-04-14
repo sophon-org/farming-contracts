@@ -4,6 +4,17 @@ pragma solidity 0.8.24;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
+interface BridgeLike {
+    function depositERC20To(
+        address _l1Token,
+        address _l2Token,
+        address _to,
+        uint256 _amount,
+        uint32 _minGasLimit,
+        bytes calldata _extraData
+    ) external;
+}
+
 contract SophonFarmingState {
     // Info of each user.
     struct UserInfo {
@@ -28,6 +39,8 @@ contract SophonFarmingState {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
+        address l2Token; // Address of LP token on Sophon chain
+        address l2Farm; // Address of the farming contract on Sophon chain
         uint256 amount; // total amount of LP tokens earning yield from deposits and boosts
         uint256 boostAmount; // total boosted value purchased by users
         uint256 depositAmount; // remaining deposits not applied to a boost purchases
@@ -66,4 +79,8 @@ contract SophonFarmingState {
     bool internal _initialized;
 
     mapping(address => bool) public poolExists;
+
+    uint256 public endBlockForWithdrawals;
+
+    BridgeLike public bridge;
 }
