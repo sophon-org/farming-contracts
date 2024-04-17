@@ -5,14 +5,14 @@ pragma solidity 0.8.24;
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
 interface BridgeLike {
-    function depositERC20To(
+    function deposit(
+        address _l2Receiver,
         address _l1Token,
-        address _l2Token,
-        address _to,
         uint256 _amount,
-        uint32 _minGasLimit,
-        bytes calldata _extraData
-    ) external;
+        uint256 _l2TxGasLimit,
+        uint256 _l2TxGasPerPubdataByte,
+        address _refundRecipient
+    ) external payable returns (bytes32 l2TxHash);
 }
 
 contract SophonFarmingState {
@@ -39,7 +39,6 @@ contract SophonFarmingState {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
-        address l2Token; // Address of LP token on Sophon chain
         address l2Farm; // Address of the farming contract on Sophon chain
         uint256 amount; // total amount of LP tokens earning yield from deposits and boosts
         uint256 boostAmount; // total boosted value purchased by users
@@ -50,8 +49,18 @@ contract SophonFarmingState {
         string description; // Description of pool.
     }
 
-    uint256 public wstETH_Pool_Id;
-    uint256 public sDAI_Pool_Id;
+    enum PredefinedPool {
+        sDAI,           // MakerDAO (sDAI)
+        wstETH,         // Lido (wstETH)
+        weETH,          // ether.fi (weETH)
+        ezETH,          // Renzo (ezETH)
+        rsETH,          // Kelp Dao (rsETH)
+        rswETH,         // Swell (rswETH)
+        uniETH,         // Bedrock (uniETH)
+        pufETH          // Puffer (pufETH)
+    }
+
+    mapping(PredefinedPool => uint256) public typeToId;
 
     // held proceeds from booster sales
     mapping(uint256 => uint256) public heldProceeds;
