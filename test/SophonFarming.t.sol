@@ -570,7 +570,7 @@ contract SophonFarmingTest is Test {
     }
 
     // DEPOSIT_WETH FUNCTION /////////////////////////////////////////////////////////////////
-   function testFuzz_DepositWeth_NotBoosted(uint256 amountToDeposit) public {
+    function testFuzz_DepositWeth_NotBoosted(uint256 amountToDeposit) public {
         vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
 
         uint256 wsthDepositedAmount = WstETHRate(StETHRate(amountToDeposit));
@@ -667,7 +667,6 @@ contract SophonFarmingTest is Test {
         assertEq(weth.balanceOf(account1), amountToDeposit);
 
         uint256 wsthDepositedAmount = WstETHRate(StETHRate(amountToDeposit));
-        uint256 amountToBoost = amountToDeposit / boostFraction;
 
         weth.approve(address(sophonFarming), amountToDeposit);
         vm.expectRevert(SophonFarming.InvalidDeposit.selector);
@@ -690,19 +689,119 @@ contract SophonFarmingTest is Test {
         sophonFarming.depositWeth(amountToDeposit, amountToBoost, SophonFarmingState.PredefinedPool.wstETH);
     }
 
-    // DEPOSIT_WETH FUNCTION /////////////////////////////////////////////////////////////////
+    // DEPOSIT_STETH FUNCTION /////////////////////////////////////////////////////////////////
+    function testFuzz_DepositStEth_NotBoosted(uint256 amountToDeposit) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
 
+        uint256 wsthDepositedAmount = WstETHRate(amountToDeposit);
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
 
+        vm.startPrank(account1);
+        deal(address(stETH), account1, amountToDeposit);
+        assertEq(stETH.balanceOf(account1), amountToDeposit);
 
+        stETH.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositStEth(amountToDeposit, 0);
+        assertEq(stETH.balanceOf(account1), 0);
 
+        SophonFarmingState.UserInfo memory userInfo;
+        (
+            userInfo.amount,
+            userInfo.boostAmount,
+            userInfo.depositAmount,
+            userInfo.rewardSettled,
+            userInfo.rewardDebt
+        ) = sophonFarming.userInfo(poolId, account1);
 
+        assertEq(userInfo.amount, wsthDepositedAmount);
+        assertEq(userInfo.boostAmount, 0);
+        assertEq(userInfo.depositAmount, wsthDepositedAmount);
+        assertEq(userInfo.rewardSettled, 0);
+        assertEq(userInfo.rewardDebt, 0);
+    }
 
+    function testFuzz_DepositStEth_Boosted(uint256 amountToDeposit, uint256 boostFraction) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        vm.assume(boostFraction > 0 && boostFraction <= 10);
 
+        uint256 wsthDepositedAmount = WstETHRate(amountToDeposit);
+        uint256 amountToBoost = amountToDeposit / boostFraction;
+        uint256 boostAmount = amountToBoost * wsthDepositedAmount / amountToDeposit;
+        uint256 finalBoostAmount = boostAmount * sophonFarming.boosterMultiplier() / 1e18;
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
 
+        vm.startPrank(account1);
+        deal(address(stETH), account1, amountToDeposit);
+        assertEq(stETH.balanceOf(account1), amountToDeposit);
 
+        stETH.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositStEth(amountToDeposit, amountToBoost);
+        assertEq(stETH.balanceOf(account1), 0);
 
+        SophonFarmingState.UserInfo memory userInfo;
+        (
+            userInfo.amount,
+            userInfo.boostAmount,
+            userInfo.depositAmount,
+            userInfo.rewardSettled,
+            userInfo.rewardDebt
+        ) = sophonFarming.userInfo(poolId, account1);
 
+        assertEq(userInfo.amount, wsthDepositedAmount + finalBoostAmount);
+        assertEq(userInfo.boostAmount, finalBoostAmount);
+        assertEq(userInfo.depositAmount, wsthDepositedAmount - boostAmount);
+        assertEq(userInfo.rewardSettled, 0);
+        assertEq(userInfo.rewardDebt, 0);
+    }
 
+    function testFuzz_DepositStEth_RevertWhen_FarmingIsEnded(uint256 amountToDeposit, uint256 boostFraction) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        vm.assume(boostFraction > 0 && boostFraction <= 10);
+
+        vm.prank(deployer);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
+        vm.roll(block.number + 10);
+
+        vm.startPrank(account1);
+        deal(address(stETH), account1, amountToDeposit);
+        assertEq(stETH.balanceOf(account1), amountToDeposit);
+
+        uint256 wsthDepositedAmount = WstETHRate(amountToDeposit);
+        uint256 amountToBoost = amountToDeposit / boostFraction;
+
+        stETH.approve(address(sophonFarming), amountToDeposit);
+        vm.expectRevert(SophonFarming.FarmingIsEnded.selector);
+        sophonFarming.depositStEth(amountToDeposit, 0);
+    }
+
+    function testFuzz_DepositStEth_RevertWhen_InvalidDeposit() public {
+        uint256 amountToDeposit = 1;
+
+        vm.startPrank(account1);
+        deal(address(stETH), account1, amountToDeposit);
+        assertEq(stETH.balanceOf(account1), amountToDeposit);
+
+        uint256 wsthDepositedAmount = WstETHRate(amountToDeposit);
+
+        stETH.approve(address(sophonFarming), amountToDeposit);
+        vm.expectRevert(SophonFarming.InvalidDeposit.selector);
+        sophonFarming.depositStEth(amountToDeposit, 0);
+    }
+
+    function testFuzz_DepositStEth_RevertWhen_BoostTooHigh(uint256 amountToDeposit) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+
+        vm.startPrank(account1);
+        deal(address(stETH), account1, amountToDeposit);
+        assertEq(stETH.balanceOf(account1), amountToDeposit);
+
+        uint256 wsthDepositedAmount = WstETHRate(amountToDeposit);
+        uint256 amountToBoost = amountToDeposit * 2;
+
+        stETH.approve(address(sophonFarming), amountToDeposit);
+        vm.expectRevert(abi.encodeWithSelector(SophonFarming.BoostTooHigh.selector, wsthDepositedAmount));        
+        sophonFarming.depositStEth(amountToDeposit, amountToBoost);
+    }
 
     // DEPOSIT_DAI FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_DepositDai_NotBoostedDeposit(uint256 amountToDeposit) public {
