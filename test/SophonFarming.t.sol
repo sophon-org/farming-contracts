@@ -10,6 +10,7 @@ import {MockWETH} from "./../contracts/mocks//MockWETH.sol";
 import {MockStETH} from "./../contracts/mocks/MockStETH.sol";
 import {MockWstETH} from "./../contracts/mocks/MockWstETH.sol";
 import {MockSDAI} from "./../contracts/mocks/MockSDAI.sol";
+import "@openzeppelin/token/ERC20/IERC20.sol";
 
 contract SophonFarmingTest is Test {
     string internal mnemonic = "test test test test test test test test test test test junk";
@@ -969,5 +970,40 @@ contract SophonFarmingTest is Test {
         assertEq(finalUserInfo.depositAmount, 0);
         assertEq(finalUserInfo.rewardSettled, (userInfo.amount * accPointsPerShare / 1e12 + userInfo.rewardSettled - userInfo.rewardDebt) / 2);
         assertEq(finalUserInfo.rewardDebt, 0);
+    }
+
+    // GET_POOL_INFO FUNCTION /////////////////////////////////////////////////////////////////
+    function test_GetPoolInfo() public {
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        for(uint256 i = 0; i < PoolInfo.length; i++) {
+            helperAssertPoolInfo(PoolInfo[i], i);
+        }
+    }
+
+    function helperAssertPoolInfo(SophonFarmingState.PoolInfo memory PoolInfo, uint256 poolId) internal {
+        (
+            IERC20 lpToken,
+            address l2Farm,
+            uint256 amount,
+            uint256 boostAmount,
+            uint256 depositAmount,
+            uint256 allocPoint,
+            uint256 lastRewardBlock,
+            uint256 accPointsPerShare,
+            string memory description
+        ) = sophonFarming.poolInfo(poolId);
+
+        assertEq(address(PoolInfo.lpToken), address(lpToken));
+        assertEq(PoolInfo.l2Farm, l2Farm);
+        assertEq(PoolInfo.amount, amount);
+        assertEq(PoolInfo.boostAmount, boostAmount);
+        assertEq(PoolInfo.depositAmount, depositAmount);
+        assertEq(PoolInfo.allocPoint, allocPoint);
+        assertEq(PoolInfo.lastRewardBlock, lastRewardBlock);
+        assertEq(PoolInfo.accPointsPerShare, accPointsPerShare);
+        assertEq(abi.encode(PoolInfo.description), abi.encode(description));
     }
 }
