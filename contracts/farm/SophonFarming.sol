@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.24;
 
-import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/utils/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IWeth.sol";
 import "./interfaces/IstETH.sol";
 import "./interfaces/IwstETH.sol";

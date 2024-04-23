@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import "@openzeppelin/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Upgradeable is Ownable {
     address public implementation;
