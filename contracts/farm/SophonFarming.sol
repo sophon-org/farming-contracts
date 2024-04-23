@@ -234,7 +234,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     function setEndBlocks(uint256 _endBlock, uint256 _withdrawalBlocks) public onlyOwner {
         uint256 _endBlockForWithdrawals;
-        if (endBlock != 0) {
+        if (_endBlock != 0) {
             if (_endBlock <= startBlock || getBlockNumber() > _endBlock) {
                 revert InvalidEndBlock();
             }

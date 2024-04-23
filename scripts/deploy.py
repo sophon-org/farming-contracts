@@ -18,7 +18,7 @@ if NETWORK == "development" or NETWORK == "anvil":
     NETWORK = "development"
     acct = accounts[0]
 else:
-    acct = accounts.load("soph2")
+    acct = accounts.load("soph")
 
 ## https://patx.github.io/pickledb/commands.html
 def dbDelete():
@@ -64,32 +64,40 @@ def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, 
 
     return acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI
 
-def createMockSetup():
+def createMockSetup(deployTokens = False):
     global acct
 
-    createMockToken(0, True)
-    createMockToken(1, True)
+    if deployTokens == False:
+        acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = getMocks()
+
+    if deployTokens == True:
+        createMockToken(0, True)
+        createMockToken(1, True)
 
     ## Sepolia
     weth = Contract.from_abi("weth", "0xDc1808F3994912DB7c9448aF227de231c5251216", interface.IWeth.abi)
 
     ## mock stEth
-    stETH = MockStETH.deploy({"from": acct})
-    dbSet("mock_steth", stETH.address)
+    if deployTokens == True:
+        stETH = MockStETH.deploy({"from": acct})
+        dbSet("mock_steth", stETH.address)
 
     ## mock wstEth
-    wstETH = MockWstETH.deploy(stETH, {"from": acct})
-    dbSet("mock_wsteth", wstETH.address)
+    if deployTokens == True:
+        wstETH = MockWstETH.deploy(stETH, {"from": acct})
+        dbSet("mock_wsteth", wstETH.address)
     wstETHAllocPoint = 20000
 
     ## mock DAI
-    dai = MockERC20.deploy("Mock Dai Token", "MockDAI", 18, {"from": acct})
-    dai.mint(acct, 1000000e18, {"from": acct})
+    if deployTokens == True:
+        dai = MockERC20.deploy("Mock Dai Token", "MockDAI", 18, {"from": acct})
+        dai.mint(acct, 1000000e18, {"from": acct})
     dbSet("mock_dai", dai.address)
 
     ## mock sDAI
-    sDAI = MockSDAI.deploy(dai, {"from": acct})
-    dbSet("mock_sdai", sDAI.address)
+    if deployTokens == True:
+        sDAI = MockSDAI.deploy(dai, {"from": acct})
+        dbSet("mock_sdai", sDAI.address)
     sDAIAllocPoint = 20000
 
     pointsPerBlock = 25*10**18
