@@ -603,7 +603,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             1e18;
 
         // boosted value added to pool balance
-        pool.amount = pool.amount + finalBoostAmount;
+        pool.amount = pool.amount + finalBoostAmount - _boostAmount;
         pool.boostAmount = pool.boostAmount + finalBoostAmount;
 
         emit IncreaseBoost(msg.sender, _pid, finalBoostAmount);
