@@ -592,21 +592,21 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         pool.depositAmount = pool.depositAmount - _boostAmount;
 
         // apply the multiplier
-        _boostAmount = _boostAmount * boosterMultiplier / 1e18;
+        uint256 finalBoostAmount = _boostAmount * boosterMultiplier / 1e18;
 
-        user.boostAmount = user.boostAmount + _boostAmount;
+        user.boostAmount = user.boostAmount + finalBoostAmount;
 
-        userAmount = userAmount + _boostAmount;
+        userAmount = userAmount + finalBoostAmount - _boostAmount;
         user.amount = userAmount;
         user.rewardDebt = userAmount *
             pool.accPointsPerShare /
             1e18;
 
         // boosted value added to pool balance
-        pool.amount = pool.amount + _boostAmount;
-        pool.boostAmount = pool.boostAmount + _boostAmount;
+        pool.amount = pool.amount + finalBoostAmount;
+        pool.boostAmount = pool.boostAmount + finalBoostAmount;
 
-        emit IncreaseBoost(msg.sender, _pid, _boostAmount);
+        emit IncreaseBoost(msg.sender, _pid, finalBoostAmount);
     }
 
 	// total allowed boost is 100% of total deposit
