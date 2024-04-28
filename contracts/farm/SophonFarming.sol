@@ -118,38 +118,38 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         poolExists[stETH] = true;
 
         // sDAI
-        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", false);
+        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", "sDAI", false);
         IERC20(dai).approve(sDAI, 2**256-1);
 
         // wstETH
-        typeToId[PredefinedPool.wstETH] = add(ethAllocPoint_, wstETH, "wstETH", false);
+        typeToId[PredefinedPool.wstETH] = add(ethAllocPoint_, wstETH, "wstETH", "wstETH", false);
         IERC20(stETH).approve(wstETH, 2**256-1);
 
         /*
         // weETH
-        typeToId[PredefinedPool.weETH] = add(ethAllocPoint_, weETH, "weETH", false);
+        typeToId[PredefinedPool.weETH] = add(ethAllocPoint_, weETH, "weETH", "weETH", false);
 
         // ezETH
-        typeToId[PredefinedPool.ezETH] = add(ethAllocPoint_, ezETH, "ezETH", false);
+        typeToId[PredefinedPool.ezETH] = add(ethAllocPoint_, ezETH, "ezETH", "ezETH", false);
 
         // rsETH
-        typeToId[PredefinedPool.rsETH] = add(ethAllocPoint_, rsETH, "rsETH", false);
+        typeToId[PredefinedPool.rsETH] = add(ethAllocPoint_, rsETH, "rsETH", "rsETH", false);
 
         // rswETH
-        typeToId[PredefinedPool.rswETH] = add(ethAllocPoint_, rswETH, "rswETH", false);
+        typeToId[PredefinedPool.rswETH] = add(ethAllocPoint_, rswETH, "rswETH", "rswETH", false);
 
         // uniETH
-        typeToId[PredefinedPool.uniETH] = add(ethAllocPoint_, uniETH, "uniETH", false);
+        typeToId[PredefinedPool.uniETH] = add(ethAllocPoint_, uniETH, "uniETH", "uniETH", false);
 
         // pufETH
-        typeToId[PredefinedPool.pufETH] = add(ethAllocPoint_, pufETH, "pufETH", false);
+        typeToId[PredefinedPool.pufETH] = add(ethAllocPoint_, pufETH, "pufETH", "pufETH", false);
         */
 
         _initialized = true;
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
-    function add(uint256 _allocPoint, address _lpToken, string memory _description, bool _withUpdate) public onlyOwner nonDuplicated(_lpToken) returns (uint256) {
+    function add(uint256 _allocPoint, address _lpToken, string memory _poolShareSymbol, string memory _description, bool _withUpdate) public onlyOwner nonDuplicated(_lpToken) returns (uint256) {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -170,6 +170,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
                 accPointsPerShare: 0,
+                poolShareToken: new PoolShareToken(_poolShareSymbol, poolInfo.length),
                 description: _description
             })
         );
@@ -277,6 +278,56 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         } else {
             return 0;
         }
+    }
+
+    function _handleTransfer(uint256 _pid, address _from, address _to, uint256 _amount) external {
+
+        PoolInfo storage pool = poolInfo[_pid];
+        if (_to == address(this) || msg.sender != address(poolInfo[_pid].poolShareToken)) {
+            revert Unauthorized();
+        }
+
+        updatePool(_pid);
+        uint256 accPointsPerShare = pool.accPointsPerShare;
+
+        UserInfo storage userFrom = userInfo[_pid][_from];
+        UserInfo storage userTo = userInfo[_pid][_to];
+
+        uint256 userFromAmount = userFrom.amount;
+        uint256 userToAmount = userTo.amount;
+
+        if (userFromAmount != 0) {
+            userFrom.rewardSettled =
+                userFromAmount *
+                accPointsPerShare /
+                1e18 +
+                userFrom.rewardSettled -
+                userFrom.rewardDebt;
+        }
+        if (userToAmount != 0) {
+            userTo.rewardSettled =
+                userToAmount *
+                accPointsPerShare /
+                1e18 +
+                userTo.rewardSettled -
+                userTo.rewardDebt;
+        }
+
+        // adjust balances
+        userFrom.depositAmount = userFrom.depositAmount - _amount;
+        userFromAmount = userFromAmount - _amount;
+        userFrom.amount = userFromAmount;
+
+        userTo.depositAmount = userTo.depositAmount + _amount;
+        userToAmount = userToAmount + _amount;
+        userTo.amount = userToAmount;
+
+        userFrom.rewardDebt = userFromAmount *
+            accPointsPerShare /
+            1e18;
+        userTo.rewardDebt = userToAmount *
+            accPointsPerShare /
+            1e18;
     }
 
     function _pendingPoints(uint256 _pid, address _user) internal view returns (uint256) {
@@ -471,6 +522,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         // set deposit amount
         user.depositAmount = user.depositAmount + _amount - _boostAmount;
+
+        // mint share token
+        pool.poolShareToken.mint(msg.sender, _amount - _boostAmount);
+
         pool.depositAmount = pool.depositAmount + _amount - _boostAmount;
 
         // apply the multiplier
@@ -514,6 +569,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         pool.amount = pool.amount - _amount;
         pool.boostAmount = pool.boostAmount - user.boostAmount;
         pool.depositAmount = pool.depositAmount - depositAmount;
+
+        // burn share token
+        pool.poolShareToken.burn(msg.sender, depositAmount);
 
         user.amount = 0;
         user.boostAmount = 0;
