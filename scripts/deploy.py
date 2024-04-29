@@ -43,7 +43,7 @@ def getFarm():
         SophonContract = SophonFarming
 
     return Contract.from_abi("farm", dbGet("farm"), SophonContract.abi)
-def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = run("deploy", "getMocks")
+def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = run("deploy", "getMocks")
     farm = getFarm()
 
     mock0 = Contract.from_abi("mock0", dbGet("mock_0"), MockERC20.abi)
@@ -52,6 +52,10 @@ def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, 
     weth = Contract.from_abi("mock0", "0xDc1808F3994912DB7c9448aF227de231c5251216", interface.IWeth.abi)
     stETH = Contract.from_abi("stETH", dbGet("mock_steth"), MockStETH.abi)
     wstETH = Contract.from_abi("wstETH", dbGet("mock_wsteth"), MockWstETH.abi)
+    eETH = Contract.from_abi("eETH", dbGet("mock_eETH"), MockERC20.abi)
+    eETHLiquidityPool = Contract.from_abi("eETHLiquidityPool", dbGet("mock_eETHLiquidityPool"), MockeETHLiquidityPool.abi)
+    weETH = Contract.from_abi("weETH", dbGet("mock_weETH"), MockweETH.abi)
+
     dai = Contract.from_abi("dai", dbGet("mock_dai"), MockERC20.abi)
     sDAI = Contract.from_abi("sDAI", dbGet("mock_sdai"), MockSDAI.abi)
 
@@ -62,13 +66,13 @@ def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, 
         acct1 = acct
         acct2 = acct
 
-    return acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI
+    return acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI
 
 def createMockSetup(deployTokens = False):
     global acct
 
     if deployTokens == False:
-        acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = getMocks()
+        acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = getMocks()
 
     if deployTokens == True:
         createMockToken(0, True)
@@ -88,6 +92,22 @@ def createMockSetup(deployTokens = False):
         dbSet("mock_wsteth", wstETH.address)
     wstETHAllocPoint = 20000
 
+    ## mock eETH
+    if deployTokens == True:
+        eETH = MockERC20.deploy("Mock eETH Token", "MockeETH", 18, {"from": acct})
+        dbSet("mock_eETH", eETH.address)
+
+    ## mock eETHLiquidityPool
+    if deployTokens == True:
+        eETHLiquidityPool = MockeETHLiquidityPool.deploy(eETH, {"from": acct})
+        dbSet("eETHLiquidityPool", eETHLiquidityPool.address)
+
+    ## mock weETH
+    if deployTokens == True:
+        weETH = MockweETH.deploy(eETH, {"from": acct})
+        dbSet("mock_weETH", weETH.address)
+    weETHAllocPoint = 20000
+
     ## mock DAI
     if deployTokens == True:
         dai = MockERC20.deploy("Mock Dai Token", "MockDAI", 18, {"from": acct})
@@ -104,9 +124,9 @@ def createMockSetup(deployTokens = False):
     startBlock = chain.height
     boosterMultiplier = 2e18
 
-    createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
+    createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, weETH, weETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
 
-    acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = getMocks()
+    acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = getMocks()
 
     farm.add(10000, mock0, "mock0", True, {"from": acct})
     farm.add(30000, mock1, "mock1", True, {"from": acct})
@@ -117,6 +137,8 @@ def createMockSetup(deployTokens = False):
     weth.approve(farm, 2**256-1, {"from": acct})
     stETH.approve(farm, 2**256-1, {"from": acct})
     wstETH.approve(farm, 2**256-1, {"from": acct})
+    eETH.approve(farm, 2**256-1, {"from": acct})
+    weETH.approve(farm, 2**256-1, {"from": acct})
     dai.approve(farm, 2**256-1, {"from": acct})
     sDAI.approve(farm, 2**256-1, {"from": acct})
     stETH.approve(wstETH, 2**256-1, {"from": acct})
@@ -128,20 +150,31 @@ def createMockSetup(deployTokens = False):
     weth.deposit({"from": acct, "value": 0.01e18})
     stETH.submit(farm, {"from": acct, "value": 0.02e18})
     wstETH.wrap(stETH.balanceOf(acct) / 2, {"from": acct})
+    eETHLiquidityPool.deposit(farm, {"from": acct, "value": 0.03e18})
+    weETH.wrap(eETH.balanceOf(acct) / 2, {"from": acct})
     dai.mint(acct, 1000e18, {"from": acct})
     sDAI.deposit(dai.balanceOf(acct) / 2, acct, {"from": acct})
 
-    ## Deposit ETH
+    ## Deposit ETH to Lido
     farm.depositEth(0.01e18 * 0.02, 1, {"from": acct, "value": 0.01e18})
+
+    ## Deposit ETH to Ether.fi
+    farm.depositEth(0, 2, {"from": acct, "value": 0.02e18})
 
     ## Deposit ETH Directly
     acct.transfer(to=farm.address, amount=0.01e18)
 
-    ## Deposit Weth
-    farm.depositWeth(weth.balanceOf(acct), weth.balanceOf(acct) * 0.05, 1, {"from": acct})
+    ## Deposit Weth to Lido
+    farm.depositWeth(weth.balanceOf(acct) / 2, weth.balanceOf(acct) / 2 * 0.05, 1, {"from": acct})
+
+    ## Deposit Weth to Ether.fi
+    farm.depositWeth(weth.balanceOf(acct), 2, {"from": acct})
 
     ## Deposit stEth
     farm.depositStEth(stETH.balanceOf(acct), 0, {"from": acct})
+
+    ## Deposit eEth
+    farm.depositeEth(eETH.balanceOf(acct), 0, {"from": acct})
 
     ## Deposit DAI
     farm.depositDai(dai.balanceOf(acct), dai.balanceOf(acct) * 0.1, {"from": acct})
@@ -173,7 +206,7 @@ def createMockToken(count=0, force=False):
 
     return mock
 
-def createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier):
+def createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, weETH, weETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier):
     global acct
 
     if "fork" in NETWORK:

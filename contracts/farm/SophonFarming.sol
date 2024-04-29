@@ -9,6 +9,8 @@ import "./interfaces/IWeth.sol";
 import "./interfaces/IstETH.sol";
 import "./interfaces/IwstETH.sol";
 import "./interfaces/IsDAI.sol";
+import "./interfaces/IeETHLiquidityPool.sol";
+import "./interfaces/IweETH.sol";
 import "../proxies/Upgradeable2Step.sol";
 import "./SophonFarmingState.sol";
 
@@ -40,9 +42,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     address public immutable weth;
     address public immutable stETH;
     address public immutable wstETH;
+    address public immutable eETH;
+    address public immutable eETHLiquidityPool;
+    address public immutable weETH;
     /*address public immutable uSDe;
     address public immutable sUSDe;
-    address public immutable weETH;
     address public immutable ezETH;
     address public immutable rsETH;
     address public immutable rswETH;
@@ -66,6 +70,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     // todo: add LSDs seen here -> https://app.pendle.finance/points
     // ether.fi ETH (eETH): 0x35fA164735182de50811E8e2E824cFb9B6118ac2
+    // ether.fi Liquidity Pool: 0x308861A430be4cce5502d0A12724771Fc6DaF216
     // ether.fi Wrapped eETH (weETH): 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee
     // Renzo ezETH (Renzo Restaked ETH): 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110
     // Kelp Dao rsETH (rsETH): 0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7
@@ -75,20 +80,22 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     // DAI: 0x6B175474E89094C44Da98b954EedeAC495271d0F
     // sDAI: 0x83F20F44975D03b1b09e64809B757c47f942BEeA
-    constructor(address[5] memory tokens_) {
+    constructor(address[8] memory tokens_) {
         dai = tokens_[0];
         sDAI = tokens_[1];
         weth = tokens_[2];
         stETH = tokens_[3];
         wstETH = tokens_[4];
-        /*uSDe = tokens_[5];
-        sUSDe = tokens_[6];
+        eETH = tokens_[5];
+        eETHLiquidityPool = tokens_[6];
         weETH = tokens_[7];
-        ezETH = tokens_[8];
-        rsETH = tokens_[9];
-        rswETH = tokens_[10];
-        uniETH = tokens_[11];
-        pufETH = tokens_[12];*/
+        /*uSDe = tokens_[8];
+        sUSDe = tokens_[9];
+        ezETH = tokens_[10];
+        rsETH = tokens_[11];
+        rswETH = tokens_[12];
+        uniETH = tokens_[13];
+        pufETH = tokens_[14];*/
     }
 
     receive() external payable {
@@ -116,6 +123,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         poolExists[dai] = true;
         poolExists[weth] = true;
         poolExists[stETH] = true;
+        poolExists[eETH] = true;
 
         // sDAI
         typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", "sDAI", false);
@@ -125,10 +133,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         typeToId[PredefinedPool.wstETH] = add(ethAllocPoint_, wstETH, "wstETH", "wstETH", false);
         IERC20(stETH).approve(wstETH, 2**256-1);
 
-        /*
         // weETH
         typeToId[PredefinedPool.weETH] = add(ethAllocPoint_, weETH, "weETH", "weETH", false);
+        IERC20(eETH).approve(weETH, 2**256-1);
 
+        /*
         // ezETH
         typeToId[PredefinedPool.ezETH] = add(ethAllocPoint_, ezETH, "ezETH", "ezETH", false);
 
@@ -432,6 +441,16 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         _depositPredefinedAsset(_amount, _amount, _boostAmount, PredefinedPool.wstETH);
     }
 
+    function depositeEth(uint256 _amount, uint256 _boostAmount) external {
+        IERC20(eETH).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
+
+        _depositPredefinedAsset(_amount, _amount, _boostAmount, PredefinedPool.weETH);
+    }
+
     function depositEth(uint256 _boostAmount, PredefinedPool predefinedPool) public payable {
         if (msg.value == 0) {
             revert NoEthSent();
@@ -440,6 +459,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         uint256 _finalAmount = msg.value;
         if (predefinedPool == PredefinedPool.wstETH) {
             _finalAmount = _ethTOstEth(_finalAmount);
+        } else if (predefinedPool == PredefinedPool.weETH) {
+            _finalAmount = _ethTOeEth(_finalAmount);
         }
 
         _depositPredefinedAsset(_finalAmount, msg.value, _boostAmount, predefinedPool);
@@ -455,6 +476,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         uint256 _finalAmount = _wethTOEth(_amount);
         if (predefinedPool == PredefinedPool.wstETH) {
             _finalAmount = _ethTOstEth(_finalAmount);
+        } else if (predefinedPool == PredefinedPool.weETH) {
+            _finalAmount = _ethTOeEth(_finalAmount);
         }
 
         _depositPredefinedAsset(_finalAmount, _amount, _boostAmount, predefinedPool);
@@ -468,9 +491,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             _finalAmount = _daiTOsDai(_amount);
         } else if (predefinedPool == PredefinedPool.wstETH) {
             _finalAmount = _stEthTOwstEth(_amount);
-        /*} else if (predefinedPool == PredefinedPool.weETH) {
-            _finalAmount = _ethTOweEth(_amount);
-        } else if (predefinedPool == PredefinedPool.ezETH) {
+        } else if (predefinedPool == PredefinedPool.weETH) {
+            _finalAmount = _eethTOweEth(_amount);
+        /*} else if (predefinedPool == PredefinedPool.ezETH) {
             _finalAmount = _ethTOezEth(_amount);
         } else if (predefinedPool == PredefinedPool.rsETH) {
             _finalAmount = _ethTOrsEth(_amount);
@@ -679,6 +702,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         return _amount;
     }
 
+    // Lido
     function _ethTOstEth(uint256 _amount) internal returns (uint256) {
         // submit function does not return exact amount of stETH so we need to check balances
         uint256 balanceBefore = IERC20(stETH).balanceOf(address(this));
@@ -686,18 +710,26 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         return (IERC20(stETH).balanceOf(address(this)) - balanceBefore);
     }
 
+    // Lido
     function _stEthTOwstEth(uint256 _amount) internal returns (uint256) {
         // wrap returns exact amount of wstETH
         return IwstETH(wstETH).wrap(_amount);
     }
 
-    // TODO: all these below
-    /*function _ethTOweEth(uint256 _amount) internal returns (uint256) {
-        uint256 balanceBefore = IERC20(weETH).balanceOf(address(this));
-        IstETH(weETH).submit{value: _amount}(address(this));
-        return (IERC20(weETH).balanceOf(address(this)) - balanceBefore);
+    // ether.fi
+    function _ethTOeEth(uint256 _amount) internal returns (uint256) {
+        // deposit returns exact amount of eETH
+        return IeETHLiquidityPool(eETHLiquidityPool).deposit{value: _amount}(address(this));
     }
-    function _ethTOezEth(uint256 _amount) internal returns (uint256) {
+
+    // ether.fi
+    function _eethTOweEth(uint256 _amount) internal returns (uint256) {
+        // wrap returns exact amount of weETH
+        return IweETH(eETH).wrap(_amount);
+    }
+
+    // TODO: all these below
+    /*function _ethTOezEth(uint256 _amount) internal returns (uint256) {
         uint256 balanceBefore = IERC20(weETH).balanceOf(address(this));
         IstETH(weETH).submit{value: _amount}(address(this));
         return (IERC20(weETH).balanceOf(address(this)) - balanceBefore);
