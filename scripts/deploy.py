@@ -100,13 +100,12 @@ def createMockSetup(deployTokens = False):
     ## mock eETHLiquidityPool
     if deployTokens == True:
         eETHLiquidityPool = MockeETHLiquidityPool.deploy(eETH, {"from": acct})
-        dbSet("eETHLiquidityPool", eETHLiquidityPool.address)
+        dbSet("mock_eETHLiquidityPool", eETHLiquidityPool.address)
 
     ## mock weETH
     if deployTokens == True:
         weETH = MockweETH.deploy(eETH, {"from": acct})
         dbSet("mock_weETH", weETH.address)
-    weETHAllocPoint = 20000
 
     ## mock DAI
     if deployTokens == True:
@@ -124,12 +123,13 @@ def createMockSetup(deployTokens = False):
     startBlock = chain.height
     boosterMultiplier = 2e18
 
-    createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, weETH, weETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
+    createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, weETH, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
 
     acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = getMocks()
 
-    farm.add(10000, mock0, "mock0", True, {"from": acct})
-    farm.add(30000, mock1, "mock1", True, {"from": acct})
+    farm.add(10000, mock0, "mock0", "mock0", True, {"from": acct})
+    farm.add(30000, mock1, "mock1", "mock1", True, {"from": acct})
+
 
     ## Approvals
     mock0.approve(farm, 2**256-1, {"from": acct})
@@ -142,6 +142,7 @@ def createMockSetup(deployTokens = False):
     dai.approve(farm, 2**256-1, {"from": acct})
     sDAI.approve(farm, 2**256-1, {"from": acct})
     stETH.approve(wstETH, 2**256-1, {"from": acct})
+    eETH.approve(weETH, 2**256-1, {"from": acct})
     dai.approve(sDAI, 2**256-1, {"from": acct})
 
     ## Mint some of all the assets
@@ -168,7 +169,7 @@ def createMockSetup(deployTokens = False):
     farm.depositWeth(weth.balanceOf(acct) / 2, weth.balanceOf(acct) / 2 * 0.05, 1, {"from": acct})
 
     ## Deposit Weth to Ether.fi
-    farm.depositWeth(weth.balanceOf(acct), 2, {"from": acct})
+    farm.depositWeth(weth.balanceOf(acct), 0, 2, {"from": acct})
 
     ## Deposit stEth
     farm.depositStEth(stETH.balanceOf(acct), 0, {"from": acct})
@@ -180,10 +181,10 @@ def createMockSetup(deployTokens = False):
     farm.depositDai(dai.balanceOf(acct), dai.balanceOf(acct) * 0.1, {"from": acct})
 
     ## Deposit Mock0
-    farm.deposit(2, 1000e18, 1000e18 * 0.01, {"from": acct})
+    farm.deposit(3, 1000e18, 1000e18 * 0.01, {"from": acct})
 
     ## Deposit Mock1
-    farm.deposit(3, 1000e18, 0, {"from": acct})
+    farm.deposit(4, 1000e18, 0, {"from": acct})
 
     if "fork" in NETWORK:
         farm.addBlocks(50, {"from": acct})
@@ -206,7 +207,7 @@ def createMockToken(count=0, force=False):
 
     return mock
 
-def createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, weETH, weETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier):
+def createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, weETH, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier):
     global acct
 
     if "fork" in NETWORK:
@@ -219,8 +220,11 @@ def createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, w
         sDAI,
         weth,
         stETH,
-        wstETH
-    ], {'from': acct})
+        wstETH,
+        eETH,
+        eETHLiquidityPool,
+        weETH
+    ], {'from': acct, "gas_limit": 10000000})
     dbSet("farmLastImpl", impl.address)
 
     proxy = SophonFarmingProxy.deploy(impl, {'from': acct})
@@ -232,7 +236,7 @@ def createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, w
     return farm
 
 def upgradeFarm():
-    acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = getMocks()
+    acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = getMocks()
 
     if "fork" in NETWORK:
         SophonContract = SophonFarmingFork
@@ -244,8 +248,11 @@ def upgradeFarm():
         sDAI,
         weth,
         stETH,
-        wstETH
-    ], {'from': acct})
+        wstETH,
+        eETH,
+        eETHLiquidityPool,
+        weETH
+    ], {'from': acct, "gas_limit": 10000000})
     dbSet("farmLastImpl", impl.address)
 
     Contract.from_abi("proxy", farm, SophonFarmingProxy.abi).replaceImplementation(impl, {'from': acct})

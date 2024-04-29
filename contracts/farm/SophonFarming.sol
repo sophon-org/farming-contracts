@@ -725,7 +725,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     // ether.fi
     function _eethTOweEth(uint256 _amount) internal returns (uint256) {
         // wrap returns exact amount of weETH
-        return IweETH(eETH).wrap(_amount);
+        return IweETH(weETH).wrap(_amount);
     }
 
     // TODO: all these below
