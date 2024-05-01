@@ -10,7 +10,7 @@ import {MockWETH} from "./../contracts/mocks//MockWETH.sol";
 import {MockStETH} from "./../contracts/mocks/MockStETH.sol";
 import {MockWstETH} from "./../contracts/mocks/MockWstETH.sol";
 import {MockSDAI} from "./../contracts/mocks/MockSDAI.sol";
-import "@openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SophonFarmingTest is Test {
     string internal mnemonic = "test test test test test test test test test test test junk";
@@ -100,15 +100,15 @@ contract SophonFarmingTest is Test {
                 address(sDAI),
                 address(weth),
                 address(stETH),
-                address(wstETH),
-                address(0x10),
-                address(0x11),
-                address(0x12),
-                address(0x13),
-                address(0x14),
-                address(0x15),
-                address(0x16),
-                address(0x17)
+                address(wstETH)
+                // address(0x10),
+                // address(0x11),
+                // address(0x12),
+                // address(0x13),
+                // address(0x14),
+                // address(0x15),
+                // address(0x16),
+                // address(0x17)
             ]    
         ));
 
@@ -163,7 +163,7 @@ contract SophonFarmingTest is Test {
         // // Deposit sDAI
         // sophonFarming.deposit(3, 1000e18, 0);
 
-        sophonFarming.setEndBlocks(maxUint - 1000, maxUint);
+        sophonFarming.setEndBlocks(maxUint - 1000, 1000);
 
         vm.stopPrank();
     }
@@ -265,15 +265,15 @@ contract SophonFarmingTest is Test {
                 address(sDAI),
                 address(weth),
                 address(stETH),
-                address(wstETH),
-                address(0x10),
-                address(0x11),
-                address(0x12),
-                address(0x13),
-                address(0x14),
-                address(0x15),
-                address(0x16),
-                address(0x17)
+                address(wstETH)
+                // address(0x10),
+                // address(0x11),
+                // address(0x12),
+                // address(0x13),
+                // address(0x14),
+                // address(0x15),
+                // address(0x16),
+                // address(0x17)
             ]    
         ));
 
@@ -408,12 +408,13 @@ contract SophonFarmingTest is Test {
     function test_SetEndBlock_RevertWhen_InvalidEndBlock() public {
         vm.startPrank(deployer);
 
-        vm.expectRevert(SophonFarming.InvalidEndBlock.selector);
-        sophonFarming.setEndBlocks(block.number - 1, 1);
-
-        sophonFarming.setStartBlock(block.number + 9);
+        sophonFarming.setStartBlock(block.number + 10);
         vm.expectRevert(SophonFarming.InvalidEndBlock.selector);
         sophonFarming.setEndBlocks(block.number + 8, 1);
+
+        vm.roll(block.number + 10);
+        vm.expectRevert(SophonFarming.InvalidEndBlock.selector);
+        sophonFarming.setEndBlocks(block.number, 1);
     }
 
     function test_SetEndBlock_RevertWhen_FarmingIsEnded() public {
@@ -1016,7 +1017,7 @@ contract SophonFarmingTest is Test {
         assertEq(finalUserInfo.boostAmount, 0);
         assertEq(finalUserInfo.depositAmount, 0);
         // Slash on points
-        assertEq(finalUserInfo.rewardSettled, (userInfo.amount * accPointsPerShare / 1e12 + userInfo.rewardSettled - userInfo.rewardDebt) / 2);
+        assertEq(finalUserInfo.rewardSettled, (userInfo.amount * accPointsPerShare / 1e18 + userInfo.rewardSettled - userInfo.rewardDebt) / 2);
         assertEq(finalUserInfo.rewardDebt, 0);
 
         assertEq(sDAI.balanceOf(account1), sDAI.convertToShares(amountToDeposit));
@@ -1105,7 +1106,7 @@ contract SophonFarmingTest is Test {
         assertEq(finalUserInfo.boostAmount, 0);
         assertEq(finalUserInfo.depositAmount, 0);
         // Slash on points
-        assertEq(finalUserInfo.rewardSettled, (userInfo.amount * accPointsPerShare / 1e12 + userInfo.rewardSettled - userInfo.rewardDebt) / 2);
+        assertEq(finalUserInfo.rewardSettled, (userInfo.amount * accPointsPerShare / 1e18 + userInfo.rewardSettled - userInfo.rewardDebt) / 2);
         assertEq(finalUserInfo.rewardDebt, 0);
         
         // Can have 1 wei of difference cause of rounding

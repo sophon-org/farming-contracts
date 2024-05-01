@@ -8,7 +8,7 @@ libs = [
 remappings = [
     "@chainlink/=node_modules/@chainlink/contracts/src/v0.8/",
     "@eth-optimism/=node_modules/@eth-optimism/",
-    "@openzeppelin/=node_modules/@openzeppelin/contracts/",
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
     "erc721a/=node_modules/erc721a/contracts/",
     "forge-std/=lib/forge-std/src/",
 ]
