@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import "@openzeppelin/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 event ReplaceImplementationStarted(address indexed previousImplementation, address indexed newImplementation);
 event ReplaceImplementation(address indexed previousImplementation, address indexed newImplementation);

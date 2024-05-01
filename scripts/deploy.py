@@ -37,7 +37,12 @@ def dbGet(key):
     return db.get(key)
 
 def getFarm():
-    return Contract.from_abi("farm", dbGet("farm"), SophonFarming.abi)
+    if "fork" in NETWORK:
+        SophonContract = SophonFarmingFork
+    else:
+        SophonContract = SophonFarming
+
+    return Contract.from_abi("farm", dbGet("farm"), SophonContract.abi)
 def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = run("deploy", "getMocks")
     farm = getFarm()
 
@@ -59,32 +64,40 @@ def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, 
 
     return acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI
 
-def createMockSetup():
+def createMockSetup(deployTokens = False):
     global acct
 
-    createMockToken(0, True)
-    createMockToken(1, True)
+    if deployTokens == False:
+        acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = getMocks()
+
+    if deployTokens == True:
+        createMockToken(0, True)
+        createMockToken(1, True)
 
     ## Sepolia
     weth = Contract.from_abi("weth", "0xDc1808F3994912DB7c9448aF227de231c5251216", interface.IWeth.abi)
 
     ## mock stEth
-    stETH = MockStETH.deploy({"from": acct})
-    dbSet("mock_steth", stETH.address)
+    if deployTokens == True:
+        stETH = MockStETH.deploy({"from": acct})
+        dbSet("mock_steth", stETH.address)
 
     ## mock wstEth
-    wstETH = MockWstETH.deploy(stETH, {"from": acct})
-    dbSet("mock_wsteth", wstETH.address)
+    if deployTokens == True:
+        wstETH = MockWstETH.deploy(stETH, {"from": acct})
+        dbSet("mock_wsteth", wstETH.address)
     wstETHAllocPoint = 20000
 
     ## mock DAI
-    dai = MockERC20.deploy("Mock Dai Token", "MockDAI", 18, {"from": acct})
-    dai.mint(acct, 1000000e18, {"from": acct})
+    if deployTokens == True:
+        dai = MockERC20.deploy("Mock Dai Token", "MockDAI", 18, {"from": acct})
+        dai.mint(acct, 1000000e18, {"from": acct})
     dbSet("mock_dai", dai.address)
 
     ## mock sDAI
-    sDAI = MockSDAI.deploy(dai, {"from": acct})
-    dbSet("mock_sdai", sDAI.address)
+    if deployTokens == True:
+        sDAI = MockSDAI.deploy(dai, {"from": acct})
+        dbSet("mock_sdai", sDAI.address)
     sDAIAllocPoint = 20000
 
     pointsPerBlock = 25*10**18
@@ -119,13 +132,13 @@ def createMockSetup():
     sDAI.deposit(dai.balanceOf(acct) / 2, acct, {"from": acct})
 
     ## Deposit ETH
-    farm.depositEth(0.01e18 * 0.02, {"from": acct, "value": 0.01e18})
+    farm.depositEth(0.01e18 * 0.02, 1, {"from": acct, "value": 0.01e18})
 
     ## Deposit ETH Directly
     acct.transfer(to=farm.address, amount=0.01e18)
 
     ## Deposit Weth
-    farm.depositWeth(weth.balanceOf(acct), weth.balanceOf(acct) * 0.05, {"from": acct})
+    farm.depositWeth(weth.balanceOf(acct), weth.balanceOf(acct) * 0.05, 1, {"from": acct})
 
     ## Deposit stEth
     farm.depositStEth(stETH.balanceOf(acct), 0, {"from": acct})
@@ -138,6 +151,9 @@ def createMockSetup():
 
     ## Deposit Mock1
     farm.deposit(3, 1000e18, 0, {"from": acct})
+
+    if "fork" in NETWORK:
+        farm.addBlocks(50, {"from": acct})
 
     return getMocks()
 
@@ -160,11 +176,22 @@ def createMockToken(count=0, force=False):
 def createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier):
     global acct
 
-    impl = SophonFarming.deploy(weth, stETH, wstETH, dai, sDAI, {'from': acct})
+    if "fork" in NETWORK:
+        SophonContract = SophonFarmingFork
+    else:
+        SophonContract = SophonFarming
+
+    impl = SophonContract.deploy([
+        dai,
+        sDAI,
+        weth,
+        stETH,
+        wstETH
+    ], {'from': acct})
     dbSet("farmLastImpl", impl.address)
 
     proxy = SophonFarmingProxy.deploy(impl, {'from': acct})
-    farm = Contract.from_abi("farm", proxy.address, SophonFarming.abi)
+    farm = Contract.from_abi("farm", proxy.address, SophonContract.abi)
     dbSet("farm", farm.address)
 
     farm.initialize(wstETHAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier, {'from': acct})
@@ -174,11 +201,22 @@ def createFarm(weth, stETH, wstETH, wstETHAllocPoint, dai, sDAI, sDAIAllocPoint,
 def upgradeFarm():
     acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, dai, sDAI = getMocks()
 
-    impl = SophonFarming.deploy(weth, stETH, wstETH, dai, sDAI, {'from': acct})
+    if "fork" in NETWORK:
+        SophonContract = SophonFarmingFork
+    else:
+        SophonContract = SophonFarming
+
+    impl = SophonContract.deploy([
+        dai,
+        sDAI,
+        weth,
+        stETH,
+        wstETH
+    ], {'from': acct})
     dbSet("farmLastImpl", impl.address)
 
     Contract.from_abi("proxy", farm, SophonFarmingProxy.abi).replaceImplementation(impl, {'from': acct})
-    Contract.from_abi("impl", impl, SophonFarming.abi).becomeImplementation(farm, {'from': acct})
+    Contract.from_abi("impl", impl, SophonContract.abi).becomeImplementation(farm, {'from': acct})
 
     return farm
 

@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.24;
 
-import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/utils/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IWeth.sol";
 import "./interfaces/IstETH.sol";
 import "./interfaces/IwstETH.sol";
@@ -31,6 +31,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error InvalidDeposit();
     error NoEthSent();
     error BoostTooHigh(uint256 maxAllowed);
+    error BoostIsZero();
     error BridgeInvalid();
 
 
@@ -39,14 +40,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     address public immutable weth;
     address public immutable stETH;
     address public immutable wstETH;
-    address public immutable uSDe;
+    /*address public immutable uSDe;
     address public immutable sUSDe;
     address public immutable weETH;
     address public immutable ezETH;
     address public immutable rsETH;
     address public immutable rswETH;
     address public immutable uniETH;
-    address public immutable pufETH;
+    address public immutable pufETH;*/
 
     modifier nonDuplicated(address _lpToken) {
         require(!poolExists[_lpToken], "pool exists");
@@ -74,20 +75,20 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     // DAI: 0x6B175474E89094C44Da98b954EedeAC495271d0F
     // sDAI: 0x83F20F44975D03b1b09e64809B757c47f942BEeA
-    constructor(address[13] memory tokens_) {
+    constructor(address[5] memory tokens_) {
         dai = tokens_[0];
         sDAI = tokens_[1];
         weth = tokens_[2];
         stETH = tokens_[3];
         wstETH = tokens_[4];
-        uSDe = tokens_[5];
+        /*uSDe = tokens_[5];
         sUSDe = tokens_[6];
         weETH = tokens_[7];
         ezETH = tokens_[8];
         rsETH = tokens_[9];
         rswETH = tokens_[10];
         uniETH = tokens_[11];
-        pufETH = tokens_[12];
+        pufETH = tokens_[12];*/
     }
 
     receive() external payable {
@@ -98,7 +99,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         depositEth(0, PredefinedPool.wstETH);
     }
 
-    function initialize(uint256 ethAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) external onlyOwner {
+    function initialize(uint256 ethAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) public virtual onlyOwner {
         if (_initialized) {
             revert AlreadyInitialized();
         }
@@ -124,6 +125,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         typeToId[PredefinedPool.wstETH] = add(ethAllocPoint_, wstETH, "wstETH", false);
         IERC20(stETH).approve(wstETH, 2**256-1);
 
+        /*
         // weETH
         typeToId[PredefinedPool.weETH] = add(ethAllocPoint_, weETH, "weETH", false);
 
@@ -141,6 +143,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         // pufETH
         typeToId[PredefinedPool.pufETH] = add(ethAllocPoint_, pufETH, "pufETH", false);
+        */
 
         _initialized = true;
     }
@@ -154,7 +157,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             massUpdatePools();
         }
         uint256 lastRewardBlock =
-            block.number > startBlock ? block.number : startBlock;
+            getBlockNumber() > startBlock ? getBlockNumber() : startBlock;
         totalAllocPoint = totalAllocPoint + _allocPoint;
         poolExists[_lpToken] = true;
         poolInfo.push(
@@ -188,14 +191,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         totalAllocPoint = totalAllocPoint - pool.allocPoint + _allocPoint;
         pool.allocPoint = _allocPoint;
 
-        if (block.number < pool.lastRewardBlock) {
+        if (getBlockNumber() < pool.lastRewardBlock) {
             pool.lastRewardBlock = startBlock;
         }
     }
 
     function isFarmingEnded() public view returns (bool) {
         uint256 _endBlock = endBlock;
-        if (_endBlock != 0 && block.number > _endBlock) {
+        if (_endBlock != 0 && getBlockNumber() > _endBlock) {
             return true;
         } else {
             return false;
@@ -204,7 +207,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     function isExitPeriodEnded() public view returns (bool) {
         uint256 _endBlockForWithdrawals = endBlockForWithdrawals;
-        if (_endBlockForWithdrawals != 0 && block.number > _endBlockForWithdrawals) {
+        if (_endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals) {
             return true;
         } else {
             return false;
@@ -223,7 +226,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (_startBlock == 0 || (endBlock != 0 && _startBlock >= endBlock)) {
             revert InvalidStartBlock();
         }
-        if (block.number > startBlock) {
+        if (getBlockNumber() > startBlock) {
             revert FarmingIsStarted();
         }
         startBlock = _startBlock;
@@ -231,8 +234,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     function setEndBlocks(uint256 _endBlock, uint256 _withdrawalBlocks) public onlyOwner {
         uint256 _endBlockForWithdrawals;
-        if (endBlock != 0) {
-            if (_endBlock <= startBlock || block.number > _endBlock) {
+        if (_endBlock != 0) {
+            if (_endBlock <= startBlock || getBlockNumber() > _endBlock) {
                 revert InvalidEndBlock();
             }
             if (isFarmingEnded()) {
@@ -265,7 +268,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     }
 
     function getBlockMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
-        _to = Math.min(_to, endBlock);
+        uint256 _endBlock = endBlock;
+        if (_endBlock != 0) {
+            _to = Math.min(_to, _endBlock);
+        }
         if (_to > _from) {
             return (_to - _from) * 1e18;
         } else {
@@ -280,8 +286,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         uint256 accPointsPerShare = pool.accPointsPerShare * 1e18;
 
         uint256 lpSupply = pool.amount;
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 blockMultiplier = getBlockMultiplier(pool.lastRewardBlock, block.number);
+        if (getBlockNumber() > pool.lastRewardBlock && lpSupply != 0) {
+            uint256 blockMultiplier = getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
 
             uint256 pointReward =
                 blockMultiplier *
@@ -290,14 +296,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
                 totalAllocPoint;
 
             accPointsPerShare = pointReward *
-                1e12 /
+                1e18 /
                 lpSupply +
                 accPointsPerShare;
         }
 
         return user.amount *
             accPointsPerShare /
-            1e30 +
+            1e36 +
             user.rewardSettled -
             user.rewardDebt;
     }
@@ -319,17 +325,17 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
-        if (block.number <= pool.lastRewardBlock) {
+        if (getBlockNumber() <= pool.lastRewardBlock) {
             return;
         }
         uint256 lpSupply = pool.amount;
         uint256 _pointsPerBlock = pointsPerBlock;
         uint256 _allocPoint = pool.allocPoint;
         if (lpSupply == 0 || _pointsPerBlock == 0 || _allocPoint == 0) {
-            pool.lastRewardBlock = block.number;
+            pool.lastRewardBlock = getBlockNumber();
             return;
         }
-        uint256 blockMultiplier = getBlockMultiplier(pool.lastRewardBlock, block.number);
+        uint256 blockMultiplier = getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
         uint256 pointReward =
             blockMultiplier *
             _pointsPerBlock *
@@ -337,11 +343,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             totalAllocPoint;
 
         pool.accPointsPerShare = pointReward /
-            1e6 /
+            /*1e6 /*/
             lpSupply +
             pool.accPointsPerShare;
 
-        pool.lastRewardBlock = block.number;
+        pool.lastRewardBlock = getBlockNumber();
     }
 
     // Deposit LP tokens to SophonFarming for Point allocation.
@@ -411,7 +417,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             _finalAmount = _daiTOsDai(_amount);
         } else if (predefinedPool == PredefinedPool.wstETH) {
             _finalAmount = _stEthTOwstEth(_amount);
-        } else if (predefinedPool == PredefinedPool.weETH) {
+        /*} else if (predefinedPool == PredefinedPool.weETH) {
             _finalAmount = _ethTOweEth(_amount);
         } else if (predefinedPool == PredefinedPool.ezETH) {
             _finalAmount = _ethTOezEth(_amount);
@@ -422,7 +428,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         } else if (predefinedPool == PredefinedPool.uniETH) {
             _finalAmount = _ethTOuniEth(_amount);
         } else if (predefinedPool == PredefinedPool.pufETH) {
-            _finalAmount = _ethTOpufEth(_amount);
+            _finalAmount = _ethTOpufEth(_amount);*/
         } else {
             revert InvalidDeposit();
         }
@@ -455,7 +461,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             user.rewardSettled = 
                 userAmount *
                 pool.accPointsPerShare /
-                1e12 +
+                1e18 +
                 user.rewardSettled -
                 user.rewardDebt;
         }
@@ -476,7 +482,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         user.amount = userAmount;
         user.rewardDebt = userAmount *
             pool.accPointsPerShare /
-            1e12;
+            1e18;
 
         // boosted value added to pool balance
         pool.amount = pool.amount + _amount + _boostAmount;
@@ -499,7 +505,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         user.rewardSettled = 
             (_amount *
             pool.accPointsPerShare /
-            1e12 +
+            1e18 +
             user.rewardSettled -
             user.rewardDebt) / 2;
 
@@ -554,6 +560,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert FarmingIsEnded();
         }
 
+        if (_boostAmount == 0) {
+            revert BoostIsZero();
+        }
+
         uint256 maxAdditionalBoost = getMaxAdditionalBoost(msg.sender, _pid);
         if (_boostAmount > maxAdditionalBoost) {
             revert BoostTooHigh(maxAdditionalBoost);
@@ -569,7 +579,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             user.rewardSettled = 
                 userAmount *
                 pool.accPointsPerShare /
-                1e12 +
+                1e18 +
                 user.rewardSettled -
                 user.rewardDebt;
         }
@@ -582,21 +592,21 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         pool.depositAmount = pool.depositAmount - _boostAmount;
 
         // apply the multiplier
-        _boostAmount = _boostAmount * boosterMultiplier / 1e18;
+        uint256 finalBoostAmount = _boostAmount * boosterMultiplier / 1e18;
 
-        user.boostAmount = user.boostAmount + _boostAmount;
+        user.boostAmount = user.boostAmount + finalBoostAmount;
 
-        userAmount = userAmount + _boostAmount;
+        userAmount = userAmount + finalBoostAmount - _boostAmount;
         user.amount = userAmount;
         user.rewardDebt = userAmount *
             pool.accPointsPerShare /
-            1e12;
+            1e18;
 
         // boosted value added to pool balance
-        pool.amount = pool.amount + _boostAmount;
-        pool.boostAmount = pool.boostAmount + _boostAmount;
+        pool.amount = pool.amount + finalBoostAmount - _boostAmount;
+        pool.boostAmount = pool.boostAmount + finalBoostAmount;
 
-        emit IncreaseBoost(msg.sender, _pid, _boostAmount);
+        emit IncreaseBoost(msg.sender, _pid, finalBoostAmount);
     }
 
 	// total allowed boost is 100% of total deposit
@@ -624,7 +634,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     }
 
     // TODO: all these below
-    function _ethTOweEth(uint256 _amount) internal returns (uint256) {
+    /*function _ethTOweEth(uint256 _amount) internal returns (uint256) {
         uint256 balanceBefore = IERC20(weETH).balanceOf(address(this));
         IstETH(weETH).submit{value: _amount}(address(this));
         return (IERC20(weETH).balanceOf(address(this)) - balanceBefore);
@@ -653,7 +663,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         uint256 balanceBefore = IERC20(weETH).balanceOf(address(this));
         IstETH(weETH).submit{value: _amount}(address(this));
         return (IERC20(weETH).balanceOf(address(this)) - balanceBefore);
-    }
+    }*/
 
     function _daiTOsDai(uint256 _amount) internal returns (uint256) {
         // deposit DAI to sDAI
@@ -666,6 +676,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         heldProceeds[_pid] = 0;
         pool.lpToken.safeTransfer(msg.sender, _proceeds);
         emit WithdrawProceeds(_pid, _proceeds);
+    }
+
+    function getBlockNumber() virtual public view returns (uint256) {
+        return block.number;
     }
 
     function getPoolInfo() external view returns (PoolInfo[] memory poolInfos) {

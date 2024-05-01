@@ -44,7 +44,7 @@ compiler:
         remappings: 
             - "@erc721a=./node_modules/erc721a/contracts"
             - "@chainlink=./node_modules/@chainlink/contracts/src/v0.8"
-            - "@openzeppelin=./node_modules/@openzeppelin/contracts"
+            - "@openzeppelin=./node_modules/@openzeppelin"
 
 console:
     show_colors: true

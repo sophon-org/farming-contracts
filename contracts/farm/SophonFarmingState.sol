@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.24;
 
-import "@openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface BridgeLike {
     function deposit(
@@ -16,6 +16,20 @@ interface BridgeLike {
 }
 
 contract SophonFarmingState {
+
+    // Info of each pool.
+    struct PoolInfo {
+        IERC20 lpToken; // Address of LP token contract.
+        address l2Farm; // Address of the farming contract on Sophon chain
+        uint256 amount; // total amount of LP tokens earning yield from deposits and boosts
+        uint256 boostAmount; // total boosted value purchased by users
+        uint256 depositAmount; // remaining deposits not applied to a boost purchases
+        uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
+        uint256 lastRewardBlock; // Last block number that points distribution occurs.
+        uint256 accPointsPerShare; // Accumulated points per share, times 1e18. See below.
+        string description; // Description of pool.
+    }
+
     // Info of each user.
     struct UserInfo {
         uint256 amount; // Amount of LP tokens the user is earning yield on from deposits and boosts
@@ -34,19 +48,6 @@ contract SophonFarmingState {
         //   2. User receives the pending reward sent to his/her address.
         //   3. User's `amount` gets updated.
         //   4. User's `rewardDebt` gets updated.
-    }
-
-    // Info of each pool.
-    struct PoolInfo {
-        IERC20 lpToken; // Address of LP token contract.
-        address l2Farm; // Address of the farming contract on Sophon chain
-        uint256 amount; // total amount of LP tokens earning yield from deposits and boosts
-        uint256 boostAmount; // total boosted value purchased by users
-        uint256 depositAmount; // remaining deposits not applied to a boost purchases
-        uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
-        uint256 lastRewardBlock; // Last block number that points distribution occurs.
-        uint256 accPointsPerShare; // Accumulated points per share, times 1e12. See below.
-        string description; // Description of pool.
     }
 
     enum PredefinedPool {
