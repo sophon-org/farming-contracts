@@ -17,7 +17,8 @@ import "./SophonFarmingState.sol";
 contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     using SafeERC20 for IERC20;
 
-    event Deposit(address indexed user, uint256 indexed pid, uint256 amount, uint256 boostAmount);
+    event Add(address indexed lpToken, uint256 indexed pid, address poolShareToken, uint256 allocPoint);
+    event Deposit(address indexed user, uint256 indexed pid, uint256 depositAmount, uint256 boostAmount);
     event Exit(address indexed user, uint256 indexed pid, uint256 amount);
     event Bridge(address indexed user, uint256 indexed pid, uint256 amount);
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
@@ -31,6 +32,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error InvalidStartBlock();
     error InvalidEndBlock();
     error InvalidDeposit();
+    error InvalidTransfer();
     error NoEthSent();
     error BoostTooHigh(uint256 maxAllowed);
     error BoostIsZero();
@@ -169,6 +171,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             getBlockNumber() > startBlock ? getBlockNumber() : startBlock;
         totalAllocPoint = totalAllocPoint + _allocPoint;
         poolExists[_lpToken] = true;
+
+        uint256 pid = poolInfo.length;
+        PoolShareToken poolShareToken = new PoolShareToken(_poolShareSymbol, pid);
+
         poolInfo.push(
             PoolInfo({
                 lpToken: IERC20(_lpToken),
@@ -179,12 +185,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
                 accPointsPerShare: 0,
-                poolShareToken: new PoolShareToken(_poolShareSymbol, poolInfo.length),
+                poolShareToken: poolShareToken,
                 description: _description
             })
         );
 
-        return poolInfo.length - 1;
+        emit Add(_lpToken, pid, address(poolShareToken), _allocPoint);
+
+        return pid;
     }
 
     // Update the given pool's allocation point. Can only be called by the owner.
@@ -291,8 +299,12 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     function _handleTransfer(uint256 _pid, address _from, address _to, uint256 _amount) external {
 
+        if (_from == _to || _to == address(this) || _amount == 0) {
+            revert InvalidTransfer();
+        }
+
         PoolInfo storage pool = poolInfo[_pid];
-        if (_to == address(this) || msg.sender != address(poolInfo[_pid].poolShareToken)) {
+        if (msg.sender != address(poolInfo[_pid].poolShareToken)) {
             revert Unauthorized();
         }
 
@@ -323,7 +335,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
 
         // adjust balances
-        userFrom.depositAmount = userFrom.depositAmount - _amount;
+        uint256 userFromDepositAmount = userFrom.depositAmount;
+        if (_amount > userFromDepositAmount) {
+            revert InvalidTransfer();
+        }
+        userFrom.depositAmount = userFromDepositAmount - _amount;
         userFromAmount = userFromAmount - _amount;
         userFrom.amount = userFromAmount;
 
@@ -514,15 +530,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     }
 
     // Deposit LP tokens to SophonFarming for Point allocation.
-    function _deposit(uint256 _pid, uint256 _amount, uint256 _boostAmount) internal {
+    function _deposit(uint256 _pid, uint256 _depositAmount, uint256 _boostAmount) internal {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_amount == 0) {
+        if (_depositAmount == 0) {
             revert InvalidDeposit();
         }
-        if (_boostAmount > _amount) {
-            revert BoostTooHigh(_amount);
+        if (_boostAmount > _depositAmount) {
+            revert BoostTooHigh(_depositAmount);
         }
 
         PoolInfo storage pool = poolInfo[_pid];
@@ -543,30 +559,33 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         // booster purchase proceeds
         heldProceeds[_pid] = heldProceeds[_pid] + _boostAmount;
 
+        // deposit amount is reduced by amount of the deposit to boost
+        _depositAmount = _depositAmount - _boostAmount;
+
         // set deposit amount
-        user.depositAmount = user.depositAmount + _amount - _boostAmount;
+        user.depositAmount = user.depositAmount + _depositAmount;
+        pool.depositAmount = pool.depositAmount + _depositAmount;
 
-        // mint share token
-        pool.poolShareToken.mint(msg.sender, _amount - _boostAmount);
+        // mint share token based on deposit amount
+        pool.poolShareToken.mint(msg.sender, _depositAmount);
 
-        pool.depositAmount = pool.depositAmount + _amount - _boostAmount;
-
-        // apply the multiplier
+        // apply the boost multiplier
         _boostAmount = _boostAmount * boosterMultiplier / 1e18;
 
         user.boostAmount = user.boostAmount + _boostAmount;
+        pool.boostAmount = pool.boostAmount + _boostAmount;
 
-        userAmount = userAmount + _amount + _boostAmount;
+        // userAmount is increased by remaining deposit amount + full boosted amount
+        userAmount = userAmount + _depositAmount + _boostAmount;
+
         user.amount = userAmount;
+        pool.amount = pool.amount + _depositAmount + _boostAmount;
+
         user.rewardDebt = userAmount *
             pool.accPointsPerShare /
             1e18;
 
-        // boosted value added to pool balance
-        pool.amount = pool.amount + _amount + _boostAmount;
-        pool.boostAmount = pool.boostAmount + _boostAmount;
-
-        emit Deposit(msg.sender, _pid, _amount, _boostAmount);
+        emit Deposit(msg.sender, _pid, _depositAmount, _boostAmount);
     }
 
     // Withdraw LP tokens from SophonFarming and accept a slash on points
@@ -593,7 +612,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         pool.boostAmount = pool.boostAmount - user.boostAmount;
         pool.depositAmount = pool.depositAmount - depositAmount;
 
-        // burn share token
+        // burn share token based on withdrawn deposit amount
         pool.poolShareToken.burn(msg.sender, depositAmount);
 
         user.amount = 0;
@@ -668,24 +687,28 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         // booster purchase proceeds
         heldProceeds[_pid] = heldProceeds[_pid] + _boostAmount;
 
-        // set deposit amount
+        // user's remaining deposit is reduced by amount of the deposit to boost
         user.depositAmount = user.depositAmount - _boostAmount;
         pool.depositAmount = pool.depositAmount - _boostAmount;
+
+        // burn share token based on deduced deposit amount
+        pool.poolShareToken.burn(msg.sender, _boostAmount);
 
         // apply the multiplier
         uint256 finalBoostAmount = _boostAmount * boosterMultiplier / 1e18;
 
         user.boostAmount = user.boostAmount + finalBoostAmount;
+        pool.boostAmount = pool.boostAmount + finalBoostAmount;
 
+        // user amount is increased by the full boosted amount - deposit amount used to boost
         userAmount = userAmount + finalBoostAmount - _boostAmount;
+
         user.amount = userAmount;
+        pool.amount = pool.amount + finalBoostAmount - _boostAmount;
+
         user.rewardDebt = userAmount *
             pool.accPointsPerShare /
             1e18;
-
-        // boosted value added to pool balance
-        pool.amount = pool.amount + finalBoostAmount - _boostAmount;
-        pool.boostAmount = pool.boostAmount + finalBoostAmount;
 
         emit IncreaseBoost(msg.sender, _pid, finalBoostAmount);
     }
