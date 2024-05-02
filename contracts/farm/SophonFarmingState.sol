@@ -3,6 +3,7 @@
 pragma solidity 0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./PoolShareToken.sol";
 
 interface BridgeLike {
     function deposit(
@@ -27,6 +28,7 @@ contract SophonFarmingState {
         uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
         uint256 lastRewardBlock; // Last block number that points distribution occurs.
         uint256 accPointsPerShare; // Accumulated points per share, times 1e18. See below.
+        PoolShareToken poolShareToken; // the pool share token minted when a user deposits that represents their deposit
         string description; // Description of pool.
     }
 
