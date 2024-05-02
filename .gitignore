@@ -59,3 +59,4 @@ out/
 /broadcast/**/dry-run/
 docs/
 .env
+lcov.info
