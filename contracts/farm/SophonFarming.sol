@@ -9,13 +9,16 @@ import "./interfaces/IWeth.sol";
 import "./interfaces/IstETH.sol";
 import "./interfaces/IwstETH.sol";
 import "./interfaces/IsDAI.sol";
+import "./interfaces/IeETHLiquidityPool.sol";
+import "./interfaces/IweETH.sol";
 import "../proxies/Upgradeable2Step.sol";
 import "./SophonFarmingState.sol";
 
 contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     using SafeERC20 for IERC20;
 
-    event Deposit(address indexed user, uint256 indexed pid, uint256 amount, uint256 boostAmount);
+    event Add(address indexed lpToken, uint256 indexed pid, address poolShareToken, uint256 allocPoint);
+    event Deposit(address indexed user, uint256 indexed pid, uint256 depositAmount, uint256 boostAmount);
     event Exit(address indexed user, uint256 indexed pid, uint256 amount);
     event Bridge(address indexed user, uint256 indexed pid, uint256 amount);
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
@@ -29,6 +32,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error InvalidStartBlock();
     error InvalidEndBlock();
     error InvalidDeposit();
+    error InvalidTransfer();
     error NoEthSent();
     error BoostTooHigh(uint256 maxAllowed);
     error BoostIsZero();
@@ -40,9 +44,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     address public immutable weth;
     address public immutable stETH;
     address public immutable wstETH;
+    address public immutable eETH;
+    address public immutable eETHLiquidityPool;
+    address public immutable weETH;
     /*address public immutable uSDe;
     address public immutable sUSDe;
-    address public immutable weETH;
     address public immutable ezETH;
     address public immutable rsETH;
     address public immutable rswETH;
@@ -66,6 +72,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     // todo: add LSDs seen here -> https://app.pendle.finance/points
     // ether.fi ETH (eETH): 0x35fA164735182de50811E8e2E824cFb9B6118ac2
+    // ether.fi Liquidity Pool: 0x308861A430be4cce5502d0A12724771Fc6DaF216
     // ether.fi Wrapped eETH (weETH): 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee
     // Renzo ezETH (Renzo Restaked ETH): 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110
     // Kelp Dao rsETH (rsETH): 0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7
@@ -75,20 +82,22 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     // DAI: 0x6B175474E89094C44Da98b954EedeAC495271d0F
     // sDAI: 0x83F20F44975D03b1b09e64809B757c47f942BEeA
-    constructor(address[5] memory tokens_) {
+    constructor(address[8] memory tokens_) {
         dai = tokens_[0];
         sDAI = tokens_[1];
         weth = tokens_[2];
         stETH = tokens_[3];
         wstETH = tokens_[4];
-        /*uSDe = tokens_[5];
-        sUSDe = tokens_[6];
+        eETH = tokens_[5];
+        eETHLiquidityPool = tokens_[6];
         weETH = tokens_[7];
-        ezETH = tokens_[8];
-        rsETH = tokens_[9];
-        rswETH = tokens_[10];
-        uniETH = tokens_[11];
-        pufETH = tokens_[12];*/
+        /*uSDe = tokens_[8];
+        sUSDe = tokens_[9];
+        ezETH = tokens_[10];
+        rsETH = tokens_[11];
+        rswETH = tokens_[12];
+        uniETH = tokens_[13];
+        pufETH = tokens_[14];*/
     }
 
     receive() external payable {
@@ -116,40 +125,42 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         poolExists[dai] = true;
         poolExists[weth] = true;
         poolExists[stETH] = true;
+        poolExists[eETH] = true;
 
         // sDAI
-        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", false);
+        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", "sDAI", false);
         IERC20(dai).approve(sDAI, 2**256-1);
 
         // wstETH
-        typeToId[PredefinedPool.wstETH] = add(ethAllocPoint_, wstETH, "wstETH", false);
+        typeToId[PredefinedPool.wstETH] = add(ethAllocPoint_, wstETH, "wstETH", "wstETH", false);
         IERC20(stETH).approve(wstETH, 2**256-1);
 
-        /*
         // weETH
-        typeToId[PredefinedPool.weETH] = add(ethAllocPoint_, weETH, "weETH", false);
+        typeToId[PredefinedPool.weETH] = add(ethAllocPoint_, weETH, "weETH", "weETH", false);
+        IERC20(eETH).approve(weETH, 2**256-1);
 
+        /*
         // ezETH
-        typeToId[PredefinedPool.ezETH] = add(ethAllocPoint_, ezETH, "ezETH", false);
+        typeToId[PredefinedPool.ezETH] = add(ethAllocPoint_, ezETH, "ezETH", "ezETH", false);
 
         // rsETH
-        typeToId[PredefinedPool.rsETH] = add(ethAllocPoint_, rsETH, "rsETH", false);
+        typeToId[PredefinedPool.rsETH] = add(ethAllocPoint_, rsETH, "rsETH", "rsETH", false);
 
         // rswETH
-        typeToId[PredefinedPool.rswETH] = add(ethAllocPoint_, rswETH, "rswETH", false);
+        typeToId[PredefinedPool.rswETH] = add(ethAllocPoint_, rswETH, "rswETH", "rswETH", false);
 
         // uniETH
-        typeToId[PredefinedPool.uniETH] = add(ethAllocPoint_, uniETH, "uniETH", false);
+        typeToId[PredefinedPool.uniETH] = add(ethAllocPoint_, uniETH, "uniETH", "uniETH", false);
 
         // pufETH
-        typeToId[PredefinedPool.pufETH] = add(ethAllocPoint_, pufETH, "pufETH", false);
+        typeToId[PredefinedPool.pufETH] = add(ethAllocPoint_, pufETH, "pufETH", "pufETH", false);
         */
 
         _initialized = true;
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
-    function add(uint256 _allocPoint, address _lpToken, string memory _description, bool _withUpdate) public onlyOwner nonDuplicated(_lpToken) returns (uint256) {
+    function add(uint256 _allocPoint, address _lpToken, string memory _poolShareSymbol, string memory _description, bool _withUpdate) public onlyOwner nonDuplicated(_lpToken) returns (uint256) {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -160,6 +171,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             getBlockNumber() > startBlock ? getBlockNumber() : startBlock;
         totalAllocPoint = totalAllocPoint + _allocPoint;
         poolExists[_lpToken] = true;
+
+        uint256 pid = poolInfo.length;
+        PoolShareToken poolShareToken = new PoolShareToken(_poolShareSymbol, pid);
+
         poolInfo.push(
             PoolInfo({
                 lpToken: IERC20(_lpToken),
@@ -170,11 +185,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
                 accPointsPerShare: 0,
+                poolShareToken: poolShareToken,
                 description: _description
             })
         );
 
-        return poolInfo.length - 1;
+        emit Add(_lpToken, pid, address(poolShareToken), _allocPoint);
+
+        return pid;
     }
 
     // Update the given pool's allocation point. Can only be called by the owner.
@@ -279,6 +297,64 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
     }
 
+    function _handleTransfer(uint256 _pid, address _from, address _to, uint256 _amount) external {
+
+        if (_from == _to || _to == address(this) || _amount == 0) {
+            revert InvalidTransfer();
+        }
+
+        PoolInfo storage pool = poolInfo[_pid];
+        if (msg.sender != address(poolInfo[_pid].poolShareToken)) {
+            revert Unauthorized();
+        }
+
+        updatePool(_pid);
+        uint256 accPointsPerShare = pool.accPointsPerShare;
+
+        UserInfo storage userFrom = userInfo[_pid][_from];
+        UserInfo storage userTo = userInfo[_pid][_to];
+
+        uint256 userFromAmount = userFrom.amount;
+        uint256 userToAmount = userTo.amount;
+
+        if (userFromAmount != 0) {
+            userFrom.rewardSettled =
+                userFromAmount *
+                accPointsPerShare /
+                1e18 +
+                userFrom.rewardSettled -
+                userFrom.rewardDebt;
+        }
+        if (userToAmount != 0) {
+            userTo.rewardSettled =
+                userToAmount *
+                accPointsPerShare /
+                1e18 +
+                userTo.rewardSettled -
+                userTo.rewardDebt;
+        }
+
+        // adjust balances
+        uint256 userFromDepositAmount = userFrom.depositAmount;
+        if (_amount > userFromDepositAmount) {
+            revert InvalidTransfer();
+        }
+        userFrom.depositAmount = userFromDepositAmount - _amount;
+        userFromAmount = userFromAmount - _amount;
+        userFrom.amount = userFromAmount;
+
+        userTo.depositAmount = userTo.depositAmount + _amount;
+        userToAmount = userToAmount + _amount;
+        userTo.amount = userToAmount;
+
+        userFrom.rewardDebt = userFromAmount *
+            accPointsPerShare /
+            1e18;
+        userTo.rewardDebt = userToAmount *
+            accPointsPerShare /
+            1e18;
+    }
+
     function _pendingPoints(uint256 _pid, address _user) internal view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
@@ -381,6 +457,16 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         _depositPredefinedAsset(_amount, _amount, _boostAmount, PredefinedPool.wstETH);
     }
 
+    function depositeEth(uint256 _amount, uint256 _boostAmount) external {
+        IERC20(eETH).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
+
+        _depositPredefinedAsset(_amount, _amount, _boostAmount, PredefinedPool.weETH);
+    }
+
     function depositEth(uint256 _boostAmount, PredefinedPool predefinedPool) public payable {
         if (msg.value == 0) {
             revert NoEthSent();
@@ -389,6 +475,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         uint256 _finalAmount = msg.value;
         if (predefinedPool == PredefinedPool.wstETH) {
             _finalAmount = _ethTOstEth(_finalAmount);
+        } else if (predefinedPool == PredefinedPool.weETH) {
+            _finalAmount = _ethTOeEth(_finalAmount);
         }
 
         _depositPredefinedAsset(_finalAmount, msg.value, _boostAmount, predefinedPool);
@@ -404,6 +492,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         uint256 _finalAmount = _wethTOEth(_amount);
         if (predefinedPool == PredefinedPool.wstETH) {
             _finalAmount = _ethTOstEth(_finalAmount);
+        } else if (predefinedPool == PredefinedPool.weETH) {
+            _finalAmount = _ethTOeEth(_finalAmount);
         }
 
         _depositPredefinedAsset(_finalAmount, _amount, _boostAmount, predefinedPool);
@@ -417,9 +507,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             _finalAmount = _daiTOsDai(_amount);
         } else if (predefinedPool == PredefinedPool.wstETH) {
             _finalAmount = _stEthTOwstEth(_amount);
-        /*} else if (predefinedPool == PredefinedPool.weETH) {
-            _finalAmount = _ethTOweEth(_amount);
-        } else if (predefinedPool == PredefinedPool.ezETH) {
+        } else if (predefinedPool == PredefinedPool.weETH) {
+            _finalAmount = _eethTOweEth(_amount);
+        /*} else if (predefinedPool == PredefinedPool.ezETH) {
             _finalAmount = _ethTOezEth(_amount);
         } else if (predefinedPool == PredefinedPool.rsETH) {
             _finalAmount = _ethTOrsEth(_amount);
@@ -440,15 +530,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     }
 
     // Deposit LP tokens to SophonFarming for Point allocation.
-    function _deposit(uint256 _pid, uint256 _amount, uint256 _boostAmount) internal {
+    function _deposit(uint256 _pid, uint256 _depositAmount, uint256 _boostAmount) internal {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_amount == 0) {
+        if (_depositAmount == 0) {
             revert InvalidDeposit();
         }
-        if (_boostAmount > _amount) {
-            revert BoostTooHigh(_amount);
+        if (_boostAmount > _depositAmount) {
+            revert BoostTooHigh(_depositAmount);
         }
 
         PoolInfo storage pool = poolInfo[_pid];
@@ -469,26 +559,33 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         // booster purchase proceeds
         heldProceeds[_pid] = heldProceeds[_pid] + _boostAmount;
 
-        // set deposit amount
-        user.depositAmount = user.depositAmount + _amount - _boostAmount;
-        pool.depositAmount = pool.depositAmount + _amount - _boostAmount;
+        // deposit amount is reduced by amount of the deposit to boost
+        _depositAmount = _depositAmount - _boostAmount;
 
-        // apply the multiplier
+        // set deposit amount
+        user.depositAmount = user.depositAmount + _depositAmount;
+        pool.depositAmount = pool.depositAmount + _depositAmount;
+
+        // mint share token based on deposit amount
+        pool.poolShareToken.mint(msg.sender, _depositAmount);
+
+        // apply the boost multiplier
         _boostAmount = _boostAmount * boosterMultiplier / 1e18;
 
         user.boostAmount = user.boostAmount + _boostAmount;
+        pool.boostAmount = pool.boostAmount + _boostAmount;
 
-        userAmount = userAmount + _amount + _boostAmount;
+        // userAmount is increased by remaining deposit amount + full boosted amount
+        userAmount = userAmount + _depositAmount + _boostAmount;
+
         user.amount = userAmount;
+        pool.amount = pool.amount + _depositAmount + _boostAmount;
+
         user.rewardDebt = userAmount *
             pool.accPointsPerShare /
             1e18;
 
-        // boosted value added to pool balance
-        pool.amount = pool.amount + _amount + _boostAmount;
-        pool.boostAmount = pool.boostAmount + _boostAmount;
-
-        emit Deposit(msg.sender, _pid, _amount, _boostAmount);
+        emit Deposit(msg.sender, _pid, _depositAmount, _boostAmount);
     }
 
     // Withdraw LP tokens from SophonFarming and accept a slash on points
@@ -514,6 +611,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         pool.amount = pool.amount - _amount;
         pool.boostAmount = pool.boostAmount - user.boostAmount;
         pool.depositAmount = pool.depositAmount - depositAmount;
+
+        // burn share token based on withdrawn deposit amount
+        pool.poolShareToken.burn(msg.sender, depositAmount);
 
         user.amount = 0;
         user.boostAmount = 0;
@@ -587,24 +687,28 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         // booster purchase proceeds
         heldProceeds[_pid] = heldProceeds[_pid] + _boostAmount;
 
-        // set deposit amount
+        // user's remaining deposit is reduced by amount of the deposit to boost
         user.depositAmount = user.depositAmount - _boostAmount;
         pool.depositAmount = pool.depositAmount - _boostAmount;
+
+        // burn share token based on deduced deposit amount
+        pool.poolShareToken.burn(msg.sender, _boostAmount);
 
         // apply the multiplier
         uint256 finalBoostAmount = _boostAmount * boosterMultiplier / 1e18;
 
         user.boostAmount = user.boostAmount + finalBoostAmount;
+        pool.boostAmount = pool.boostAmount + finalBoostAmount;
 
+        // user amount is increased by the full boosted amount - deposit amount used to boost
         userAmount = userAmount + finalBoostAmount - _boostAmount;
+
         user.amount = userAmount;
+        pool.amount = pool.amount + finalBoostAmount - _boostAmount;
+
         user.rewardDebt = userAmount *
             pool.accPointsPerShare /
             1e18;
-
-        // boosted value added to pool balance
-        pool.amount = pool.amount + finalBoostAmount - _boostAmount;
-        pool.boostAmount = pool.boostAmount + finalBoostAmount;
 
         emit IncreaseBoost(msg.sender, _pid, finalBoostAmount);
     }
@@ -621,6 +725,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         return _amount;
     }
 
+    // Lido
     function _ethTOstEth(uint256 _amount) internal returns (uint256) {
         // submit function does not return exact amount of stETH so we need to check balances
         uint256 balanceBefore = IERC20(stETH).balanceOf(address(this));
@@ -628,18 +733,26 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         return (IERC20(stETH).balanceOf(address(this)) - balanceBefore);
     }
 
+    // Lido
     function _stEthTOwstEth(uint256 _amount) internal returns (uint256) {
         // wrap returns exact amount of wstETH
         return IwstETH(wstETH).wrap(_amount);
     }
 
-    // TODO: all these below
-    /*function _ethTOweEth(uint256 _amount) internal returns (uint256) {
-        uint256 balanceBefore = IERC20(weETH).balanceOf(address(this));
-        IstETH(weETH).submit{value: _amount}(address(this));
-        return (IERC20(weETH).balanceOf(address(this)) - balanceBefore);
+    // ether.fi
+    function _ethTOeEth(uint256 _amount) internal returns (uint256) {
+        // deposit returns exact amount of eETH
+        return IeETHLiquidityPool(eETHLiquidityPool).deposit{value: _amount}(address(this));
     }
-    function _ethTOezEth(uint256 _amount) internal returns (uint256) {
+
+    // ether.fi
+    function _eethTOweEth(uint256 _amount) internal returns (uint256) {
+        // wrap returns exact amount of weETH
+        return IweETH(weETH).wrap(_amount);
+    }
+
+    // TODO: all these below
+    /*function _ethTOezEth(uint256 _amount) internal returns (uint256) {
         uint256 balanceBefore = IERC20(weETH).balanceOf(address(this));
         IstETH(weETH).submit{value: _amount}(address(this));
         return (IERC20(weETH).balanceOf(address(this)) - balanceBefore);
