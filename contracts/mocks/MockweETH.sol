@@ -4,21 +4,21 @@ pragma solidity 0.8.24;
 import "./MockERC20.sol";
 import "../farm/interfaces/IweETH.sol";
 
-contract MockweETH is MockERC20, IweETH {
+contract MockWeETH is MockERC20, IweETH {
 
     error TransferOutFailed();
     error Unsupported();
 
-    MockERC20 public immutable stEth;
+    MockERC20 public immutable eETH;
 
-    constructor(MockERC20 stETH_) MockERC20("Mock Wrapped liquid staked Ether 2.0", "MockWstETH", 18) {
-        stEth = stETH_;
+    constructor(MockERC20 eETH_) MockERC20("Mock Wrapped eETH", "MockWeETH", 18) {
+        eETH = eETH_;
     }
 
-    function wrap(uint256 _stETHAmount) external returns (uint256) {        
-        stEth.transferFrom(msg.sender, address(this), _stETHAmount);
+    function wrap(uint256 _eETHAmount) external returns (uint256) {
+        eETH.transferFrom(msg.sender, address(this), _eETHAmount);
 
-        uint256 mintAmount = getWstETHByStETH(_stETHAmount);
+        uint256 mintAmount = getWeETHByeETH(_eETHAmount);
         
         balanceOf[msg.sender] = add(balanceOf[msg.sender], mintAmount);
         totalSupply    = add(totalSupply, mintAmount);
@@ -27,31 +27,31 @@ contract MockweETH is MockERC20, IweETH {
         return mintAmount;
     }
 
-    function unwrap(uint256 _wstETHAmount) external returns (uint256) {
+    function unwrap(uint256 _weETHAmount) external returns (uint256) {
 
-        balanceOf[msg.sender] = sub(balanceOf[msg.sender], _wstETHAmount);
-        totalSupply    = sub(totalSupply, _wstETHAmount);
-        emit Transfer(msg.sender, address(0), _wstETHAmount);
+        balanceOf[msg.sender] = sub(balanceOf[msg.sender], _weETHAmount);
+        totalSupply    = sub(totalSupply, _weETHAmount);
+        emit Transfer(msg.sender, address(0), _weETHAmount);
 
-        uint256 returnAmount = getStETHByWstETH(_wstETHAmount);
-        stEth.transfer(msg.sender, returnAmount);
+        uint256 returnAmount = geteETHByWeETH(_weETHAmount);
+        eETH.transfer(msg.sender, returnAmount);
 
         return returnAmount;
     }
 
-    function getWstETHByStETH(uint256 _stETHAmount) public view returns (uint256) {
-        return _stETHAmount * tokensPerStEth() / 1e18;
+    function getWeETHByeETH(uint256 _eETHAmount) public view returns (uint256) {
+        return _eETHAmount * tokensPereETH() / 1e18;
     }
 
-    function getStETHByWstETH(uint256 _wstETHAmount) public view returns (uint256) {
-        return _wstETHAmount * stEthPerToken() / 1e18;
+    function geteETHByWeETH(uint256 _weETHAmount) public view returns (uint256) {
+        return _weETHAmount * eETHPerToken() / 1e18;
     }
 
-    function stEthPerToken() public view returns (uint256) {
+    function eETHPerToken() public view returns (uint256) {
         return 1161179830902898325;
     }
     
-    function tokensPerStEth() public view returns (uint256) {
+    function tokensPereETH() public view returns (uint256) {
         return 861193049850366619;
     }
 
