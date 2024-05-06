@@ -24,7 +24,7 @@ contract SophonFarmingState {
         address l2Farm; // Address of the farming contract on Sophon chain
         uint256 amount; // total amount of LP tokens earning yield from deposits and boosts
         uint256 boostAmount; // total boosted value purchased by users
-        uint256 depositAmount; // remaining deposits not applied to a boost purchases
+        uint256 depositAmount; // remaining deposits not applied to a boost purchases (note: tracked by PoolShareToken balances/totalSupply)
         uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
         uint256 lastRewardBlock; // Last block number that points distribution occurs.
         uint256 accPointsPerShare; // Accumulated points per share, times 1e18. See below.
@@ -36,7 +36,7 @@ contract SophonFarmingState {
     struct UserInfo {
         uint256 amount; // Amount of LP tokens the user is earning yield on from deposits and boosts
         uint256 boostAmount; // Boosted value purchased by the user
-        uint256 depositAmount; // remaining deposits not applied to a boost purchases
+        uint256 depositAmount; // remaining deposits not applied to a boost purchases (note: tracked by PoolShareToken balances/totalSupply)
         uint256 rewardSettled; // Reward settled.
         uint256 rewardDebt; // Reward debt. See explanation below.
         //
