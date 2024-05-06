@@ -49,6 +49,10 @@ contract SophonFarmingTest is Test {
     uint256 internal startBlock;
     uint256 internal boosterMultiplier;
 
+    PoolShareToken internal sDAIpoolShareToken;
+    PoolShareToken internal wstETHpoolShareToken;
+    PoolShareToken internal weETHpoolShareToken;
+
     uint256 maxUint = type(uint256).max;
 
     error Unauthorized();
@@ -138,6 +142,15 @@ contract SophonFarmingTest is Test {
 
         // Initialize SophonFarming
         sophonFarming.initialize(wstETHAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier);
+
+        // Get lpToken addresses
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        sDAIpoolShareToken = PoolInfo[sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI)].poolShareToken;
+        wstETHpoolShareToken = PoolInfo[sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH)].poolShareToken;
+        weETHpoolShareToken = PoolInfo[sophonFarming.typeToId(SophonFarmingState.PredefinedPool.weETH)].poolShareToken;
 
         // // Add mock tokens
         // sophonFarming.add(10000, address(mock0), "mock0", true);
@@ -714,7 +727,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(userInfo.amount, wsthDepositedAmount);
         assertEq(userInfo.boostAmount, 0);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount);
+        assertEq(wstETHpoolShareToken.balanceOf(account1), wsthDepositedAmount);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
     }
@@ -744,7 +757,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(userInfo.amount, wsthDepositedAmount * multipleDeposits);
         assertEq(userInfo.boostAmount, 0);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount * multipleDeposits);
+        assertEq(wstETHpoolShareToken.balanceOf(account1), wsthDepositedAmount * multipleDeposits);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
     }
@@ -776,7 +789,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(userInfo.amount, wsthDepositedAmount - boostAmount + finalBoostAmount);
         assertEq(userInfo.boostAmount, finalBoostAmount);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount - boostAmount);
+        assertEq(wstETHpoolShareToken.balanceOf(account1), wsthDepositedAmount - boostAmount);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
     }
@@ -876,7 +889,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(userInfo.amount, wsthDepositedAmount);
         assertEq(userInfo.boostAmount, 0);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount);
+        assertEq(wstETHpoolShareToken.balanceOf(account1), wsthDepositedAmount);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
     }
@@ -911,7 +924,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(userInfo.amount, wsthDepositedAmount - boostAmount + finalBoostAmount);
         assertEq(userInfo.boostAmount, finalBoostAmount);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount - boostAmount);
+        assertEq(wstETHpoolShareToken.balanceOf(account1), wsthDepositedAmount - boostAmount);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
     }
@@ -992,7 +1005,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(userInfo.amount, wsthDepositedAmount);
         assertEq(userInfo.boostAmount, 0);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount);
+        assertEq(wstETHpoolShareToken.balanceOf(account1), wsthDepositedAmount);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
     }
@@ -1026,7 +1039,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(userInfo.amount, wsthDepositedAmount - boostAmount + finalBoostAmount);
         assertEq(userInfo.boostAmount, finalBoostAmount);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount - boostAmount);
+        assertEq(wstETHpoolShareToken.balanceOf(account1), wsthDepositedAmount - boostAmount);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
     }
@@ -1101,7 +1114,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(userInfo.amount, wsthDepositedAmount);
         assertEq(userInfo.boostAmount, 0);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount);
+        assertEq(wstETHpoolShareToken.balanceOf(account1), wsthDepositedAmount);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
     }
@@ -1135,7 +1148,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(userInfo.amount, wsthDepositedAmount - boostAmount + finalBoostAmount);
         assertEq(userInfo.boostAmount, finalBoostAmount);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount - boostAmount);
+        assertEq(wstETHpoolShareToken.balanceOf(account1), wsthDepositedAmount - boostAmount);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
     }
@@ -1215,7 +1228,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(userInfo.amount, sDAI.convertToShares(amountToDeposit));
         assertEq(userInfo.boostAmount, 0);
-        assertEq(userInfo.depositAmount, sDAI.convertToShares(amountToDeposit));
+        assertEq(sDAIpoolShareToken.balanceOf(account1), sDAI.convertToShares(amountToDeposit));
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
     }
@@ -1264,7 +1277,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(finalUserInfo.amount, 0);
         assertEq(finalUserInfo.boostAmount, 0);
-        assertEq(finalUserInfo.depositAmount, 0);
+        assertEq(sDAIpoolShareToken.balanceOf(account1), 0);
         // Slash on points
         assertEq(finalUserInfo.rewardSettled, (userInfo.amount * PoolInfo[poolId].accPointsPerShare / 1e18 + userInfo.rewardSettled - userInfo.rewardDebt) / 2);
         assertEq(finalUserInfo.rewardDebt, 0);
@@ -1285,15 +1298,6 @@ contract SophonFarmingTest is Test {
         sophonFarming.depositDai(amountToDeposit, 0);
         assertEq(dai.balanceOf(account1), 0);
         vm.stopPrank();
-
-        SophonFarmingState.UserInfo memory userInfo;
-        (
-            userInfo.amount,
-            userInfo.boostAmount,
-            userInfo.depositAmount,
-            userInfo.rewardSettled,
-            userInfo.rewardDebt
-        ) = sophonFarming.userInfo(poolId, account1);
         
         vm.prank(deployer);
         sophonFarming.setEndBlocks(block.number + 10, 1);
@@ -1332,7 +1336,7 @@ contract SophonFarmingTest is Test {
         // Can have 1 wei of difference cause of rounding
         assertApproxEqAbs(userInfo.amount, sDAI.convertToShares(amountToDeposit) - sDAI.convertToShares(amountToDepositBoost) + finalAmountToDepositBoost * sophonFarming.boosterMultiplier() / 1e18, 1);
         assertEq(userInfo.boostAmount, finalAmountToDepositBoost * sophonFarming.boosterMultiplier() / 1e18);
-        assertEq(userInfo.depositAmount, sDAI.convertToShares(amountToDeposit) - finalAmountToDepositBoost);
+        assertEq(sDAIpoolShareToken.balanceOf(account1), sDAI.convertToShares(amountToDeposit) - finalAmountToDepositBoost);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
     }
@@ -1385,7 +1389,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(finalUserInfo.amount, 0);
         assertEq(finalUserInfo.boostAmount, 0);
-        assertEq(finalUserInfo.depositAmount, 0);
+        assertEq(sDAIpoolShareToken.balanceOf(account1), 0);
         // Slash on points
         assertEq(finalUserInfo.rewardSettled, (userInfo.amount * PoolInfo[poolId].accPointsPerShare / 1e18 + userInfo.rewardSettled - userInfo.rewardDebt) / 2);
         assertEq(finalUserInfo.rewardDebt, 0);
@@ -1487,12 +1491,32 @@ contract SophonFarmingTest is Test {
 
         assertEq(userInfo.amount, wsthDepositedAmount);
         assertEq(userInfo.boostAmount, 0);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount);
+        assertEq(wstETHpoolShareToken.balanceOf(account1), wsthDepositedAmount);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
 
-        vm.expectRevert(abi.encodeWithSelector(SophonFarming.BoostTooHigh.selector, wsthDepositedAmount));  
+        // vm.expectRevert(abi.encodeWithSelector(SophonFarming.BoostTooHigh.selector, wsthDepositedAmount));
+        vm.expectRevert("insufficient-balance");
         sophonFarming.increaseBoost(poolId, wsthDepositedAmount * 2);
+    }
+
+    // GET_MAX_ADDITIONAL_BOOST FUNCTION /////////////////////////////////////////////////////////////////
+    function test_GetMaxAdditionalBoost(uint256 amountToDeposit) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+
+        uint256 wsthDepositedAmount = amountToDeposit;
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        vm.startPrank(account1);
+        deal(address(wstETH), account1, amountToDeposit);
+        assertEq(wstETH.balanceOf(account1), amountToDeposit);
+
+        wstETH.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.deposit(poolId, amountToDeposit, 0);
+        assertEq(wstETH.balanceOf(account1), 0);
+
+        assertEq(sophonFarming.getMaxAdditionalBoost(account1, poolId), wsthDepositedAmount);
+        assertEq(sophonFarming.getMaxAdditionalBoost(account1, poolId), wstETHpoolShareToken.balanceOf(account1));
     }
 
     // WITHDRAW_PROCEEDS FUNCTION /////////////////////////////////////////////////////////////////
@@ -1526,9 +1550,10 @@ contract SophonFarmingTest is Test {
             userInfo.rewardDebt
         ) = sophonFarming.userInfo(poolId, account1);
 
+
         assertEq(userInfo.amount, wsthDepositedAmount - boostAmount + finalBoostAmount);
         assertEq(userInfo.boostAmount, finalBoostAmount);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount - boostAmount);
+        assertEq(wstETHpoolShareToken.balanceOf(account1), wsthDepositedAmount - boostAmount);
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
 
@@ -1629,28 +1654,57 @@ contract SophonFarmingTest is Test {
         vm.startPrank(account1);
         dai.approve(address(sophonFarming), amountToDeposit);
         sophonFarming.depositDai(amountToDeposit, 0);
-
-        SophonFarmingState.UserInfo memory userInfo;
-        (
-            userInfo.amount,
-            userInfo.boostAmount,
-            userInfo.depositAmount,
-            userInfo.rewardSettled,
-            userInfo.rewardDebt
-        ) = sophonFarming.userInfo(poolId, account1);
+        
+        uint256 userDepositAmount = sDAIpoolShareToken.balanceOf(account1);
 
         SophonFarmingState.PoolInfo[] memory PoolInfo;
         PoolInfo = sophonFarming.getPoolInfo();
 
-        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account1), userInfo.depositAmount);
+        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account1), userDepositAmount);
 
-        PoolInfo[poolId].poolShareToken.transfer(account2, userInfo.depositAmount);
+        PoolInfo[poolId].poolShareToken.transfer(account2, userDepositAmount);
 
         assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account1), 0);
-        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account2), userInfo.depositAmount);
+        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account2), userDepositAmount);
     }
 
-    // TRANSFERFROM FUNCTION /////////////////////////////////////////////////////////////////
+    function testFuzz_TransferShareTokensToAnotherFarmer(uint256 amountToDeposit) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+
+        deal(address(dai), account1, amountToDeposit);
+        deal(address(dai), account2, amountToDeposit);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
+
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        vm.startPrank(account1);
+        dai.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositDai(amountToDeposit, 0);
+        
+        uint256 userDepositAmount1 = sDAIpoolShareToken.balanceOf(account1);
+
+        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account1), userDepositAmount1);
+        vm.stopPrank();
+
+        vm.startPrank(account2);
+        dai.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositDai(amountToDeposit, 0);
+
+        uint256 userDepositAmount2 = sDAIpoolShareToken.balanceOf(account2);
+        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account2), userDepositAmount2);
+        vm.stopPrank();
+
+        vm.startPrank(account1);
+
+        PoolInfo[poolId].poolShareToken.transfer(account2, userDepositAmount1);
+
+        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account1), 0);
+        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account2), userDepositAmount1 + userDepositAmount2);
+    }
+
+    // TRANSFER_FROM FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_TransferFromShareTokens(uint256 amountToDeposit) public {
         vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
 
@@ -1662,28 +1716,21 @@ contract SophonFarmingTest is Test {
         dai.approve(address(sophonFarming), amountToDeposit);
         sophonFarming.depositDai(amountToDeposit, 0);
 
-        SophonFarmingState.UserInfo memory userInfo;
-        (
-            userInfo.amount,
-            userInfo.boostAmount,
-            userInfo.depositAmount,
-            userInfo.rewardSettled,
-            userInfo.rewardDebt
-        ) = sophonFarming.userInfo(poolId, account1);
+        uint256 userDepositAmount = sDAIpoolShareToken.balanceOf(account1);
 
         SophonFarmingState.PoolInfo[] memory PoolInfo;
         PoolInfo = sophonFarming.getPoolInfo();
 
-        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account1), userInfo.depositAmount);
+        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account1), userDepositAmount);
 
-        PoolInfo[poolId].poolShareToken.approve(account2, userInfo.depositAmount);
+        PoolInfo[poolId].poolShareToken.approve(account2, userDepositAmount);
 
         vm.stopPrank();
         vm.startPrank(account2);
-        PoolInfo[poolId].poolShareToken.transferFrom(account1, account2, userInfo.depositAmount);
+        PoolInfo[poolId].poolShareToken.transferFrom(account1, account2, userDepositAmount);
 
         assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account1), 0);
-        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account2), userInfo.depositAmount);
+        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(account2), userDepositAmount);
     }
 
     // PERMIT FUNCTION /////////////////////////////////////////////////////////////////
@@ -1703,25 +1750,18 @@ contract SophonFarmingTest is Test {
         dai.approve(address(sophonFarming), amountToDeposit);
         sophonFarming.depositDai(amountToDeposit, 0);
 
-        SophonFarmingState.UserInfo memory userInfo;
-        (
-            userInfo.amount,
-            userInfo.boostAmount,
-            userInfo.depositAmount,
-            userInfo.rewardSettled,
-            userInfo.rewardDebt
-        ) = sophonFarming.userInfo(poolId, permitUserAddress);
+        uint256 userDepositAmount = sDAIpoolShareToken.balanceOf(permitUserAddress);
 
         SophonFarmingState.PoolInfo[] memory PoolInfo;
         PoolInfo = sophonFarming.getPoolInfo();
 
-        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(permitUserAddress), userInfo.depositAmount);
+        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(permitUserAddress), userDepositAmount);
 
         bytes32 permitHash = permitTester.getPermitTypehash(
             PoolInfo[poolId].poolShareToken,
             permitUserAddress,
             address(permitTester),
-            userInfo.depositAmount,
+            userDepositAmount,
             PoolInfo[poolId].poolShareToken.nonces(permitUserAddress),
             block.timestamp + 60
         );
@@ -1737,7 +1777,7 @@ contract SophonFarmingTest is Test {
             PoolInfo[poolId].poolShareToken,
             permitUserAddress,
             address(permitTester),
-            userInfo.depositAmount,
+            userDepositAmount,
             block.timestamp + 60,
             v,
             r,
@@ -1745,7 +1785,7 @@ contract SophonFarmingTest is Test {
         );
 
         assertEq(PoolInfo[poolId].poolShareToken.balanceOf(permitUserAddress), 0);
-        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(address(permitTester)), userInfo.depositAmount);
+        assertEq(PoolInfo[poolId].poolShareToken.balanceOf(address(permitTester)), userDepositAmount);
     }
 
     function testFuzz_TransferShareTokens_RevertWhen_InvalidTransfer(uint256 amountToDeposit) public {
@@ -1759,23 +1799,16 @@ contract SophonFarmingTest is Test {
         dai.approve(address(sophonFarming), amountToDeposit);
         sophonFarming.depositDai(amountToDeposit, 0);
 
-        SophonFarmingState.UserInfo memory userInfo;
-        (
-            userInfo.amount,
-            userInfo.boostAmount,
-            userInfo.depositAmount,
-            userInfo.rewardSettled,
-            userInfo.rewardDebt
-        ) = sophonFarming.userInfo(poolId, account1);
+        uint256 userDepositAmount = sDAIpoolShareToken.balanceOf(account1);
 
         SophonFarmingState.PoolInfo[] memory PoolInfo;
         PoolInfo = sophonFarming.getPoolInfo();
 
         vm.expectRevert(SophonFarming.InvalidTransfer.selector);
-        PoolInfo[poolId].poolShareToken.transfer(account1, userInfo.depositAmount);
+        PoolInfo[poolId].poolShareToken.transfer(account1, userDepositAmount);
 
         vm.expectRevert(SophonFarming.InvalidTransfer.selector);
-        PoolInfo[poolId].poolShareToken.transfer(address(sophonFarming), userInfo.depositAmount);
+        PoolInfo[poolId].poolShareToken.transfer(address(sophonFarming), userDepositAmount);
 
         // vm.expectRevert(SophonFarming.InvalidTransfer.selector);
         // PoolInfo[poolId].poolShareToken.transfer(account2, 0);
