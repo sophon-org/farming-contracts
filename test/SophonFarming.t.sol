@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {SophonFarming} from "../contracts/farm/SophonFarming.sol";
 import {PoolShareToken} from "./../contracts/farm/PoolShareToken.sol";
-import {SophonFarmingState} from "./../contracts/farm/SophonFarmingState.sol";
+import {SophonFarmingState, BridgeLike} from "./../contracts/farm/SophonFarmingState.sol";
 import {SophonFarmingProxy} from "./../contracts/proxies/SophonFarmingProxy.sol";
 import {Proxy} from "./../contracts/proxies/Proxy.sol";
 import {MockERC20} from "./../contracts/mocks/MockERC20.sol";
@@ -14,6 +14,7 @@ import {MockWstETH} from "./../contracts/mocks/MockWstETH.sol";
 import {MockeETHLiquidityPool} from "./../contracts/mocks/MockeETHLiquidityPool.sol";
 import {MockWeETH} from "./../contracts/mocks/MockweETH.sol";
 import {MockSDAI} from "./../contracts/mocks/MockSDAI.sol";
+import {MockBridge} from "./../contracts/mocks/MockBridge.sol";
 import {PermitTester} from "./utils/PermitTester.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -1621,13 +1622,57 @@ contract SophonFarmingTest is Test {
     }
 
     // BRIDGE_POOL FUNCTION /////////////////////////////////////////////////////////////////
-    // function test_BridgePool() public {
-    //     vm.startPrank(deployer);
+    function test_SetBridge() public {
+        vm.startPrank(deployer);
 
-    //     uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
 
-    //     sophonFarming.bridgePool(poolId);
-    // }
+        MockBridge bridge = new MockBridge();
+        sophonFarming.setBridge(bridge);
+
+        sophonFarming.setBridgeForPool(poolId, address(0xb));
+
+        vm.stopPrank();
+        vm.startPrank(account1);
+
+        uint256 amountToDeposit = 1e18;
+        vm.deal(account1, amountToDeposit);
+        weth.deposit{value: amountToDeposit}();
+        assertEq(weth.balanceOf(account1), amountToDeposit);
+
+        weth.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositWeth(amountToDeposit, 0, SophonFarmingState.PredefinedPool.wstETH);
+        assertEq(weth.balanceOf(account1), 0);
+
+        vm.stopPrank();
+        vm.startPrank(deployer);
+
+        sophonFarming.setEndBlocks(block.number + 10, 1);
+        vm.roll(block.number + 12);
+
+        sophonFarming.bridgePool(poolId);
+    }
+
+    function test_BridgePool_RevertWhen_Unauthorized() public {
+        vm.startPrank(account1);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        vm.expectRevert(Unauthorized.selector);
+        sophonFarming.bridgePool(poolId);
+    }
+
+    function test_BridgePool_RevertWhen_BridgeInvalid() public {
+        vm.startPrank(deployer);
+
+        sophonFarming.setEndBlocks(block.number + 10, 1);
+        vm.roll(block.number + 12);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        vm.expectRevert(SophonFarming.BridgeInvalid.selector);
+        sophonFarming.bridgePool(poolId);
+    }
 
     // INCREASE_BOOST FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_IncreaseBoost(uint256 amountToDeposit, uint256 boostFraction) public {
