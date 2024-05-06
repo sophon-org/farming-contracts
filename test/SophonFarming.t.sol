@@ -12,7 +12,7 @@ import {MockWETH} from "./../contracts/mocks//MockWETH.sol";
 import {MockStETH} from "./../contracts/mocks/MockStETH.sol";
 import {MockWstETH} from "./../contracts/mocks/MockWstETH.sol";
 import {MockeETHLiquidityPool} from "./../contracts/mocks/MockeETHLiquidityPool.sol";
-import {MockweETH} from "./../contracts/mocks/MockweETH.sol";
+import {MockWeETH} from "./../contracts/mocks/MockweETH.sol";
 import {MockSDAI} from "./../contracts/mocks/MockSDAI.sol";
 import {PermitTester} from "./utils/PermitTester.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -39,7 +39,7 @@ contract SophonFarmingTest is Test {
     MockWstETH internal wstETH;
     MockERC20 internal eETH;
     MockeETHLiquidityPool internal eETHLiquidityPool;
-    MockweETH internal weETH;
+    MockWeETH internal weETH;
     MockERC20 internal dai;
     MockSDAI internal sDAI;
 
@@ -63,8 +63,16 @@ contract SophonFarmingTest is Test {
         return amount / 1001 * 1000;
     }
 
-    function WstETHRate(uint256 amount) internal pure returns (uint256) {
-        return amount * 861193049850366619 / 1e18;
+    function WstETHRate(uint256 amount) internal view returns (uint256) {
+        return amount * wstETH.tokensPerStEth() / 1e18;
+    }
+
+    function eETHLPRate(uint256 amount) internal pure returns (uint256) {
+        return amount / 1001 * 1000;
+    }
+
+    function WeETHRate(uint256 amount) internal view returns (uint256) {
+        return amount * weETH.tokensPereETH() / 1e18;
     }
 
     // Setup
@@ -100,7 +108,7 @@ contract SophonFarmingTest is Test {
 
         eETHLiquidityPool = new MockeETHLiquidityPool(eETH);
 
-        weETH = new MockweETH(stETH);
+        weETH = new MockWeETH(eETH);
 
         // mock DAI
         dai = new MockERC20("Mock Dai Token", "MockDAI", 18);
@@ -251,15 +259,15 @@ contract SophonFarmingTest is Test {
         sophonFarming.deposit(poolId2, amountToDeposit2, 0);
         vm.stopPrank();
 
-        // uint256 amountToDeposit3 = 10000e18;
-        // uint256 poolId3 = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.weETH);
+        uint256 amountToDeposit3 = 10000e18;
+        uint256 poolId3 = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.weETH);
 
-        // vm.startPrank(account3);
-        // deal(address(eETH), account3, amountToDeposit3);
+        vm.startPrank(account3);
+        deal(address(eETH), account3, amountToDeposit3);
 
-        // eETH.approve(address(sophonFarming), amountToDeposit3);
-        // sophonFarming.depositeEth(amountToDeposit3, 0);
-        // vm.stopPrank();
+        eETH.approve(address(sophonFarming), amountToDeposit3);
+        sophonFarming.depositeEth(amountToDeposit3, 0);
+        vm.stopPrank();
     }
 
     // UPGRADEABLE 2 STEP FUNCTIONS /////////////////////////////////////////////////////////////////
@@ -909,6 +917,33 @@ contract SophonFarmingTest is Test {
         sophonFarming.depositEth{value: amountToDeposit}(0, SophonFarmingState.PredefinedPool.pufETH);
     }
 
+    function testFuzz_DepositEthToWeETH_NotBoosted(uint256 amountToDeposit) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        vm.deal(account1, amountToDeposit);
+        vm.startPrank(account1);
+
+        uint256 weEthDepositedAmount = WeETHRate(eETHLPRate(amountToDeposit));
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.weETH);
+
+        sophonFarming.depositEth{value: amountToDeposit}(0, SophonFarmingState.PredefinedPool.weETH);
+        assertEq(address(account1).balance, 0);
+
+        SophonFarmingState.UserInfo memory userInfo;
+        (
+            userInfo.amount,
+            userInfo.boostAmount,
+            userInfo.depositAmount,
+            userInfo.rewardSettled,
+            userInfo.rewardDebt
+        ) = sophonFarming.userInfo(poolId, account1);
+
+        assertEq(userInfo.amount, weEthDepositedAmount);
+        assertEq(userInfo.boostAmount, 0);
+        assertEq(weETHpoolShareToken.balanceOf(account1), weEthDepositedAmount);
+        assertEq(userInfo.rewardSettled, 0);
+        assertEq(userInfo.rewardDebt, 0);
+    }
+
     // DEPOSIT_WETH FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_DepositWeth_NotBoosted(uint256 amountToDeposit) public {
         vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
@@ -1024,6 +1059,146 @@ contract SophonFarmingTest is Test {
         weth.approve(address(sophonFarming), amountToDeposit);
         vm.expectRevert(abi.encodeWithSelector(SophonFarming.BoostTooHigh.selector, wsthDepositedAmount));        
         sophonFarming.depositWeth(amountToDeposit, amountToBoost, SophonFarmingState.PredefinedPool.wstETH);
+    }
+
+    function testFuzz_DepositWethToWeETH_NotBoosted(uint256 amountToDeposit) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+
+        uint256 weEthDepositedAmount = WeETHRate(eETHLPRate(amountToDeposit));
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.weETH);
+
+        vm.startPrank(account1);
+        vm.deal(account1, amountToDeposit);
+        weth.deposit{value: amountToDeposit}();
+        assertEq(weth.balanceOf(account1), amountToDeposit);
+
+        weth.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositWeth(amountToDeposit, 0, SophonFarmingState.PredefinedPool.weETH);
+        assertEq(weth.balanceOf(account1), 0);
+
+        SophonFarmingState.UserInfo memory userInfo;
+        (
+            userInfo.amount,
+            userInfo.boostAmount,
+            userInfo.depositAmount,
+            userInfo.rewardSettled,
+            userInfo.rewardDebt
+        ) = sophonFarming.userInfo(poolId, account1);
+
+        assertEq(userInfo.amount, weEthDepositedAmount);
+        assertEq(userInfo.boostAmount, 0);
+        assertEq(weETHpoolShareToken.balanceOf(account1), weEthDepositedAmount);
+        assertEq(userInfo.rewardSettled, 0);
+        assertEq(userInfo.rewardDebt, 0);
+    }
+
+    // DEPOSIT_EETH FUNCTION /////////////////////////////////////////////////////////////////
+    function testFuzz_DepositEEth_NotBoosted(uint256 amountToDeposit) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+
+        uint256 weEthDepositedAmount = WeETHRate(amountToDeposit);
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.weETH);
+
+        vm.startPrank(account1);
+        deal(address(eETH), account1, amountToDeposit);
+        assertEq(eETH.balanceOf(account1), amountToDeposit);
+
+        eETH.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositeEth(amountToDeposit, 0);
+        assertEq(eETH.balanceOf(account1), 0);
+
+        SophonFarmingState.UserInfo memory userInfo;
+        (
+            userInfo.amount,
+            userInfo.boostAmount,
+            userInfo.depositAmount,
+            userInfo.rewardSettled,
+            userInfo.rewardDebt
+        ) = sophonFarming.userInfo(poolId, account1);
+
+        assertEq(userInfo.amount, weEthDepositedAmount);
+        assertEq(userInfo.boostAmount, 0);
+        assertEq(weETHpoolShareToken.balanceOf(account1), weEthDepositedAmount);
+        assertEq(userInfo.rewardSettled, 0);
+        assertEq(userInfo.rewardDebt, 0);
+    }
+
+    function testFuzz_DepositEEth_Boosted(uint256 amountToDeposit, uint256 boostFraction) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        vm.assume(boostFraction > 0 && boostFraction <= 10);
+
+        uint256 weEthDepositedAmount = WeETHRate(amountToDeposit);
+        uint256 amountToBoost = amountToDeposit / boostFraction;
+        uint256 boostAmount = amountToBoost * weEthDepositedAmount / amountToDeposit;
+        uint256 finalBoostAmount = boostAmount * sophonFarming.boosterMultiplier() / 1e18;
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.weETH);
+
+        vm.startPrank(account1);
+        deal(address(eETH), account1, amountToDeposit);
+        assertEq(eETH.balanceOf(account1), amountToDeposit);
+
+        eETH.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositeEth(amountToDeposit, amountToBoost);
+        assertEq(eETH.balanceOf(account1), 0);
+
+        SophonFarmingState.UserInfo memory userInfo;
+        (
+            userInfo.amount,
+            userInfo.boostAmount,
+            userInfo.depositAmount,
+            userInfo.rewardSettled,
+            userInfo.rewardDebt
+        ) = sophonFarming.userInfo(poolId, account1);
+
+        assertEq(userInfo.amount, weEthDepositedAmount - boostAmount + finalBoostAmount);
+        assertEq(userInfo.boostAmount, finalBoostAmount);
+        assertEq(weETHpoolShareToken.balanceOf(account1), weEthDepositedAmount - boostAmount);
+        assertEq(userInfo.rewardSettled, 0);
+        assertEq(userInfo.rewardDebt, 0);
+    }
+
+    function testFuzz_DepositEEth_RevertWhen_FarmingIsEnded(uint256 amountToDeposit, uint256 boostFraction) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        vm.assume(boostFraction > 0 && boostFraction <= 10);
+
+        vm.prank(deployer);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
+        vm.roll(block.number + 10);
+
+        vm.startPrank(account1);
+        deal(address(eETH), account1, amountToDeposit);
+        assertEq(eETH.balanceOf(account1), amountToDeposit);
+
+        eETH.approve(address(sophonFarming), amountToDeposit);
+        vm.expectRevert(SophonFarming.FarmingIsEnded.selector);
+        sophonFarming.depositeEth(amountToDeposit, 0);
+    }
+
+    function testFuzz_DepositEEth_RevertWhen_InvalidDeposit() public {
+        uint256 amountToDeposit = 1;
+
+        vm.startPrank(account1);
+        deal(address(eETH), account1, amountToDeposit);
+        assertEq(eETH.balanceOf(account1), amountToDeposit);
+
+        eETH.approve(address(sophonFarming), amountToDeposit);
+        vm.expectRevert(SophonFarming.InvalidDeposit.selector);
+        sophonFarming.depositeEth(amountToDeposit, 0);
+    }
+
+    function testFuzz_DepositEEth_RevertWhen_BoostTooHigh(uint256 amountToDeposit) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+
+        vm.startPrank(account1);
+        deal(address(eETH), account1, amountToDeposit);
+        assertEq(eETH.balanceOf(account1), amountToDeposit);
+
+        uint256 weEthDepositedAmount = WeETHRate(amountToDeposit);
+        uint256 amountToBoost = amountToDeposit * 2;
+
+        eETH.approve(address(sophonFarming), amountToDeposit);
+        vm.expectRevert(abi.encodeWithSelector(SophonFarming.BoostTooHigh.selector, weEthDepositedAmount));        
+        sophonFarming.depositeEth(amountToDeposit, amountToBoost);
     }
 
     // DEPOSIT_STETH FUNCTION /////////////////////////////////////////////////////////////////
@@ -1660,9 +1835,10 @@ contract SophonFarmingTest is Test {
         setOneDepositorPerPool();
         SophonFarmingState.UserInfo[][] memory userInfos = new SophonFarmingState.UserInfo[][](sophonFarming.getPoolInfo().length);
 
-        address[] memory accounts = new address[](2);
+        address[] memory accounts = new address[](3);
         accounts[0] = account1;
         accounts[1] = account2;
+        accounts[2] = account3;
 
         userInfos = sophonFarming.getUserInfo(accounts);
 
@@ -1690,8 +1866,8 @@ contract SophonFarmingTest is Test {
             }
         }
 
-        // There are deposits in 2 of the 3 pools
-        assertApproxEqAbs(totalPoints, pointsPerBlock * rollBlocks * 2 / 3, 1);
+        // There are deposits in 2 of the 3 pools. Margin of error is 1 wei per user.
+        assertApproxEqAbs(totalPoints, pointsPerBlock * rollBlocks, accounts.length);
     }
 
     // POOL_SHARE_TOKEN FUNCTIONS /////////////////////////////////////////////////////////////////
@@ -1862,7 +2038,7 @@ contract SophonFarmingTest is Test {
         vm.expectRevert(SophonFarming.InvalidTransfer.selector);
         PoolInfo[poolId].poolShareToken.transfer(address(sophonFarming), userDepositAmount);
 
-        // vm.expectRevert(SophonFarming.InvalidTransfer.selector);
-        // PoolInfo[poolId].poolShareToken.transfer(account2, 0);
+        vm.expectRevert(Unauthorized.selector);
+        sophonFarming._handleTransfer(poolId, account1, account2, amountToDeposit);
     }
 }
