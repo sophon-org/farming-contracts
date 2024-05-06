@@ -60,3 +60,4 @@ out/
 docs/
 .env
 lcov.info
+report/*
