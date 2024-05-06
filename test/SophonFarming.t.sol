@@ -6,7 +6,7 @@ import {SophonFarming} from "../contracts/farm/SophonFarming.sol";
 import {PoolShareToken} from "./../contracts/farm/PoolShareToken.sol";
 import {SophonFarmingState} from "./../contracts/farm/SophonFarmingState.sol";
 import {SophonFarmingProxy} from "./../contracts/proxies/SophonFarmingProxy.sol";
-import {Upgradeable2Step} from "./../contracts/proxies/Upgradeable2Step.sol";
+import {Proxy} from "./../contracts/proxies/Proxy.sol";
 import {MockERC20} from "./../contracts/mocks/MockERC20.sol";
 import {MockWETH} from "./../contracts/mocks//MockWETH.sol";
 import {MockStETH} from "./../contracts/mocks/MockStETH.sol";
@@ -372,6 +372,35 @@ contract SophonFarmingTest is Test {
         SophonFarming(payable(newImplementation)).becomeImplementation(sophonFarmingProxy);
     }
 
+    // REPLACE_IMPLEMENTATION FUNCTION /////////////////////////////////////////////////////////////////
+    function test_Proxy() public {
+        vm.startPrank(deployer);
+
+        Proxy proxy = new Proxy(implementation);
+        assertEq(proxy.implementation(), implementation);
+
+        address newImplementation = address(new SophonFarming(
+            [
+                address(dai),
+                address(sDAI),
+                address(weth),
+                address(stETH),
+                address(wstETH),
+                address(eETH),
+                address(eETHLiquidityPool),
+                address(weETH)
+                // address(0x13),
+                // address(0x14),
+                // address(0x15),
+                // address(0x16),
+                // address(0x17)
+            ]    
+        ));
+
+        proxy.replaceImplementation(newImplementation);
+        assertEq(proxy.implementation(), newImplementation);
+    }
+
     // CONSTRUCTOR PARAMETERS /////////////////////////////////////////////////////////////////
     function test_ConstructorParameters() public view {
         assertEq(sophonFarming.weth(), address(weth));
@@ -685,6 +714,24 @@ contract SophonFarmingTest is Test {
     
         to = block.number + 1000;
         assertEq(sophonFarming.getBlockMultiplier(from, to), (newEndBlock - from) * 1e18);
+    }
+
+    // MASS_UPDATE_POOLS FUNCTION /////////////////////////////////////////////////////////////////
+    function test_MassUpdatePools() public {
+        vm.startPrank(deployer);
+
+        sophonFarming.setEndBlocks(block.number + 1, 1);
+        vm.roll(block.number + 3);
+
+        sophonFarming.massUpdatePools();
+
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        for(uint256 i = 0; i < PoolInfo.length; i++) {
+            assertEq(PoolInfo[i].lastRewardBlock, block.number);
+        }
     }
 
     // UPDATE_POOL FUNCTION /////////////////////////////////////////////////////////////////
@@ -1564,6 +1611,12 @@ contract SophonFarmingTest is Test {
         assertEq(wstETH.balanceOf(deployer), startingDeployerBalance + amountToBoost);
     }
 
+    // GET_BLOCK_NUMBER FUNCTION /////////////////////////////////////////////////////////////////
+    function test_GetBlockNumber() public {
+        vm.roll(block.number + 100);
+        assertEq(sophonFarming.getBlockNumber(), block.number);
+    }
+
     // GET_POOL_INFO FUNCTION /////////////////////////////////////////////////////////////////
     function test_GetPoolInfo() public view {
         SophonFarmingState.PoolInfo[] memory PoolInfo;
@@ -1642,7 +1695,6 @@ contract SophonFarmingTest is Test {
     }
 
     // POOL_SHARE_TOKEN FUNCTIONS /////////////////////////////////////////////////////////////////
-
     // TRANSFER FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_TransferShareTokens(uint256 amountToDeposit) public {
         vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
