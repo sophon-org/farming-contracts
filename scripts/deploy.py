@@ -54,7 +54,7 @@ def getMocks(): ## acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, 
     wstETH = Contract.from_abi("wstETH", dbGet("mock_wsteth"), MockWstETH.abi)
     eETH = Contract.from_abi("eETH", dbGet("mock_eETH"), MockERC20.abi)
     eETHLiquidityPool = Contract.from_abi("eETHLiquidityPool", dbGet("mock_eETHLiquidityPool"), MockeETHLiquidityPool.abi)
-    weETH = Contract.from_abi("weETH", dbGet("mock_weETH"), MockweETH.abi)
+    weETH = Contract.from_abi("weETH", dbGet("mock_weETH"), MockWeETH.abi)
 
     dai = Contract.from_abi("dai", dbGet("mock_dai"), MockERC20.abi)
     sDAI = Contract.from_abi("sDAI", dbGet("mock_sdai"), MockSDAI.abi)
@@ -104,7 +104,7 @@ def createMockSetup(deployTokens = False):
 
     ## mock weETH
     if deployTokens == True:
-        weETH = MockweETH.deploy(eETH, {"from": acct})
+        weETH = MockWeETH.deploy(eETH, {"from": acct})
         dbSet("mock_weETH", weETH.address)
 
     ## mock DAI
