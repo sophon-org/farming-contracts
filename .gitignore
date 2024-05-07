@@ -51,3 +51,13 @@ package-lock.json
 *.txt
 *.log
 *.db
+# Foundry
+cache/
+out/
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+docs/
+.env
+lcov.info
+report/
