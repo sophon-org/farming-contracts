@@ -38,7 +38,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error BoostIsZero();
     error BridgeInvalid();
 
-
     address public immutable dai;
     address public immutable sDAI;
     address public immutable weth;
@@ -47,13 +46,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     address public immutable eETH;
     address public immutable eETHLiquidityPool;
     address public immutable weETH;
-    /*address public immutable uSDe;
-    address public immutable sUSDe;
-    address public immutable ezETH;
-    address public immutable rsETH;
-    address public immutable rswETH;
-    address public immutable uniETH;
-    address public immutable pufETH;*/
 
     modifier nonDuplicated(address _lpToken) {
         require(!poolExists[_lpToken], "pool exists");
@@ -64,24 +56,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         return poolInfo.length;
     }
 
-
-    // Mainnet ->
-    // weth: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
-    // stETH: 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
-    // wstETH: 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
-
-    // todo: add LSDs seen here -> https://app.pendle.finance/points
-    // ether.fi ETH (eETH): 0x35fA164735182de50811E8e2E824cFb9B6118ac2
-    // ether.fi Liquidity Pool: 0x308861A430be4cce5502d0A12724771Fc6DaF216
-    // ether.fi Wrapped eETH (weETH): 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee
-    // Renzo ezETH (Renzo Restaked ETH): 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110
-    // Kelp Dao rsETH (rsETH): 0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7
-    // Swell rswETH (rswETH): 0xFAe103DC9cf190eD75350761e95403b7b8aFa6c0
-    // Bedrock uniETH (Universal ETH): 0xF1376bceF0f78459C0Ed0ba5ddce976F1ddF51F4
-    // Puffer pufETH (pufETH): 0xD9A442856C234a39a81a089C06451EBAa4306a72
-
-    // DAI: 0x6B175474E89094C44Da98b954EedeAC495271d0F
-    // sDAI: 0x83F20F44975D03b1b09e64809B757c47f942BEeA
     constructor(address[8] memory tokens_) {
         dai = tokens_[0];
         sDAI = tokens_[1];
@@ -91,13 +65,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         eETH = tokens_[5];
         eETHLiquidityPool = tokens_[6];
         weETH = tokens_[7];
-        /*uSDe = tokens_[8];
-        sUSDe = tokens_[9];
-        ezETH = tokens_[10];
-        rsETH = tokens_[11];
-        rswETH = tokens_[12];
-        uniETH = tokens_[13];
-        pufETH = tokens_[14];*/
     }
 
     receive() external payable {
@@ -138,23 +105,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         // weETH
         typeToId[PredefinedPool.weETH] = add(ethAllocPoint_, weETH, "weETH", "weETH", false);
         IERC20(eETH).approve(weETH, 2**256-1);
-
-        /*
-        // ezETH
-        typeToId[PredefinedPool.ezETH] = add(ethAllocPoint_, ezETH, "ezETH", "ezETH", false);
-
-        // rsETH
-        typeToId[PredefinedPool.rsETH] = add(ethAllocPoint_, rsETH, "rsETH", "rsETH", false);
-
-        // rswETH
-        typeToId[PredefinedPool.rswETH] = add(ethAllocPoint_, rswETH, "rswETH", "rswETH", false);
-
-        // uniETH
-        typeToId[PredefinedPool.uniETH] = add(ethAllocPoint_, uniETH, "uniETH", "uniETH", false);
-
-        // pufETH
-        typeToId[PredefinedPool.pufETH] = add(ethAllocPoint_, pufETH, "pufETH", "pufETH", false);
-        */
 
         _initialized = true;
     }
@@ -502,16 +452,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             _finalAmount = _stEthTOwstEth(_amount);
         } else if (predefinedPool == PredefinedPool.weETH) {
             _finalAmount = _eethTOweEth(_amount);
-        /*} else if (predefinedPool == PredefinedPool.ezETH) {
-            _finalAmount = _ethTOezEth(_amount);
-        } else if (predefinedPool == PredefinedPool.rsETH) {
-            _finalAmount = _ethTOrsEth(_amount);
-        } else if (predefinedPool == PredefinedPool.rswETH) {
-            _finalAmount = _ethTOrswEth(_amount);
-        } else if (predefinedPool == PredefinedPool.uniETH) {
-            _finalAmount = _ethTOuniEth(_amount);
-        } else if (predefinedPool == PredefinedPool.pufETH) {
-            _finalAmount = _ethTOpufEth(_amount);*/
         } else {
             revert InvalidDeposit();
         }
@@ -651,12 +591,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert BoostIsZero();
         }
 
-        /*uint256 maxAdditionalBoost = getMaxAdditionalBoost(msg.sender, _pid);
-        if (_boostAmount > maxAdditionalBoost) {
-            revert BoostTooHigh(maxAdditionalBoost);
-        }*/
-
         PoolInfo storage pool = poolInfo[_pid];
+
+        // burn share token based on deduced deposit amount
+        // will revert if boostAmount too high
+        // (calling earlier since we don't have a separate balance check)
+        pool.poolShareToken.burn(msg.sender, _boostAmount);
+
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
 
@@ -673,9 +614,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         // booster purchase proceeds
         heldProceeds[_pid] = heldProceeds[_pid] + _boostAmount;
-
-        // burn share token based on deduced deposit amount
-        pool.poolShareToken.burn(msg.sender, _boostAmount); // will revert if boostAmount too high
 
         // apply the multiplier
         uint256 finalBoostAmount = _boostAmount * boosterMultiplier / 1e18;
@@ -696,12 +634,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         emit IncreaseBoost(msg.sender, _pid, finalBoostAmount);
     }
 
-	// total allowed boost is 100% of total deposit
+    // total allowed boost is 100% of total deposit
     // returns max additional boost amount allowed to boost current deposits
-	function getMaxAdditionalBoost(address _user, uint256 _pid) public view returns (uint256) {
+    function getMaxAdditionalBoost(address _user, uint256 _pid) public view returns (uint256) {
         return poolInfo[_pid].poolShareToken.balanceOf(_user);
-	}
+    }
 
+    // WETH
     function _wethTOEth(uint256 _amount) internal returns (uint256) {
         // unwrap weth to eth
         IWeth(weth).withdraw(_amount);
@@ -734,33 +673,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         return IweETH(weETH).wrap(_amount);
     }
 
-    // TODO: all these below
-    /*function _ethTOezEth(uint256 _amount) internal returns (uint256) {
-        uint256 balanceBefore = IERC20(weETH).balanceOf(address(this));
-        IstETH(weETH).submit{value: _amount}(address(this));
-        return (IERC20(weETH).balanceOf(address(this)) - balanceBefore);
-    }
-    function _ethTOrsEth(uint256 _amount) internal returns (uint256) {
-        uint256 balanceBefore = IERC20(weETH).balanceOf(address(this));
-        IstETH(weETH).submit{value: _amount}(address(this));
-        return (IERC20(weETH).balanceOf(address(this)) - balanceBefore);
-    }
-    function _ethTOrswEth(uint256 _amount) internal returns (uint256) {
-        uint256 balanceBefore = IERC20(weETH).balanceOf(address(this));
-        IstETH(weETH).submit{value: _amount}(address(this));
-        return (IERC20(weETH).balanceOf(address(this)) - balanceBefore);
-    }
-    function _ethTOuniEth(uint256 _amount) internal returns (uint256) {
-        uint256 balanceBefore = IERC20(weETH).balanceOf(address(this));
-        IstETH(weETH).submit{value: _amount}(address(this));
-        return (IERC20(weETH).balanceOf(address(this)) - balanceBefore);
-    }
-    function _ethTOpufEth(uint256 _amount) internal returns (uint256) {
-        uint256 balanceBefore = IERC20(weETH).balanceOf(address(this));
-        IstETH(weETH).submit{value: _amount}(address(this));
-        return (IERC20(weETH).balanceOf(address(this)) - balanceBefore);
-    }*/
-
+    // MakerDao
     function _daiTOsDai(uint256 _amount) internal returns (uint256) {
         // deposit DAI to sDAI
         return IsDAI(sDAI).deposit(_amount, address(this));

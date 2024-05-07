@@ -2,10 +2,16 @@
 pragma solidity 0.8.24;
 
 interface SophonFarmingLike {
-    function _handleTransfer(uint256 _pid, address _from, address _to, uint256 _amount) external;
+    function _handleTransfer(uint256 pid, address from, address to, uint256 amount) external;
 }
 
 contract PoolShareToken {
+
+    error Unauthorized();
+    error InsufficientBalance();
+    error InsufficientAllowance();
+    error DeadlineExpired();
+    error InvalidSignature();
 
     event Transfer(address indexed from, address indexed to, uint256 amount);
     event Approval(address indexed owner, address indexed spender, uint256 amount);
@@ -16,17 +22,9 @@ contract PoolShareToken {
     uint8   public immutable decimals;
     uint256 public totalSupply;
 
-    mapping (address => uint)                      public balanceOf;
-    mapping (address => mapping (address => uint)) public allowance;
-    mapping (address => uint)                      public nonces;
-
-    // --- Math ---
-    function add(uint x, uint y) internal pure returns (uint z) {
-        require((z = x + y) >= x);
-    }
-    function sub(uint x, uint y) internal pure returns (uint z) {
-        require((z = x - y) <= x);
-    }
+    mapping (address => uint256)                      public balanceOf;
+    mapping (address => mapping (address => uint256)) public allowance;
+    mapping (address => uint256)                      public nonces;
 
     // --- EIP712 niceties ---
     bytes32 public DOMAIN_SEPARATOR;
@@ -56,44 +54,73 @@ contract PoolShareToken {
     }
 
     // --- Token ---
-    function transfer(address dst, uint wad) external returns (bool) {
-        return transferFrom(msg.sender, dst, wad);
+
+    function transfer(address to, uint256 value) external returns (bool) {
+        return transferFrom(msg.sender, to, value);
     }
-    function transferFrom(address src, address dst, uint wad)
-        public returns (bool)
-    {
-        require(balanceOf[src] >= wad, "insufficient-balance");
-        if (src != msg.sender && allowance[src][msg.sender] != type(uint).max) {
-            require(allowance[src][msg.sender] >= wad, "insufficient-allowance");
-            allowance[src][msg.sender] = sub(allowance[src][msg.sender], wad);
+
+    function transferFrom(address from, address to, uint256 value) public returns (bool) {
+        uint256 balanceFrom = balanceOf[from];
+        if (balanceFrom < value) {
+            revert InsufficientBalance();
         }
-        balanceOf[src] = sub(balanceOf[src], wad);
-        balanceOf[dst] = add(balanceOf[dst], wad);
-        emit Transfer(src, dst, wad);
+
+        uint256 allowed = allowance[from][msg.sender];
+        if (from != msg.sender && allowed != type(uint256).max) {
+            if (allowed < value) {
+                revert InsufficientAllowance();
+            }
+
+            unchecked {
+                allowance[from][msg.sender] = allowed - value;
+            }
+        }
+
+        balanceOf[from] = balanceFrom - value;
+        balanceOf[to] = balanceOf[to] + value;
+
+        emit Transfer(from, to, value);
 
         // settle pool balances
-        if (wad != 0) {
-            controller._handleTransfer(pid, src, dst, wad);
+        if (value != 0) {
+            controller._handleTransfer(pid, from, to, value);
         }
 
         return true;
     }
-    function mint(address usr, uint wad) external virtual {
-        require (msg.sender == address(controller), "Unauthorized");
-        balanceOf[usr] = add(balanceOf[usr], wad);
-        totalSupply    = add(totalSupply, wad);
-        emit Transfer(address(0), usr, wad);
+
+    function mint(address user, uint256 value) external {
+        if (msg.sender != address(controller)) {
+            revert Unauthorized();
+        }
+
+        balanceOf[user] = balanceOf[user] + value;
+        totalSupply    = totalSupply + value;
+
+        emit Transfer(address(0), user, value);
     }
-    function burn(address usr, uint wad) external virtual {
-        require (msg.sender == address(controller), "Unauthorized");
-        require(balanceOf[usr] >= wad, "insufficient-balance");
-        balanceOf[usr] = sub(balanceOf[usr], wad);
-        totalSupply    = sub(totalSupply, wad);
-        emit Transfer(usr, address(0), wad);
+
+    function burn(address user, uint256 value) external {
+        if (msg.sender != address(controller)) {
+            revert Unauthorized();
+        }
+
+        uint256 userBalance = balanceOf[user];
+        if (userBalance < value) {
+            revert InsufficientBalance();
+        }
+
+        unchecked {
+            balanceOf[user] = userBalance - value;
+            totalSupply    = totalSupply - value;
+        }
+
+        emit Transfer(user, address(0), value);
     }
-    function approve(address usr, uint wad) external returns (bool) {
-        allowance[msg.sender][usr] = wad;
-        emit Approval(msg.sender, usr, wad);
+
+    function approve(address user, uint256 value) external returns (bool) {
+        allowance[msg.sender][user] = value;
+        emit Approval(msg.sender, user, value);
         return true;
     }
 
@@ -107,10 +134,17 @@ contract PoolShareToken {
         bytes32 r,
         bytes32 s
     ) external {
-        require(deadline >= block.timestamp, "EXPIRED");
+        if (deadline < block.timestamp) {
+            revert DeadlineExpired();
+        }
+
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner]++, deadline))));
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, "INVALID_SIGNATURE");
+
+        if (recoveredAddress == address(0) || recoveredAddress != owner) {
+            revert InvalidSignature();
+        }
+
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
     }

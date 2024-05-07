@@ -1,3 +1,23 @@
+'''
+    // Mainnet ->
+    // weth: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+    // stETH: 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
+    // wstETH: 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
+
+    // ether.fi ETH (eETH): 0x35fA164735182de50811E8e2E824cFb9B6118ac2
+    // ether.fi Liquidity Pool: 0x308861A430be4cce5502d0A12724771Fc6DaF216
+    // ether.fi Wrapped eETH (weETH): 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee
+    // Renzo ezETH (Renzo Restaked ETH): 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110
+    // Kelp Dao rsETH (rsETH): 0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7
+    // Swell rswETH (rswETH): 0xFAe103DC9cf190eD75350761e95403b7b8aFa6c0
+    // Bedrock uniETH (Universal ETH): 0xF1376bceF0f78459C0Ed0ba5ddce976F1ddF51F4
+    // Puffer pufETH (pufETH): 0xD9A442856C234a39a81a089C06451EBAa4306a72
+
+    // DAI: 0x6B175474E89094C44Da98b954EedeAC495271d0F
+    // sDAI: 0x83F20F44975D03b1b09e64809B757c47f942BEeA
+'''
+
+
 from brownie import *
 import secrets, pickledb, random
 import sys, os, re, csv, json, shutil
