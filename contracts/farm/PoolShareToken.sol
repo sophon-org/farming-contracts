@@ -95,7 +95,7 @@ contract PoolShareToken {
         }
 
         balanceOf[user] = balanceOf[user] + value;
-        totalSupply    = totalSupply + value;
+        totalSupply     = totalSupply + value;
 
         emit Transfer(address(0), user, value);
     }
@@ -112,7 +112,7 @@ contract PoolShareToken {
 
         unchecked {
             balanceOf[user] = userBalance - value;
-            totalSupply    = totalSupply - value;
+            totalSupply     = totalSupply - value;
         }
 
         emit Transfer(user, address(0), value);

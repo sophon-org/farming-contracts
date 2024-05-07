@@ -553,10 +553,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         emit Exit(msg.sender, _pid, depositAmount);
     }
 
-    // TODO: reward for caller; change _refundRecipient
     // permissionless function to allow anyone to bridge during the correct period
+    // TODO: add logic to reward the permissionless caller
     function bridgePool(uint256 _pid) external {
-        if (!isFarmingEnded() || !isExitPeriodEnded()) {
+        if (!isFarmingEnded() || !isExitPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
         }
 
@@ -568,17 +568,27 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert BridgeInvalid();
         }
 
-        // TODO: change _refundRecipient
+        IERC20 lpToken = pool.lpToken;
+        lpToken.approve(address(bridge), depositAmount);
+
+        // TODO: change _refundRecipient, verify l2Farm, _l2TxGasLimit and _l2TxGasPerPubdataByte
         bridge.deposit(
             pool.l2Farm,            // _l2Receiver
-            address(pool.lpToken),  // _l1Token
+            address(lpToken),       // _l1Token
             depositAmount,          // _amount
             200000,                 // _l2TxGasLimit
             0,                      // _l2TxGasPerPubdataByte
             owner()                 // _refundRecipient
         );
 
+        isBridged[_pid] = true;
+
         emit Bridge(msg.sender, _pid, depositAmount);
+    }
+
+    // TODO: does this function need to call claimFailedDeposit on the bridge?
+    function revertFailedBridge(uint256 _pid) external onlyOwner {
+        isBridged[_pid] = false;
     }
 
     // Increase boost from existing deposits.
@@ -593,7 +603,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
 
-        // burn share token based on deduced deposit amount
+        // burn share token based on reduced deposit amount
         // will revert if boostAmount too high
         // (calling earlier since we don't have a separate balance check)
         pool.poolShareToken.burn(msg.sender, _boostAmount);
