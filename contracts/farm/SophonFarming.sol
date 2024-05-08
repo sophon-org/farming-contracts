@@ -247,7 +247,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
     }
 
-    function _handleTransfer(uint256 _pid, address _from, address _to, uint256 _amount) external {
+    function _handleTransfer(uint256 _pid, address _from, address _to, uint256 _amount, uint256 _depositBeforeTransfer) external {
 
         if (_from == _to || _to == address(this) || _amount == 0) {
             revert InvalidTransfer();
@@ -267,21 +267,19 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         uint256 userFromAmount = userFrom.amount;
         uint256 userToAmount = userTo.amount;
 
-        userFrom.rewardSettled =
+        uint256 rewardSettledFrom =
             userFromAmount *
             accPointsPerShare /
             1e18 +
             userFrom.rewardSettled -
             userFrom.rewardDebt;
 
-        if (userToAmount != 0) {
-            userTo.rewardSettled =
-                userToAmount *
-                accPointsPerShare /
-                1e18 +
-                userTo.rewardSettled -
-                userTo.rewardDebt;
-        }
+        uint256 rewardSettledTo =
+            userToAmount *
+            accPointsPerShare /
+            1e18 +
+            userTo.rewardSettled -
+            userTo.rewardDebt;
 
         // adjust balances
 
@@ -296,6 +294,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         userTo.rewardDebt = userToAmount *
             accPointsPerShare /
             1e18;
+
+        assert(_amount <= _depositBeforeTransfer);
+        uint256 pointsTransferAmount = rewardSettledFrom * _amount / _depositBeforeTransfer;
+
+        userFrom.rewardSettled = rewardSettledFrom - pointsTransferAmount;
+        userTo.rewardSettled = rewardSettledTo + pointsTransferAmount;
+
     }
 
     function _pendingPoints(uint256 _pid, address _user) internal view returns (uint256) {
@@ -479,15 +484,12 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         updatePool(_pid);
 
         uint256 userAmount = user.amount;
-  
-        if (userAmount != 0) {
-            user.rewardSettled = 
-                userAmount *
-                pool.accPointsPerShare /
-                1e18 +
-                user.rewardSettled -
-                user.rewardDebt;
-        }
+        user.rewardSettled =
+            userAmount *
+            pool.accPointsPerShare /
+            1e18 +
+            user.rewardSettled -
+            user.rewardDebt;
 
         // booster purchase proceeds
         heldProceeds[_pid] = heldProceeds[_pid] + _boostAmount;
@@ -528,7 +530,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         require(_amount != 0, "nothing in pool");
         updatePool(_pid);
 
-        user.rewardSettled = 
+        user.rewardSettled =
             (_amount *
             pool.accPointsPerShare /
             1e18 +
@@ -612,15 +614,12 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         updatePool(_pid);
 
         uint256 userAmount = user.amount;
-  
-        if (userAmount != 0) {
-            user.rewardSettled = 
-                userAmount *
-                pool.accPointsPerShare /
-                1e18 +
-                user.rewardSettled -
-                user.rewardDebt;
-        }
+        user.rewardSettled =
+            userAmount *
+            pool.accPointsPerShare /
+            1e18 +
+            user.rewardSettled -
+            user.rewardDebt;
 
         // booster purchase proceeds
         heldProceeds[_pid] = heldProceeds[_pid] + _boostAmount;

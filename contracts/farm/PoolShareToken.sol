@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 interface SophonFarmingLike {
-    function _handleTransfer(uint256 pid, address from, address to, uint256 amount) external;
+    function _handleTransfer(uint256 pid, address from, address to, uint256 amount, uint256 depositBeforeTransfer) external;
 }
 
 contract PoolShareToken {
@@ -60,8 +60,8 @@ contract PoolShareToken {
     }
 
     function transferFrom(address from, address to, uint256 value) public returns (bool) {
-        uint256 balanceFrom = balanceOf[from];
-        if (balanceFrom < value) {
+        uint256 balanceFromBeforeTransfer = balanceOf[from];
+        if (value > balanceFromBeforeTransfer) {
             revert InsufficientBalance();
         }
 
@@ -76,15 +76,15 @@ contract PoolShareToken {
             }
         }
 
-        balanceOf[from] = balanceFrom - value;
-        balanceOf[to] = balanceOf[to] + value;
+        if (value != 0) {
+            // settle pool balances
+            controller._handleTransfer(pid, from, to, value, balanceFromBeforeTransfer);
+
+            balanceOf[from] = balanceFromBeforeTransfer - value;
+            balanceOf[to] = balanceOf[to] + value;
+        }
 
         emit Transfer(from, to, value);
-
-        // settle pool balances
-        if (value != 0) {
-            controller._handleTransfer(pid, from, to, value);
-        }
 
         return true;
     }
