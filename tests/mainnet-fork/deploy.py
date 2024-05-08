@@ -45,6 +45,7 @@ SF.add(10000, rsETH, "rsETH", "rsETH description", True, {"from": deployer})
 rsETH_holder = "0x22162DbBa43fE0477cdC5234E248264eC7C6EA7c"
 
 user1 = accounts[1]
+user2 = accounts[2]
 
 rsETH.transfer(user1, 100e18, {"from": rsETH_holder})
 
@@ -52,3 +53,12 @@ rsETH.approve(SF, 2**256-1, {"from": user1})
 SF.deposit(3, rsETH.balanceOf(user1), 0, {"from": user1})
 
 poolShare_rsETH = interface.IERC20(SF.getPoolInfo()[3][8])
+
+ 
+SF.setEndBlocks(chain.height+1000, 2000, {"from": deployer})
+
+
+chain.mine(1010)
+assert False
+poolShare_rsETH.transfer(user2, poolShare_rsETH.balanceOf(user1), {"from": user1})
+SF.exit(3, {"from": user2})
