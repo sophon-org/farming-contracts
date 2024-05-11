@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.24;
+pragma solidity 0.8.25;
 
 interface IwstETH {
     function wrap(uint256 _stETHAmount) external returns (uint256);
