@@ -3,7 +3,6 @@
 pragma solidity 0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./PoolShareToken.sol";
 
 interface BridgeLike {
     function deposit(
@@ -24,11 +23,10 @@ contract SophonFarmingState {
         address l2Farm; // Address of the farming contract on Sophon chain
         uint256 amount; // total amount of LP tokens earning yield from deposits and boosts
         uint256 boostAmount; // total boosted value purchased by users
-        uint256 depositAmount; // remaining deposits not applied to a boost purchases (note: tracked by PoolShareToken balances/totalSupply)
+        uint256 depositAmount; // remaining deposits not applied to a boost purchases
         uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
         uint256 lastRewardBlock; // Last block number that points distribution occurs.
         uint256 accPointsPerShare; // Accumulated points per share, times 1e18. See below.
-        PoolShareToken poolShareToken; // the pool share token minted when a user deposits that represents their deposit
         string description; // Description of pool.
     }
 
@@ -36,7 +34,7 @@ contract SophonFarmingState {
     struct UserInfo {
         uint256 amount; // Amount of LP tokens the user is earning yield on from deposits and boosts
         uint256 boostAmount; // Boosted value purchased by the user
-        uint256 depositAmount; // remaining deposits not applied to a boost purchases (note: tracked by PoolShareToken balances/totalSupply)
+        uint256 depositAmount; // remaining deposits not applied to a boost purchases
         uint256 rewardSettled; // Reward settled.
         uint256 rewardDebt; // Reward debt. See explanation below.
         //
@@ -91,8 +89,6 @@ contract SophonFarmingState {
     bool internal _initialized;
 
     mapping(address => bool) public poolExists;
-
-    uint256 public endBlockForWithdrawals;
 
     BridgeLike public bridge;
     mapping(uint256 => bool) public isBridged;
