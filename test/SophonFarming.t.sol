@@ -206,7 +206,7 @@ contract SophonFarmingTest is Test {
         // // Deposit sDAI
         // sophonFarming.deposit(3, 1000e18, 0);
 
-        sophonFarming.setEndBlocks(maxUint);
+        sophonFarming.setEndBlocks(maxUint - 1000, 1000);
 
         vm.stopPrank();
     }
@@ -526,7 +526,7 @@ contract SophonFarmingTest is Test {
     function test_Add_RevertWhen_FarmingIsEnded() public {
         vm.startPrank(deployer);
 
-        sophonFarming.setEndBlocks(block.number + 1);
+        sophonFarming.setEndBlocks(block.number + 1, 1);
         vm.roll(block.number + 2);
 
         MockERC20 mock = new MockERC20("Mock", "M", 18);
@@ -563,7 +563,7 @@ contract SophonFarmingTest is Test {
     function test_Set_RevertWhen_FarmingIsEnded() public {
         vm.startPrank(deployer);
 
-        sophonFarming.setEndBlocks(block.number + 1);
+        sophonFarming.setEndBlocks(block.number + 1, 1);
         vm.roll(block.number + 2);
 
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
@@ -578,7 +578,7 @@ contract SophonFarmingTest is Test {
 
         assertEq(sophonFarming.isFarmingEnded(), false);
 
-        sophonFarming.setEndBlocks(block.number + 10);
+        sophonFarming.setEndBlocks(block.number + 10, 1);
         assertEq(sophonFarming.isFarmingEnded(), false);
 
         vm.roll(block.number + 20);
@@ -616,7 +616,7 @@ contract SophonFarmingTest is Test {
         vm.expectRevert(SophonFarming.InvalidStartBlock.selector);
         sophonFarming.setStartBlock(0);
 
-        sophonFarming.setEndBlocks(block.number + 9);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
         vm.expectRevert(SophonFarming.InvalidStartBlock.selector);
         sophonFarming.setStartBlock(block.number + 10);
     }
@@ -636,11 +636,11 @@ contract SophonFarmingTest is Test {
         vm.startPrank(deployer);
 
         newEndBlock = block.number + 10;
-        sophonFarming.setEndBlocks(newEndBlock);
+        sophonFarming.setEndBlocks(newEndBlock, 1);
         assertEq(sophonFarming.endBlock(), newEndBlock);
 
         newEndBlock = 0;
-        sophonFarming.setEndBlocks(newEndBlock);
+        sophonFarming.setEndBlocks(newEndBlock, 1);
         assertEq(sophonFarming.endBlock(), newEndBlock);
     }
 
@@ -649,21 +649,21 @@ contract SophonFarmingTest is Test {
 
         sophonFarming.setStartBlock(block.number + 10);
         vm.expectRevert(SophonFarming.InvalidEndBlock.selector);
-        sophonFarming.setEndBlocks(block.number + 8);
+        sophonFarming.setEndBlocks(block.number + 8, 1);
 
         vm.roll(block.number + 10);
         vm.expectRevert(SophonFarming.InvalidEndBlock.selector);
-        sophonFarming.setEndBlocks(block.number);
+        sophonFarming.setEndBlocks(block.number, 1);
     }
 
     function test_SetEndBlock_RevertWhen_FarmingIsEnded() public {
         vm.startPrank(deployer);
 
-        sophonFarming.setEndBlocks(block.number + 9);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
         vm.roll(block.number + 10);
 
         vm.expectRevert(SophonFarming.FarmingIsEnded.selector);
-        sophonFarming.setEndBlocks(block.number + 15);
+        sophonFarming.setEndBlocks(block.number + 15, 1);
     }
 
     // SET_POINTS_PER_BLOCK FUNCTION /////////////////////////////////////////////////////////////////
@@ -678,7 +678,7 @@ contract SophonFarmingTest is Test {
     function test_SetPointsPerBlock_RevertWhen_IsFarmingEnded() public {
         vm.startPrank(deployer);
 
-        sophonFarming.setEndBlocks(block.number + 9);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
         vm.roll(block.number + 10);
 
         uint256 newPointsPerBlock = 50e18;
@@ -698,7 +698,7 @@ contract SophonFarmingTest is Test {
     function test_SetBoosterMultiplier_RevertWhen_IsFarmingEnded() public {
         vm.startPrank(deployer);
 
-        sophonFarming.setEndBlocks(block.number + 9);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
         vm.roll(block.number + 10);
 
         uint256 newBoosterMultiplier = 3e18;
@@ -710,7 +710,7 @@ contract SophonFarmingTest is Test {
     function test_GetBlockMultiplier() public {
         vm.startPrank(deployer);
         uint256 newEndBlock = block.number + 100;
-        sophonFarming.setEndBlocks(newEndBlock);
+        sophonFarming.setEndBlocks(newEndBlock, 1);
 
         uint256 from = block.number;
         uint256 to = block.number + 10;
@@ -726,7 +726,7 @@ contract SophonFarmingTest is Test {
     function test_MassUpdatePools() public {
         vm.startPrank(deployer);
 
-        sophonFarming.setEndBlocks(block.number + 1);
+        sophonFarming.setEndBlocks(block.number + 1, 1);
         vm.roll(block.number + 3);
 
         sophonFarming.massUpdatePools();
@@ -744,7 +744,7 @@ contract SophonFarmingTest is Test {
     function test_UpdatePool() public {
         vm.startPrank(deployer);
 
-        sophonFarming.setEndBlocks(block.number + 1);
+        sophonFarming.setEndBlocks(block.number + 1, 1);
         vm.roll(block.number + 3);
 
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
@@ -850,7 +850,7 @@ contract SophonFarmingTest is Test {
         vm.assume(boostFraction > 0 && boostFraction <= 10);
 
         vm.prank(deployer);
-        sophonFarming.setEndBlocks(block.number + 9);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
         vm.roll(block.number + 10);
 
         vm.deal(account1, amountToDeposit);
@@ -981,7 +981,7 @@ contract SophonFarmingTest is Test {
         vm.assume(boostFraction > 0 && boostFraction <= 10);
 
         vm.prank(deployer);
-        sophonFarming.setEndBlocks(block.number + 9);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
         vm.roll(block.number + 10);
 
         vm.startPrank(account1);
@@ -1112,7 +1112,7 @@ contract SophonFarmingTest is Test {
         vm.assume(boostFraction > 0 && boostFraction <= 10);
 
         vm.prank(deployer);
-        sophonFarming.setEndBlocks(block.number + 9);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
         vm.roll(block.number + 10);
 
         vm.startPrank(account1);
@@ -1211,7 +1211,7 @@ contract SophonFarmingTest is Test {
         vm.assume(boostFraction > 0 && boostFraction <= 10);
 
         vm.prank(deployer);
-        sophonFarming.setEndBlocks(block.number + 9);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
         vm.roll(block.number + 10);
 
         vm.startPrank(account1);
@@ -1310,7 +1310,7 @@ contract SophonFarmingTest is Test {
         vm.assume(boostFraction > 0 && boostFraction <= 10);
 
         vm.prank(deployer);
-        sophonFarming.setEndBlocks(block.number + 9);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
         vm.roll(block.number + 10);
 
         vm.startPrank(account1);
@@ -1572,7 +1572,7 @@ contract SophonFarmingTest is Test {
         vm.stopPrank();
         vm.startPrank(deployer);
 
-        sophonFarming.setEndBlocks(block.number + 10);
+        sophonFarming.setEndBlocks(block.number + 10, 1);
         vm.roll(block.number + 12);
 
         sophonFarming.bridgePool(poolId);
@@ -1590,7 +1590,7 @@ contract SophonFarmingTest is Test {
     function test_BridgePool_RevertWhen_BridgeInvalid() public {
         vm.startPrank(deployer);
 
-        sophonFarming.setEndBlocks(block.number + 10);
+        sophonFarming.setEndBlocks(block.number + 10, 1);
         vm.roll(block.number + 12);
 
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
@@ -1625,7 +1625,7 @@ contract SophonFarmingTest is Test {
         vm.stopPrank();
         vm.startPrank(deployer);
 
-        sophonFarming.setEndBlocks(block.number + 10);
+        sophonFarming.setEndBlocks(block.number + 10, 1);
         vm.roll(block.number + 12);
 
         sophonFarming.bridgePool(poolId);
@@ -1674,7 +1674,7 @@ contract SophonFarmingTest is Test {
 
     function test_IncreaseBoost_RevertWhen_FarmingIsEnded() public {
         vm.prank(deployer);
-        sophonFarming.setEndBlocks(block.number + 9);
+        sophonFarming.setEndBlocks(block.number + 9, 1);
         vm.roll(block.number + 10);
 
         vm.startPrank(account1);
