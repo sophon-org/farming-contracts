@@ -35,7 +35,7 @@ SFProxy = SophonFarmingProxy.deploy(SFImpl, {"from": deployer})
 SF = interface.ISophonFarming(SFProxy)
 
 SF.initialize(wstETHAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier, {'from': deployer})
-
+SF.setEndBlocks(chain.height+10000, 2000, {"from": deployer})
 
 
 # testing rsETH
@@ -51,14 +51,22 @@ rsETH.transfer(user1, 100e18, {"from": rsETH_holder})
 
 rsETH.approve(SF, 2**256-1, {"from": user1})
 SF.deposit(3, rsETH.balanceOf(user1), 0, {"from": user1})
-
 poolShare_rsETH = interface.IERC20(SF.getPoolInfo()[3][8])
+assert False
+
 
  
-SF.setEndBlocks(chain.height+1000, 2000, {"from": deployer})
 
 
-chain.mine(1010)
+
+chain.mine(5000)
 assert False
-poolShare_rsETH.transfer(user2, poolShare_rsETH.balanceOf(user1), {"from": user1})
+poolShare_rsETH.transfer(user2, poolShare_rsETH.balanceOf(user1)/2, {"from": user1})
 SF.exit(3, {"from": user2})
+
+
+# increase boost
+SF.increaseBoost(3, 50000000000000000000/2, {"from": user1})
+
+# end farming
+chain.mine(SF.endBlock()-chain.height)
