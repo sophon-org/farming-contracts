@@ -24,6 +24,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     event WithdrawProceeds(uint256 indexed pid, uint256 amount);
     event Bridge(address indexed user, uint256 indexed pid, uint256 amount);
 
+    error PoolExists();
     error AlreadyInitialized();
     error NotFound(address lpToken);
     error FarmingIsStarted();
@@ -47,14 +48,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     address public immutable eETHLiquidityPool;
     address public immutable weETH;
 
-    modifier nonDuplicated(address _lpToken) {
-        require(!poolExists[_lpToken], "pool exists");
-        _;
-    }
-
-    function poolLength() external view returns (uint256) {
-        return poolInfo.length;
-    }
 
     constructor(address[8] memory tokens_) {
         dai = tokens_[0];
@@ -110,7 +103,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
-    function add(uint256 _allocPoint, address _lpToken, string memory _description, bool _withUpdate) public onlyOwner nonDuplicated(_lpToken) returns (uint256) {
+    function add(uint256 _allocPoint, address _lpToken, string memory _description, bool _withUpdate) public onlyOwner returns (uint256) {
+        if (poolExists[_lpToken]) {
+            revert PoolExists();
+        }
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -160,6 +156,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (getBlockNumber() < pool.lastRewardBlock) {
             pool.lastRewardBlock = startBlock;
         }
+    }
+
+    function poolLength() external view returns (uint256) {
+        return poolInfo.length;
     }
 
     function isFarmingEnded() public view returns (bool) {
