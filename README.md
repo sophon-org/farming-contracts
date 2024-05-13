@@ -33,7 +33,6 @@ forge coverage --report lcov && \
 lcov --remove lcov.info -o lcov.info \
 'contracts/mocks/*' \
 'contracts/farm/test/*' \
-'contracts/zap/*' \
 'test/*' \
 && genhtml -o report --branch-coverage lcov.info
 ```

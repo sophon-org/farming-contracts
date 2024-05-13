@@ -58,6 +58,7 @@ contract SophonFarmingTest is Test {
 
     error Unauthorized();
     error OwnableUnauthorizedAccount(address account);
+    error InsufficientBalance();
 
     // Helper functions
     function StETHRate(uint256 amount) internal pure returns (uint256) {
@@ -1693,8 +1694,7 @@ contract SophonFarmingTest is Test {
         assertEq(userInfo.rewardSettled, 0);
         assertEq(userInfo.rewardDebt, 0);
 
-        // vm.expectRevert(abi.encodeWithSelector(SophonFarming.BoostTooHigh.selector, wsthDepositedAmount));
-        vm.expectRevert("insufficient-balance");
+        vm.expectRevert(InsufficientBalance.selector);
         sophonFarming.increaseBoost(poolId, wsthDepositedAmount * 2);
     }
 
