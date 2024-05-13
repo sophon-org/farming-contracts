@@ -171,6 +171,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
     }
 
+    function isWithdrawPeriodEnded() public view returns (bool) {
+        uint256 _endBlockForWithdrawals = endBlockForWithdrawals;
+        if (_endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     function setBridge(BridgeLike _bridge) public onlyOwner {
         bridge = _bridge;
     }
@@ -189,7 +198,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         startBlock = _startBlock;
     }
 
-    function setEndBlocks(uint256 _endBlock) public onlyOwner {
+    function setEndBlocks(uint256 _endBlock, uint256 _withdrawalBlocks) public onlyOwner {
+        uint256 _endBlockForWithdrawals;
         if (_endBlock != 0) {
             if (_endBlock <= startBlock || getBlockNumber() > _endBlock) {
                 revert InvalidEndBlock();
@@ -197,9 +207,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             if (isFarmingEnded()) {
                 revert FarmingIsEnded();
             }
+            _endBlockForWithdrawals = _endBlock + _withdrawalBlocks;
+        } else {
+            // withdrawal blocks needs an endBlock
+            _endBlockForWithdrawals = 0;
         }
         massUpdatePools();
         endBlock = _endBlock;
+        endBlockForWithdrawals = _endBlockForWithdrawals;
     }
 
     function setPointsPerBlock(uint256 _pointsPerBlock) public onlyOwner {
@@ -448,10 +463,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     // Withdraw LP tokens from SophonFarming and accept a slash on points
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external {
-        if (isFarmingEnded()) {
-            revert FarmingIsEnded();
-        }
-        if (_withdrawAmount == 0) {
+        if (isWithdrawPeriodEnded() || _withdrawAmount == 0) {
             revert InvalidWithdraw();
         }
 
@@ -497,7 +509,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     // permissionless function to allow anyone to bridge during the correct period
     function bridgePool(uint256 _pid) external {
-        if (!isFarmingEnded() || isBridged[_pid]) {
+        if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
         }
 

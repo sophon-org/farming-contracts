@@ -90,6 +90,8 @@ contract SophonFarmingState {
 
     mapping(address => bool) public poolExists;
 
+    uint256 public endBlockForWithdrawals;
+
     BridgeLike public bridge;
     mapping(uint256 => bool) public isBridged;
 }
