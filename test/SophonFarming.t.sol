@@ -1380,7 +1380,7 @@ contract SophonFarmingTest is Test {
         assertEq(userInfo.rewardDebt, 0);
     }
 
-    // function testFuzz_DepositDai_NotBoostedWithdraw(uint256 amountToDeposit) public {
+    // function testFuzz_DepositDai_NotBoostedWithdraw(uint256 amountToDeposit, uint256 fractionToWithdraw) public {
     //     vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
 
     //     deal(address(dai), account1, amountToDeposit);
@@ -1403,7 +1403,7 @@ contract SophonFarmingTest is Test {
     //     vm.roll(block.number + 11);
 
     //     vm.startPrank(account1);
-    //     sophonFarming.exit(poolId);
+    //     sophonFarming.withdraw(poolId, amountToDeposit);
 
     //     SophonFarmingState.UserInfo memory finalUserInfo;
     //     (
@@ -1597,6 +1597,42 @@ contract SophonFarmingTest is Test {
 
         vm.expectRevert(SophonFarming.BridgeInvalid.selector);
         sophonFarming.bridgePool(poolId);
+    }
+
+    // REVERT_FAILED_BRIDGE FUNCTION /////////////////////////////////////////////////////////////////
+    function test_RevertFailedBridge() public {
+        vm.startPrank(deployer);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        MockBridge bridge = new MockBridge();
+        sophonFarming.setBridge(bridge);
+
+        sophonFarming.setBridgeForPool(poolId, address(0xb));
+
+        vm.stopPrank();
+        vm.startPrank(account1);
+
+        uint256 amountToDeposit = 1e18;
+        vm.deal(account1, amountToDeposit);
+        weth.deposit{value: amountToDeposit}();
+        assertEq(weth.balanceOf(account1), amountToDeposit);
+
+        weth.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositWeth(amountToDeposit, 0, SophonFarmingState.PredefinedPool.wstETH);
+        assertEq(weth.balanceOf(account1), 0);
+
+        vm.stopPrank();
+        vm.startPrank(deployer);
+
+        sophonFarming.setEndBlocks(block.number + 10);
+        vm.roll(block.number + 12);
+
+        sophonFarming.bridgePool(poolId);
+        assertEq(sophonFarming.isBridged(poolId), true);
+
+        sophonFarming.revertFailedBridge(poolId);
+        assertEq(sophonFarming.isBridged(poolId), false);
     }
 
     // INCREASE_BOOST FUNCTION /////////////////////////////////////////////////////////////////
