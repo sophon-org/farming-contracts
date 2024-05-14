@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import pytest
-from brownie import network, Contract, reverts
+from brownie import network, Contract, reverts, chain
 
 @pytest.fixture(scope="module")
 def DAI(interface):
@@ -99,12 +99,93 @@ def test_SF_deposit_DAI(SF, DAI, sDAI, accounts, interface):
     
     interface.IsDAI(sDAI).redeem(sDAI.balanceOf(user1), user1, user1, {"from": user1})
     assert DAI.balanceOf(user1) > amount # due to interest rate on sDAI
-    assert False
+    assert True
 
-def test_SF_deposits_sDAI(SF, sDAI, accounts, interface):
-    assert False
+def test_SF_deposits_sDAI(SF, DAI, sDAI, accounts, interface):
+    holder = "0x0f1DfeF1a40557d279d0de6E49aB306891A638b8"
+    user1 = accounts[1]
+    amount = 10000e18
+    sDAI.transfer(user1, amount, {"from": holder})
+    sDAI.approve(SF, 2**256-1, {"from": user1})
+    
+    SF.deposit(PredefinedPool.sDAI, amount, 0, {"from": user1})
+    userInfo = SF.userInfo(0, user1)
+    SF.withdraw(0, userInfo[0], {"from": user1})
+    interface.IsDAI(sDAI).redeem(sDAI.balanceOf(user1), user1, user1, {"from": user1})
+    assert DAI.balanceOf(user1) > amount # due to interest rate on sDAI
+    
+    assert True
 
-def test_SF_deposit_WETH(SF, WETH, accounts, interface):
+class PredefinedPool:
+    sDAI = 0
+    wstETH = 1
+    weETH = 2
+
+
+
+def test_SF_deposit_WETH_wstETH(SF, WETH, wstETH, stETH, accounts, interface, chain):
+    holder = "0x8EB8a3b98659Cce290402893d0123abb75E3ab28"
+    user1 = accounts[1]
+    amount = 100e18
+    WETH.transfer(user1, amount, {"from": holder})
+    WETH.approve(SF, 2**256-1, {"from": user1})
+
+    SF.depositWeth(amount, 0, PredefinedPool.wstETH, {"from": user1})
+    userInfo = SF.userInfo(PredefinedPool.wstETH, user1)
+    assert wstETH.balanceOf(SF) == userInfo[0]
+
+    SF.withdraw(PredefinedPool.wstETH, userInfo[0], {"from": user1})
+    assert wstETH.balanceOf(SF) == 0
+
+    interface.IwstETH(wstETH).unwrap(wstETH.balanceOf(user1), {"from": user1})
+
+    assert stETH.balanceOf(user1) >  (int(amount) - 6) # due to interest rate on wstETH, also 1-2 wei bug
+    
+    assert True
+    
+def test_SF_deposit_WETH_eeETH(SF, WETH, wstETH, stETH, weETH, eETH, accounts, interface, chain):
+    holder = "0x8EB8a3b98659Cce290402893d0123abb75E3ab28"
+    user1 = accounts[1]
+    amount = 100e18
+    WETH.transfer(user1, amount, {"from": holder})
+    WETH.approve(SF, 2**256-1, {"from": user1})
+
+    SF.depositWeth(amount, 0, PredefinedPool.weETH, {"from": user1})
+    userInfo = SF.userInfo(PredefinedPool.weETH, user1)
+    assert weETH.balanceOf(SF) == userInfo[0]
+
+    SF.withdraw(PredefinedPool.weETH, userInfo[0], {"from": user1})
+    assert weETH.balanceOf(SF) == 0
+
+    interface.IwstETH(weETH).unwrap(weETH.balanceOf(user1), {"from": user1})
+    
+    
+    assert True
+    
+def test_SF_deposit_WETH_stETH(SF, WETH, wstETH, stETH, accounts, interface, chain):
+    holder = "0x18709E89BD403F470088aBDAcEbE86CC60dda12e"
+    user1 = accounts[1]
+    amount = 100e18
+    stETH.transfer(user1, amount, {"from": holder})
+    stETH.approve(SF, 2**256-1, {"from": user1})
+
+    SF.depositStEth(amount, 0, {"from": user1})
+    userInfo = SF.userInfo(PredefinedPool.wstETH, user1)
+    assert wstETH.balanceOf(SF) == userInfo[0]
+
+    SF.withdraw(PredefinedPool.wstETH, userInfo[0], {"from": user1})
+    assert wstETH.balanceOf(SF) == 0
+
+    interface.IwstETH(wstETH).unwrap(wstETH.balanceOf(user1), {"from": user1})
+
+    assert stETH.balanceOf(user1) >  (int(amount) - 6) # due to interest rate on wstETH, also 1-2 wei bug
+    
+    assert True
+    
+def test_SF_deposit_WETH_weETH(SF, WETH, wstETH, accounts, interface):
+    
+    
+    
     assert False
     
 def test_SF_deposit_stETH(SF, stETH, accounts, interface):
