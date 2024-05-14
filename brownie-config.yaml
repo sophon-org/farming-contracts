@@ -11,7 +11,7 @@ networks:
     development:
         gas_limit: max
         gas_buffer: 1
-        gas_price: 0
+        gas_price: auto
         max_fee: null
         priority_fee: null
         reverting_tx_gas_limit: max
