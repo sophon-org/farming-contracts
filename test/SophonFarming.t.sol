@@ -1380,80 +1380,6 @@ contract SophonFarmingTest is Test {
         assertEq(userInfo.rewardDebt, 0);
     }
 
-    // function testFuzz_DepositDai_NotBoostedWithdraw(uint256 amountToDeposit, uint256 fractionToWithdraw) public {
-    //     vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-
-    //     deal(address(dai), account1, amountToDeposit);
-    //     assertEq(dai.balanceOf(account1), amountToDeposit);
-
-    //     uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
-
-    //     vm.startPrank(account1);
-    //     dai.approve(address(sophonFarming), amountToDeposit);
-    //     sophonFarming.depositDai(amountToDeposit, 0);
-    //     assertEq(dai.balanceOf(account1), 0);
-    //     vm.stopPrank();
-
-    //     SophonFarmingState.UserInfo memory userInfo;
-    //     (userInfo.amount, userInfo.boostAmount, userInfo.depositAmount, userInfo.rewardSettled, userInfo.rewardDebt) =
-    //         sophonFarming.userInfo(poolId, account1);
-
-    //     vm.prank(deployer);
-    //     sophonFarming.setEndBlocks(block.number + 10);
-    //     vm.roll(block.number + 11);
-
-    //     vm.startPrank(account1);
-    //     sophonFarming.withdraw(poolId, amountToDeposit);
-
-    //     SophonFarmingState.UserInfo memory finalUserInfo;
-    //     (
-    //         finalUserInfo.amount,
-    //         finalUserInfo.boostAmount,
-    //         finalUserInfo.depositAmount,
-    //         finalUserInfo.rewardSettled,
-    //         finalUserInfo.rewardDebt
-    //     ) = sophonFarming.userInfo(poolId, account1);
-
-    //     SophonFarmingState.PoolInfo[] memory PoolInfo;
-    //     PoolInfo = sophonFarming.getPoolInfo();
-
-    //     assertEq(finalUserInfo.amount, 0);
-    //     assertEq(finalUserInfo.boostAmount, 0);
-    //     assertEq(userInfo.depositAmount, 0);
-    //     // Slash on points
-    //     assertEq(
-    //         finalUserInfo.rewardSettled,
-    //         (userInfo.amount * PoolInfo[poolId].accPointsPerShare / 1e18 + userInfo.rewardSettled - userInfo.rewardDebt)
-    //             / 2
-    //     );
-    //     assertEq(finalUserInfo.rewardDebt, 0);
-
-    //     assertEq(sDAI.balanceOf(account1), sDAI.convertToShares(amountToDeposit));
-    // }
-
-    // function testFuzz_DepositDai_RevertWhen_NotBoostedWithdraw_ExitNotAllowed(uint256 amountToDeposit) public {
-    //     vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-
-    //     deal(address(dai), account1, amountToDeposit);
-    //     assertEq(dai.balanceOf(account1), amountToDeposit);
-
-    //     uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
-
-    //     vm.startPrank(account1);
-    //     dai.approve(address(sophonFarming), amountToDeposit);
-    //     sophonFarming.depositDai(amountToDeposit, 0);
-    //     assertEq(dai.balanceOf(account1), 0);
-    //     vm.stopPrank();
-
-    //     vm.prank(deployer);
-    //     sophonFarming.setEndBlocks(block.number + 10);
-    //     vm.roll(block.number + 20);
-
-    //     vm.startPrank(account1);
-    //     vm.expectRevert(SophonFarming.ExitNotAllowed.selector);
-    //     sophonFarming.exit(poolId);
-    // }
-
     function testFuzz_DepositDai_BoostedDeposit(uint256 amountToDeposit, uint256 boostFraction) public {
         vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
         vm.assume(boostFraction > 0 && boostFraction < 5);
@@ -1490,61 +1416,231 @@ contract SophonFarmingTest is Test {
         assertEq(userInfo.rewardDebt, 0);
     }
 
-    // function testFuzz_DepositDai_BoostedWithdraw(uint256 amountToDeposit, uint256 boostFraction) public {
-    //     vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-    //     vm.assume(boostFraction > 0 && boostFraction < 5);
+    // WITHDRAW FUNCTION /////////////////////////////////////////////////////////////////
+    function testFuzz_DepositDai_NotBoostedWithdraw(uint256 amountToDeposit, uint256 fractionToWithdraw) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        vm.assume(fractionToWithdraw > 0 && fractionToWithdraw <= 10);
 
-    //     deal(address(dai), account1, amountToDeposit);
-    //     assertEq(dai.balanceOf(account1), amountToDeposit);
+        deal(address(dai), account1, amountToDeposit);
+        assertEq(dai.balanceOf(account1), amountToDeposit);
 
-    //     uint256 amountToDepositBoost = amountToDeposit / boostFraction;
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
+        uint256 depositAmount = sDAI.convertToShares(amountToDeposit);
+        uint256 withdrawAmount = depositAmount / fractionToWithdraw;
+        uint256 blocks = 10;
 
-    //     vm.startPrank(account1);
-    //     dai.approve(address(sophonFarming), amountToDeposit);
-    //     sophonFarming.depositDai(amountToDeposit, amountToDepositBoost);
-    //     assertEq(dai.balanceOf(account1), 0);
+        vm.startPrank(account1);
+        dai.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositDai(amountToDeposit, 0);
+        assertEq(dai.balanceOf(account1), 0);
+        vm.stopPrank();
 
-    //     uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
+        vm.prank(deployer);
+        sophonFarming.setEndBlocks(block.number + blocks, 1);
+        vm.roll(block.number + blocks + 1);
 
-    //     vm.stopPrank();
+        address[] memory accounts = new address[](1);
+        accounts[0] = account1;
 
-    //     SophonFarmingState.UserInfo memory userInfo;
-    //     (userInfo.amount, userInfo.boostAmount, userInfo.depositAmount, userInfo.rewardSettled, userInfo.rewardDebt) =
-    //         sophonFarming.userInfo(poolId, account1);
+        SophonFarmingState.UserInfo[][] memory userInfo =
+            new SophonFarmingState.UserInfo[][](1);
+        userInfo = sophonFarming.getUserInfo(accounts);
 
-    //     vm.prank(deployer);
-    //     sophonFarming.setEndBlocks(block.number + 10);
-    //     vm.roll(block.number + 11);
+        vm.startPrank(account1);
+        sophonFarming.withdraw(poolId, withdrawAmount);
 
-    //     vm.startPrank(account1);
-    //     sophonFarming.exit(poolId);
+        SophonFarmingState.UserInfo[][] memory finalUserInfo =
+            new SophonFarmingState.UserInfo[][](1);
+        finalUserInfo = sophonFarming.getUserInfo(accounts);
 
-    //     SophonFarmingState.UserInfo memory finalUserInfo;
-    //     (
-    //         finalUserInfo.amount,
-    //         finalUserInfo.boostAmount,
-    //         finalUserInfo.depositAmount,
-    //         finalUserInfo.rewardSettled,
-    //         finalUserInfo.rewardDebt
-    //     ) = sophonFarming.userInfo(poolId, account1);
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+        PoolInfo = sophonFarming.getPoolInfo();
 
-    //     SophonFarmingState.PoolInfo[] memory PoolInfo;
-    //     PoolInfo = sophonFarming.getPoolInfo();
+        uint256 rewardSettled = depositAmount * PoolInfo[poolId].accPointsPerShare / 1e18 * (depositAmount - withdrawAmount) / depositAmount;
+        uint256 rewardDebt = depositAmount * (depositAmount - withdrawAmount) / depositAmount * PoolInfo[poolId].accPointsPerShare / 1e18;
 
-    //     assertEq(finalUserInfo.amount, 0);
-    //     assertEq(finalUserInfo.boostAmount, 0);
-    //     assertEq(userInfo.depositAmount, 0);
-    //     // Slash on points
-    //     assertEq(
-    //         finalUserInfo.rewardSettled,
-    //         (userInfo.amount * PoolInfo[poolId].accPointsPerShare / 1e18 + userInfo.rewardSettled - userInfo.rewardDebt)
-    //             / 2
-    //     );
-    //     assertEq(finalUserInfo.rewardDebt, 0);
+        assertEq(finalUserInfo[0][poolId].amount, depositAmount - withdrawAmount);
+        assertEq(finalUserInfo[0][poolId].boostAmount, 0);
+        assertEq(finalUserInfo[0][poolId].depositAmount, depositAmount - withdrawAmount);
+        assertEq(finalUserInfo[0][poolId].rewardSettled, rewardSettled);
+        assertEq(finalUserInfo[0][poolId].rewardDebt, rewardDebt);
 
-    //     // Can have 1 wei of difference cause of rounding
-    //     assertApproxEqAbs(sDAI.balanceOf(account1), sDAI.convertToShares(amountToDeposit - amountToDepositBoost), 1);
-    // }
+        assertEq(sDAI.balanceOf(account1), withdrawAmount);
+    }
+
+    function testFuzz_DepositDai_RevertWhen_NotBoostedWithdraw_InvalidWithdraw(uint256 amountToDeposit) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+
+        deal(address(dai), account1, amountToDeposit);
+        assertEq(dai.balanceOf(account1), amountToDeposit);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
+
+        vm.startPrank(account1);
+        dai.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositDai(amountToDeposit, 0);
+        assertEq(dai.balanceOf(account1), 0);
+        vm.stopPrank();
+
+        vm.prank(deployer);
+        sophonFarming.setEndBlocks(block.number + 10, 10);
+        vm.roll(block.number + 20);
+
+        vm.startPrank(account1);
+        vm.expectRevert(SophonFarming.InvalidWithdraw.selector);
+        sophonFarming.withdraw(poolId, 0);
+
+        vm.roll(block.number + 22);
+        vm.expectRevert(SophonFarming.InvalidWithdraw.selector);
+        sophonFarming.withdraw(poolId, 1);
+    }
+
+    function testFuzz_DepositDai_BoostedWithdraw(uint256 amountToDeposit, uint256 boostFraction, uint256 fractionToWithdraw) public {
+        amountToDeposit = bound(amountToDeposit, 1e6, 1_000_000_000e18);
+        // Do not 100% of the deposit cause we need to withdraw, and boosted cannot be withdrawn.
+        boostFraction = bound(boostFraction, 2, 10);
+        fractionToWithdraw = bound(fractionToWithdraw, 2, 10);
+
+        deal(address(dai), account1, amountToDeposit);
+        assertEq(dai.balanceOf(account1), amountToDeposit);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
+        uint256 amountToDepositBoost = amountToDeposit / boostFraction;
+        uint256 depositAmount = sDAI.convertToShares(amountToDeposit - amountToDepositBoost);
+        uint256 withdrawAmount = depositAmount / fractionToWithdraw;
+        uint256 finalAmountToDepositBoost =
+            amountToDepositBoost * sDAI.convertToShares(amountToDeposit) / amountToDeposit;
+        uint256 blocks = 10;
+
+        vm.startPrank(account1);
+        dai.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositDai(amountToDeposit, amountToDepositBoost);
+        assertEq(dai.balanceOf(account1), 0);
+
+        vm.stopPrank();
+
+        vm.prank(deployer);
+        sophonFarming.setEndBlocks(block.number + blocks, 1);
+        vm.roll(block.number + blocks + 1);
+
+        address[] memory accounts = new address[](1);
+        accounts[0] = account1;
+
+        SophonFarmingState.UserInfo[][] memory userInfo =
+            new SophonFarmingState.UserInfo[][](1);
+        userInfo = sophonFarming.getUserInfo(accounts);
+
+        vm.startPrank(account1);
+        sophonFarming.withdraw(poolId, withdrawAmount);
+
+        SophonFarmingState.UserInfo[][] memory finalUserInfo =
+            new SophonFarmingState.UserInfo[][](1);
+        finalUserInfo = sophonFarming.getUserInfo(accounts);
+
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        uint256 rewardSettled = (userInfo[0][poolId].amount * PoolInfo[poolId].accPointsPerShare / 1e18) * (userInfo[0][poolId].depositAmount - withdrawAmount) / userInfo[0][poolId].depositAmount;
+        uint256 rewardDebt = (userInfo[0][poolId].amount - withdrawAmount) * PoolInfo[poolId].accPointsPerShare / 1e18;
+
+        assertApproxEqAbs(finalUserInfo[0][poolId].amount, depositAmount - withdrawAmount + finalAmountToDepositBoost * sophonFarming.boosterMultiplier() / 1e18, 1);
+        assertEq(finalUserInfo[0][poolId].boostAmount, finalAmountToDepositBoost * sophonFarming.boosterMultiplier() / 1e18);
+        assertApproxEqAbs(finalUserInfo[0][poolId].depositAmount, depositAmount - withdrawAmount, 1);
+        assertEq(finalUserInfo[0][poolId].rewardSettled, rewardSettled);
+        assertEq(finalUserInfo[0][poolId].rewardDebt, rewardDebt);
+
+        assertEq(sDAI.balanceOf(account1), withdrawAmount);
+    }
+
+    function testFuzz_DepositDai_MaxWithdraw(uint256 amountToDeposit) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+
+        deal(address(dai), account1, amountToDeposit);
+        assertEq(dai.balanceOf(account1), amountToDeposit);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
+        uint256 depositAmount = sDAI.convertToShares(amountToDeposit);
+        uint256 withdrawAmount = type(uint256).max;
+        uint256 blocks = 10;
+
+        vm.startPrank(account1);
+        dai.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositDai(amountToDeposit, 0);
+        assertEq(dai.balanceOf(account1), 0);
+        vm.stopPrank();
+
+        vm.prank(deployer);
+        sophonFarming.setEndBlocks(block.number + blocks, 1);
+        vm.roll(block.number + blocks + 1);
+
+        address[] memory accounts = new address[](1);
+        accounts[0] = account1;
+
+        SophonFarmingState.UserInfo[][] memory userInfo =
+            new SophonFarmingState.UserInfo[][](1);
+        userInfo = sophonFarming.getUserInfo(accounts);
+
+        vm.startPrank(account1);
+        sophonFarming.withdraw(poolId, withdrawAmount);
+
+        SophonFarmingState.UserInfo[][] memory finalUserInfo =
+            new SophonFarmingState.UserInfo[][](1);
+        finalUserInfo = sophonFarming.getUserInfo(accounts);
+
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        assertEq(finalUserInfo[0][poolId].amount, 0);
+        assertEq(finalUserInfo[0][poolId].boostAmount, 0);
+        assertEq(finalUserInfo[0][poolId].depositAmount, 0);
+        assertEq(finalUserInfo[0][poolId].rewardSettled, 0);
+        assertEq(finalUserInfo[0][poolId].rewardDebt, 0);
+
+        assertEq(sDAI.balanceOf(account1), depositAmount);
+    }
+
+    function testFuzz_DepositDai_RevertWhen_WithdrawTooHigh(uint256 amountToDeposit) public {
+        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+
+        deal(address(dai), account1, amountToDeposit);
+        assertEq(dai.balanceOf(account1), amountToDeposit);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
+        uint256 depositAmount = sDAI.convertToShares(amountToDeposit);
+        uint256 withdrawAmount = type(uint256).max - 1;
+        uint256 blocks = 10;
+
+        vm.startPrank(account1);
+        dai.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.depositDai(amountToDeposit, 0);
+        assertEq(dai.balanceOf(account1), 0);
+        vm.stopPrank();
+
+        vm.prank(deployer);
+        sophonFarming.setEndBlocks(block.number + blocks, 1);
+        vm.roll(block.number + blocks + 1);
+
+        address[] memory accounts = new address[](1);
+        accounts[0] = account1;
+
+        SophonFarmingState.UserInfo[][] memory userInfo =
+            new SophonFarmingState.UserInfo[][](1);
+        userInfo = sophonFarming.getUserInfo(accounts);
+
+        vm.startPrank(account1);
+        vm.expectRevert(abi.encodeWithSelector(SophonFarming.WithdrawTooHigh.selector, depositAmount));
+        sophonFarming.withdraw(poolId, withdrawAmount);
+    }
+
+    // IS_WITHDRAW_PERIOD_ENDED FUNCTION /////////////////////////////////////////////////////////////////
+    function test_IsWithdrawPeriodEnded() public {
+        vm.startPrank(deployer);
+
+        sophonFarming.setEndBlocks(block.number + 10, 1);
+        vm.roll(block.number + 12);
+
+        assertEq(sophonFarming.isWithdrawPeriodEnded(), true);
+    }
 
     // BRIDGE_POOL FUNCTION /////////////////////////////////////////////////////////////////
     function test_SetBridge() public {
