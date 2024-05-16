@@ -162,7 +162,7 @@ def test_SF_deposit_WETH_eeETH(SF, WETH, wstETH, stETH, weETH, eETH, accounts, i
     
     assert True
     
-def test_SF_deposit_WETH_stETH(SF, WETH, wstETH, stETH, accounts, interface, chain):
+def test_SF_deposit_stETH(SF, WETH, wstETH, stETH, accounts, interface, chain):
     holder = "0x18709E89BD403F470088aBDAcEbE86CC60dda12e"
     user1 = accounts[1]
     amount = 100e18
@@ -182,20 +182,116 @@ def test_SF_deposit_WETH_stETH(SF, WETH, wstETH, stETH, accounts, interface, cha
     
     assert True
     
-def test_SF_deposit_WETH_weETH(SF, WETH, wstETH, accounts, interface):
+def test_SF_deposit_eETH(SF, eETH, weETH, accounts, interface):
     
-    
-    
-    assert False
-    
-def test_SF_deposit_stETH(SF, stETH, accounts, interface):
-    assert False
+    holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
+    user1 = accounts[1]
+    amount = 100e18
+    eETH.transfer(user1, amount, {"from": holder})
+    eETH.approve(SF, 2**256-1, {"from": user1})
 
-def test_SF_deposit_wstETH(SF, wstETH, accounts, interface):
-    assert False
+    SF.depositeEth(amount, 0, {"from": user1})
+    userInfo = SF.userInfo(PredefinedPool.weETH, user1)
+    assert weETH.balanceOf(SF) == userInfo[0]
 
-def test_SF_deposit_eETH(SF, eETH, accounts, interface):
-    assert False
+    SF.withdraw(PredefinedPool.weETH, userInfo[0], {"from": user1})
+    assert weETH.balanceOf(SF) == 0
+
+    interface.IwstETH(weETH).unwrap(weETH.balanceOf(user1), {"from": user1})
+
+    assert eETH.balanceOf(user1) >  (int(amount) - 6) # due to interest rate on wstETH, also 1-2 wei bug
     
-def test_SF_deposit_weETH(SF, weETH, accounts, interface):
+    assert True
+    
+
+def test_SF_deposit_ETH_weETH(SF, weETH, accounts, interface):
+    user1 = accounts[1]
+    amount = 10e18
+    SF.depositEth(0, PredefinedPool.weETH, {"from": user1, "value": amount})
+    userInfo = SF.userInfo(PredefinedPool.weETH, user1)
+    assert weETH.balanceOf(SF) == userInfo[0]
+
+    SF.withdraw(PredefinedPool.weETH, userInfo[0], {"from": user1})
+    assert weETH.balanceOf(SF) == 0
+
+    interface.IwstETH(weETH).unwrap(weETH.balanceOf(user1), {"from": user1})
+
+    assert True
+    
+def test_SF_deposit_ETH_wstETH(SF, wstETH, stETH, accounts, interface):
+    user1 = accounts[1]
+    amount = 10e18
+    SF.depositEth(0, PredefinedPool.wstETH, {"from": user1, "value": amount})
+    
+    userInfo = SF.userInfo(PredefinedPool.wstETH, user1)
+    assert wstETH.balanceOf(SF) == userInfo[0]
+
+    SF.withdraw(PredefinedPool.wstETH, userInfo[0], {"from": user1})
+    assert wstETH.balanceOf(SF) == 0
+
+    interface.IwstETH(wstETH).unwrap(wstETH.balanceOf(user1), {"from": user1})
+
+    assert stETH.balanceOf(user1) >  (int(amount) - 6) # due to interest rate on wstETH, also 1-2 wei bug
+    
+    assert True
+
+def test_SF_deposit_transfer(SF, wstETH, stETH, accounts, interface):
+    user1 = accounts[1]
+    amount = 10e18
+    user1.transfer(SF, amount)
+    userInfo = SF.userInfo(PredefinedPool.wstETH, user1)
+    assert wstETH.balanceOf(SF) == userInfo[0]
+
+    SF.withdraw(PredefinedPool.wstETH, userInfo[0], {"from": user1})
+    assert wstETH.balanceOf(SF) == 0
+
+    interface.IwstETH(wstETH).unwrap(wstETH.balanceOf(user1), {"from": user1})
+
+    assert stETH.balanceOf(user1) >  (int(amount) - 6) # due to interest rate on wstETH, also 1-2 wei bug
+    
+    assert True
+
+def test_SF_upgrade(SF, SophonFarming, accounts, interface):
+    
+    deployer = accounts[0]
+
+    weth                = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    stETH               = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+    wstETH              = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+    wstETHAllocPoint    = 20000
+    eETH                = "0x35fA164735182de50811E8e2E824cFb9B6118ac2"
+    eETHLiquidityPool   = "0x308861A430be4cce5502d0A12724771Fc6DaF216"
+    weETH               = "0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee"
+    dai                 = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+    sDAI                = "0x83F20F44975D03b1b09e64809B757c47f942BEeA"
+
+    args = [
+        dai,
+        sDAI,
+        weth,
+        stETH,
+        wstETH,
+        eETH,
+        eETHLiquidityPool,
+        weETH
+    ]
+
+    SFImpl = SophonFarming.deploy(args, {'from': deployer})
+    
+    SF.replaceImplementation(SFImpl, {'from': deployer})
+    SFImpl.becomeImplementation(SF, {'from': deployer})
+    
+    
+    assert True
+    
+def test_SF_reward_logic(SF, accounts, interface):
+    
+    user1 = accounts[1]
+    user2 = accounts[2]
+    amount = 10e18
+    user1.transfer(SF, amount)
+    user2.transfer(SF, amount/2)
+    userInfo1 = SF.userInfo(PredefinedPool.wstETH, user1)
+    userInfo2 = SF.userInfo(PredefinedPool.wstETH, user2)
+    
     assert False

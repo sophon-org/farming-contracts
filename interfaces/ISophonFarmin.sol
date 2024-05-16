@@ -63,6 +63,7 @@ interface ISophonFarming {
     function depositDai(uint256 _amount, uint256 _boostAmount) external;
     function depositStEth(uint256 _amount, uint256 _boostAmount) external;
     function depositEth(uint256 _boostAmount, PredefinedPool predefinedPool) external payable;
+    function depositeEth(uint256 _amount, uint256 _boostAmount) external;
     function depositWeth(uint256 _amount, uint256 _boostAmount, PredefinedPool predefinedPool) external;
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external;
     function bridgePool(uint256 _pid) external;
@@ -73,6 +74,7 @@ interface ISophonFarming {
     function getOptimizedUserInfo(address[] memory _users) external view returns (uint256[4][][] memory);
     function getUserInfo(address[] memory _users) external view returns (UserInfo[][] memory);
     function getPendingPoints(address[] memory _users) external view returns (uint256[][] memory);
+    function getBlockMultiplier(uint256 _from, uint256 _to) external view returns (uint256);
 
 
     function typeToId(PredefinedPool poolType) external view returns (uint256);
@@ -89,4 +91,16 @@ interface ISophonFarming {
     function bridge() external view returns (address);
     function isBridged(uint256 poolId) external view returns (bool);
 
+    
+    
+    function pendingOwner() external view returns (address);
+    function transferOwnership(address newOwner) external;
+    function acceptOwnership() external;
+    function owner() external view returns (address);
+    // onlyOwner
+    function replaceImplementation(address impl_) external;
+    function becomeImplementation(address proxy) external;
+    function pendingImplementation() external returns(address);
+
+    
 }
