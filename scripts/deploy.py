@@ -152,8 +152,8 @@ def createMockSetup(deployTokens = False):
 
     acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = getMocks()
 
-    farm.add(10000, mock0, "mock0", True, {"from": acct})
-    farm.add(30000, mock1, "mock1", True, {"from": acct})
+    farm.add(10000, mock0, "mock0", "mock0", True, {"from": acct})
+    farm.add(30000, mock1, "mock1", "mock1", True, {"from": acct})
 
 
     ## Approvals
@@ -263,8 +263,8 @@ def testMainnetOnFork():
 
     acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = getMocks()
 
-    farm.add(10000, mock0, "mock0", True, {"from": acct})
-    farm.add(30000, mock1, "mock1", True, {"from": acct})
+    farm.add(10000, mock0, "mock0", "mock0", True, {"from": acct})
+    farm.add(30000, mock1, "mock1", "mock1", True, {"from": acct})
 
 
     ## Approvals
