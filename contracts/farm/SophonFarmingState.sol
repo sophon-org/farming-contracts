@@ -51,14 +51,9 @@ contract SophonFarmingState {
     }
 
     enum PredefinedPool {
-        sDAI,           // MakerDAO (sDAI)
-        wstETH,         // Lido (wstETH)
-        weETH,          // ether.fi (weETH)
-        ezETH,          // Renzo (ezETH)
-        rsETH,          // Kelp Dao (rsETH)
-        rswETH,         // Swell (rswETH)
-        uniETH,         // Bedrock (uniETH)
-        pufETH          // Puffer (pufETH)
+        sDAI,          // MakerDAO (sDAI)
+        wstETH,        // Lido (wstETH)
+        weETH          // ether.fi (weETH)
     }
 
     mapping(PredefinedPool => uint256) public typeToId;
