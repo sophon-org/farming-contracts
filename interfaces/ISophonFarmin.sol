@@ -5,24 +5,36 @@ pragma solidity 0.8.25;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ISophonFarming {
+    // Info of each pool.
     struct PoolInfo {
-        IERC20 lpToken;
-        address l2Farm;
-        uint256 amount;
-        uint256 boostAmount;
-        uint256 depositAmount;
-        uint256 allocPoint;
-        uint256 lastRewardBlock;
-        uint256 accPointsPerShare;
-        string description;
+        IERC20 lpToken; // Address of LP token contract.
+        address l2Farm; // Address of the farming contract on Sophon chain
+        uint256 amount; // total amount of LP tokens earning yield from deposits and boosts
+        uint256 boostAmount; // total boosted value purchased by users
+        uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
+        uint256 lastRewardBlock; // Last block number that points distribution occurs.
+        uint256 accPointsPerShare; // Accumulated points per share, times 1e18. See below.
+        address poolShareToken; // the pool share token minted when a user deposits that represents their deposit
+        string description; // Description of pool.
     }
 
+    // Info of each user.
     struct UserInfo {
-        uint256 amount;
-        uint256 boostAmount;
-        uint256 depositAmount;
-        uint256 rewardSettled;
-        uint256 rewardDebt;
+        uint256 amount; // Amount of LP tokens the user is earning yield on from deposits and boosts
+        uint256 boostAmount; // Boosted value purchased by the user
+        uint256 rewardSettled; // Reward settled.
+        uint256 rewardDebt; // Reward debt. See explanation below.
+        //
+        // We do some fancy math here. Basically, any point in time, the amount of points
+        // entitled to a user but is pending to be distributed is:
+        //
+        //   pending reward = (user.amount * pool.accPointsPerShare) - user.rewardDebt
+        //
+        // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
+        //   1. The pool's `accPointsPerShare` (and `lastRewardBlock`) gets updated.
+        //   2. User receives the pending reward sent to his/her address.
+        //   3. User's `amount` gets updated.
+        //   4. User's `rewardDebt` gets updated.
     }
 
     enum PredefinedPool {
@@ -53,7 +65,7 @@ interface ISophonFarming {
     function setBridge(address _bridge) external;
     function setBridgeForPool(uint256 _pid, address _l2Farm) external;
     function setStartBlock(uint256 _startBlock) external;
-    function setEndBlocks(uint256 _endBlock, uint256 _withdrawalBlocks) external;
+    function setEndBlock(uint256 _endBlock, uint256 _withdrawalBlocks) external;
     function setPointsPerBlock(uint256 _pointsPerBlock) external;
     function setBoosterMultiplier(uint256 _boosterMultiplier) external;
     function pendingPoints(uint256 _pid, address _user) external view returns (uint256);
@@ -65,7 +77,7 @@ interface ISophonFarming {
     function depositEth(uint256 _boostAmount, PredefinedPool predefinedPool) external payable;
     function depositeEth(uint256 _amount, uint256 _boostAmount) external;
     function depositWeth(uint256 _amount, uint256 _boostAmount, PredefinedPool predefinedPool) external;
-    function withdraw(uint256 _pid, uint256 _withdrawAmount) external;
+    function emergencyWithdraw(uint256 _pid) external;
     function bridgePool(uint256 _pid) external;
     function revertFailedBridge(uint256 _pid) external;
     function increaseBoost(uint256 _pid, uint256 _boostAmount) external;
