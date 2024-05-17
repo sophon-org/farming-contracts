@@ -77,7 +77,7 @@ interface ISophonFarming {
     function depositEth(uint256 _boostAmount, PredefinedPool predefinedPool) external payable;
     function depositeEth(uint256 _amount, uint256 _boostAmount) external;
     function depositWeth(uint256 _amount, uint256 _boostAmount, PredefinedPool predefinedPool) external;
-    function emergencyWithdraw(uint256 _pid) external;
+    function withdraw(uint256 _pid, uint256 _withdrawAmount) external;
     function bridgePool(uint256 _pid) external;
     function revertFailedBridge(uint256 _pid) external;
     function increaseBoost(uint256 _pid, uint256 _boostAmount) external;

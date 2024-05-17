@@ -95,14 +95,14 @@ def test_SF_deposit_DAI(SF, DAI, sDAI, accounts, interface):
         
     SF.depositDai(amount, 0, {"from": user1})
     userInfo = SF.userInfo(0, user1)
-    SF.emergencyWithdraw(0, {"from": user1})
+    SF.withdraw(0, userInfo[0], {"from": user1})
     
     interface.IsDAI(sDAI).redeem(sDAI.balanceOf(user1), user1, user1, {"from": user1})
     assert DAI.balanceOf(user1) > amount # due to interest rate on sDAI
     assert True
 
 def test_SF_deposits_sDAI(SF, DAI, sDAI, accounts, interface):
-    holder = "0x7344E478574aCBe6DaC9dE1077430139E17EEc3D"
+    holder = "0x0f1DfeF1a40557d279d0de6E49aB306891A638b8"
     user1 = accounts[1]
     amount = 10000e18
     sDAI.transfer(user1, amount, {"from": holder})
@@ -110,7 +110,7 @@ def test_SF_deposits_sDAI(SF, DAI, sDAI, accounts, interface):
     
     SF.deposit(PredefinedPool.sDAI, amount, 0, {"from": user1})
     userInfo = SF.userInfo(0, user1)
-    SF.emergencyWithdraw(0, {"from": user1})
+    SF.withdraw(0, userInfo[0], {"from": user1})
     interface.IsDAI(sDAI).redeem(sDAI.balanceOf(user1), user1, user1, {"from": user1})
     assert DAI.balanceOf(user1) > amount # due to interest rate on sDAI
     
@@ -134,7 +134,7 @@ def test_SF_deposit_WETH_wstETH(SF, WETH, wstETH, stETH, accounts, interface, ch
     userInfo = SF.userInfo(PredefinedPool.wstETH, user1)
     assert wstETH.balanceOf(SF) == userInfo[0]
 
-    SF.emergencyWithdraw(PredefinedPool.wstETH, {"from": user1})
+    SF.withdraw(PredefinedPool.wstETH, userInfo[0], {"from": user1})
     assert wstETH.balanceOf(SF) == 0
 
     interface.IwstETH(wstETH).unwrap(wstETH.balanceOf(user1), {"from": user1})
@@ -154,7 +154,7 @@ def test_SF_deposit_WETH_eeETH(SF, WETH, wstETH, stETH, weETH, eETH, accounts, i
     userInfo = SF.userInfo(PredefinedPool.weETH, user1)
     assert weETH.balanceOf(SF) == userInfo[0]
 
-    SF.emergencyWithdraw(PredefinedPool.weETH, {"from": user1})
+    SF.withdraw(PredefinedPool.weETH, userInfo[0], {"from": user1})
     assert weETH.balanceOf(SF) == 0
 
     interface.IwstETH(weETH).unwrap(weETH.balanceOf(user1), {"from": user1})
@@ -173,7 +173,7 @@ def test_SF_deposit_stETH(SF, WETH, wstETH, stETH, accounts, interface, chain):
     userInfo = SF.userInfo(PredefinedPool.wstETH, user1)
     assert wstETH.balanceOf(SF) == userInfo[0]
 
-    SF.emergencyWithdraw(PredefinedPool.wstETH, {"from": user1})
+    SF.withdraw(PredefinedPool.wstETH, userInfo[0], {"from": user1})
     assert wstETH.balanceOf(SF) == 0
 
     interface.IwstETH(wstETH).unwrap(wstETH.balanceOf(user1), {"from": user1})
@@ -194,7 +194,7 @@ def test_SF_deposit_eETH(SF, eETH, weETH, accounts, interface):
     userInfo = SF.userInfo(PredefinedPool.weETH, user1)
     assert weETH.balanceOf(SF) == userInfo[0]
 
-    SF.emergencyWithdraw(PredefinedPool.weETH, {"from": user1})
+    SF.withdraw(PredefinedPool.weETH, userInfo[0], {"from": user1})
     assert weETH.balanceOf(SF) == 0
 
     interface.IwstETH(weETH).unwrap(weETH.balanceOf(user1), {"from": user1})
@@ -211,7 +211,7 @@ def test_SF_deposit_ETH_weETH(SF, weETH, accounts, interface):
     userInfo = SF.userInfo(PredefinedPool.weETH, user1)
     assert weETH.balanceOf(SF) == userInfo[0]
 
-    SF.emergencyWithdraw(PredefinedPool.weETH, {"from": user1})
+    SF.withdraw(PredefinedPool.weETH, userInfo[0], {"from": user1})
     assert weETH.balanceOf(SF) == 0
 
     interface.IwstETH(weETH).unwrap(weETH.balanceOf(user1), {"from": user1})
@@ -226,7 +226,7 @@ def test_SF_deposit_ETH_wstETH(SF, wstETH, stETH, accounts, interface):
     userInfo = SF.userInfo(PredefinedPool.wstETH, user1)
     assert wstETH.balanceOf(SF) == userInfo[0]
 
-    SF.emergencyWithdraw(PredefinedPool.wstETH, {"from": user1})
+    SF.withdraw(PredefinedPool.wstETH, userInfo[0], {"from": user1})
     assert wstETH.balanceOf(SF) == 0
 
     interface.IwstETH(wstETH).unwrap(wstETH.balanceOf(user1), {"from": user1})
@@ -242,7 +242,7 @@ def test_SF_deposit_transfer(SF, wstETH, stETH, accounts, interface):
     userInfo = SF.userInfo(PredefinedPool.wstETH, user1)
     assert wstETH.balanceOf(SF) == userInfo[0]
 
-    SF.emergencyWithdraw(PredefinedPool.wstETH, {"from": user1})
+    SF.withdraw(PredefinedPool.wstETH, userInfo[0], {"from": user1})
     assert wstETH.balanceOf(SF) == 0
 
     interface.IwstETH(wstETH).unwrap(wstETH.balanceOf(user1), {"from": user1})
@@ -290,8 +290,8 @@ def test_SF_reward_logic(SF, accounts, interface):
     user2 = accounts[2]
     amount = 10e18
     user1.transfer(SF, amount)
-    user2.transfer(SF, amount/2)
+    user2.transfer(SF, amount)
     userInfo1 = SF.userInfo(PredefinedPool.wstETH, user1)
-    userInfo2 = SF.userInfo(PredefinedPool.wstETH, user2)
+    userInfo1 = SF.userInfo(PredefinedPool.wstETH, user2)
     
     assert False
