@@ -54,6 +54,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error InvalidBooster();
     error WithdrawNotAllowed();
     error WithdrawTooHigh(uint256 maxAllowed);
+    error WithdrawIsZero();
     error NothingInPool();
     error NoEthSent();
     error BoostTooHigh(uint256 maxAllowed);
@@ -696,8 +697,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _withdrawAmount amount of the withdraw
      */
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external {
-        if (isWithdrawPeriodEnded() || _withdrawAmount == 0) {
+        if (isWithdrawPeriodEnded()) {
             revert WithdrawNotAllowed();
+        }
+        if (_withdrawAmount == 0) {
+            revert WithdrawIsZero();
         }
 
         PoolInfo storage pool = poolInfo[_pid];
