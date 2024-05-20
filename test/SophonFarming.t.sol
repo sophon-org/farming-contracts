@@ -854,8 +854,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositEth_RevertWhen_InvalidDeposit(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 0 && amountToDeposit < 1001);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1, 1001);
+        boostFraction = bound(boostFraction, 1, 10);
 
         vm.deal(account1, amountToDeposit);
         vm.startPrank(account1);
@@ -979,8 +979,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositWeth_RevertWhen_InvalidDeposit(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 0 && amountToDeposit < 1001);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1, 1001);
+        boostFraction = bound(boostFraction, 1, 10);
 
         vm.startPrank(account1);
         vm.deal(account1, amountToDeposit);
