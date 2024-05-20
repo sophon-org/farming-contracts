@@ -102,9 +102,10 @@ def test_SF_deposit_DAI(SF, DAI, sDAI, accounts, interface):
     assert True
 
 def test_SF_deposits_sDAI(SF, DAI, sDAI, accounts, interface):
-    holder = "0x0f1DfeF1a40557d279d0de6E49aB306891A638b8"
+    holder = "0xDEC53aa5b5B6ec2518814061B1EC72f6A26bB5b8"
     user1 = accounts[1]
     amount = 10000e18
+
     sDAI.transfer(user1, amount, {"from": holder})
     sDAI.approve(SF, 2**256-1, {"from": user1})
     
