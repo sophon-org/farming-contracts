@@ -52,6 +52,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error InvalidEndBlock();
     error InvalidDeposit();
     error InvalidBooster();
+    error InvalidPointsPerBlock();
     error WithdrawNotAllowed();
     error WithdrawTooHigh(uint256 maxAllowed);
     error WithdrawIsZero();
@@ -110,6 +111,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert AlreadyInitialized();
         }
 
+        if (_pointsPerBlock < 1e18) {
+            revert InvalidPointsPerBlock();
+        }
         pointsPerBlock = _pointsPerBlock;
 
         if (_startBlock == 0) {
@@ -311,6 +315,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
+        if (_pointsPerBlock < 1e18) {
+            revert InvalidPointsPerBlock();
+        }
+
         massUpdatePools();
         pointsPerBlock = _pointsPerBlock;
     }
