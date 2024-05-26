@@ -510,6 +510,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             _finalAmount = _ethTOstEth(_finalAmount);
         } else if (_predefinedPool == PredefinedPool.weETH) {
             _finalAmount = _ethTOeEth(_finalAmount);
+        } else {
+            revert InvalidDeposit();
         }
 
         _depositPredefinedAsset(_finalAmount, msg.value, _boostAmount, _predefinedPool);
@@ -533,6 +535,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             _finalAmount = _ethTOstEth(_finalAmount);
         } else if (_predefinedPool == PredefinedPool.weETH) {
             _finalAmount = _ethTOeEth(_finalAmount);
+        } else {
+            revert InvalidDeposit();
         }
 
         _depositPredefinedAsset(_finalAmount, _amount, _boostAmount, _predefinedPool);
