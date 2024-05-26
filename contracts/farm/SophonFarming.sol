@@ -131,6 +131,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         poolExists[stETH] = true;
         poolExists[eETH] = true;
 
+        _initialized = true;
+
         // sDAI
         typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI");
         IERC20(dai).approve(sDAI, 2**256-1);
@@ -142,8 +144,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         // weETH
         typeToId[PredefinedPool.weETH] = add(ethAllocPoint_, weETH, "weETH");
         IERC20(eETH).approve(weETH, 2**256-1);
-
-        _initialized = true;
     }
 
     /**
@@ -741,11 +741,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         user.amount = userAmount;
         pool.amount = pool.amount - _withdrawAmount;
 
-        pool.lpToken.safeTransfer(msg.sender, _withdrawAmount);
-
         user.rewardDebt = userAmount *
             pool.accPointsPerShare /
             1e18;
+
+        pool.lpToken.safeTransfer(msg.sender, _withdrawAmount);
 
         emit Withdraw(msg.sender, _pid, _withdrawAmount);
     }
@@ -767,6 +767,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert BridgeInvalid();
         }
 
+        isBridged[_pid] = true;
+
         IERC20 lpToken = pool.lpToken;
         lpToken.approve(address(bridge), depositAmount);
 
@@ -780,8 +782,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             0,                      // _l2TxGasPerPubdataByte
             owner()                 // _refundRecipient
         );
-
-        isBridged[_pid] = true;
 
         emit Bridge(msg.sender, _pid, depositAmount);
     }
