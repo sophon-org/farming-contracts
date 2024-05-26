@@ -132,15 +132,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         poolExists[eETH] = true;
 
         // sDAI
-        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", false);
+        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI");
         IERC20(dai).approve(sDAI, 2**256-1);
 
         // wstETH
-        typeToId[PredefinedPool.wstETH] = add(ethAllocPoint_, wstETH, "wstETH", false);
+        typeToId[PredefinedPool.wstETH] = add(ethAllocPoint_, wstETH, "wstETH");
         IERC20(stETH).approve(wstETH, 2**256-1);
 
         // weETH
-        typeToId[PredefinedPool.weETH] = add(ethAllocPoint_, weETH, "weETH", false);
+        typeToId[PredefinedPool.weETH] = add(ethAllocPoint_, weETH, "weETH");
         IERC20(eETH).approve(weETH, 2**256-1);
 
         _initialized = true;
@@ -151,19 +151,18 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _allocPoint alloc point for new pool
      * @param _lpToken lpToken address
      * @param _description description of new pool
-     * @param _withUpdate True will update accounting for all pools
      * @return uint256 The pid of the newly created asset
      */
-    function add(uint256 _allocPoint, address _lpToken, string memory _description, bool _withUpdate) public onlyOwner returns (uint256) {
+    function add(uint256 _allocPoint, address _lpToken, string memory _description) public onlyOwner returns (uint256) {
         if (poolExists[_lpToken]) {
             revert PoolExists();
         }
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_withUpdate) {
-            massUpdatePools();
-        }
+
+        massUpdatePools();
+
         uint256 lastRewardBlock =
             getBlockNumber() > startBlock ? getBlockNumber() : startBlock;
         totalAllocPoint = totalAllocPoint + _allocPoint;
@@ -194,15 +193,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Updates the given pool's allocation point. Can only be called by the owner.
      * @param _pid The pid to update
      * @param _allocPoint The new alloc point to set for the pool
-     * @param _withUpdate True will update accounting for all pools
      */
-    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
+    function set(uint256 _pid, uint256 _allocPoint) public onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_withUpdate) {
-            massUpdatePools();
-        }
+
+        massUpdatePools();
 
         PoolInfo storage pool = poolInfo[_pid];
         address lpToken = address(pool.lpToken);
