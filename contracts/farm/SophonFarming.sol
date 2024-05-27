@@ -301,13 +301,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _withdrawalBlocks the last block that withdrawals are allowed
      */
     function setEndBlock(uint256 _endBlock, uint256 _withdrawalBlocks) public onlyOwner {
+        if (isFarmingEnded()) {
+            revert FarmingIsEnded();
+        }
         uint256 _endBlockForWithdrawals;
         if (_endBlock != 0) {
             if (_endBlock <= startBlock || getBlockNumber() > _endBlock) {
                 revert InvalidEndBlock();
-            }
-            if (isFarmingEnded()) {
-                revert FarmingIsEnded();
             }
             _endBlockForWithdrawals = _endBlock + _withdrawalBlocks;
         } else {
