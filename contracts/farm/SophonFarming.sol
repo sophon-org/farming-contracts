@@ -53,6 +53,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error InvalidDeposit();
     error InvalidBooster();
     error InvalidPointsPerBlock();
+    error InvalidDecimals();
     error WithdrawNotAllowed();
     error WithdrawTooHigh(uint256 maxAllowed);
     error WithdrawIsZero();
@@ -170,6 +171,19 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         uint256 pid = poolInfo.length;
 
+        uint256 decimals;
+        (bool success, bytes memory data) = _lpToken.call(abi.encodeWithSignature(
+            "decimals()"
+        ));
+        if (success) {
+            (decimals) = abi.decode(data, (uint256));
+            if (decimals > 18) {
+                revert InvalidDecimals();
+            }
+        } else {
+            revert InvalidDecimals();
+        }
+
         poolInfo.push(
             PoolInfo({
                 lpToken: IERC20(_lpToken),
@@ -180,6 +194,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
                 accPointsPerShare: 0,
+                scaleFactor: 10**(18 - decimals),
                 description: _description
             })
         );
@@ -377,7 +392,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
             accPointsPerShare = pointReward *
                 1e18 /
-                lpSupply +
+                lpSupply /
+                pool.scaleFactor +
                 accPointsPerShare;
         }
 
@@ -426,6 +442,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             return;
         }
         uint256 blockMultiplier = _getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
+
         uint256 pointReward =
             blockMultiplier *
             _pointsPerBlock *
@@ -433,7 +450,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             totalAllocPoint;
 
         pool.accPointsPerShare = pointReward /
-            lpSupply +
+            lpSupply /
+            pool.scaleFactor +
             pool.accPointsPerShare;
 
         pool.lastRewardBlock = getBlockNumber();
