@@ -42,6 +42,12 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when the admin withdraws booster proceeds
     event WithdrawProceeds(uint256 indexed pid, uint256 proceeds);
 
+    /// @notice Emitted when the the revertFailedBridge function is called
+    event RevertFailedBridge(uint256 indexed pid);
+
+    /// @notice Emitted when the the updatePool function is called
+    event PoolUpdated(uint256 indexed pid);
+
     error PoolExists();
     error PoolDoesNotExist();
     error AlreadyInitialized();
@@ -455,6 +461,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             pool.accPointsPerShare;
 
         pool.lastRewardBlock = getBlockNumber();
+
+        emit PoolUpdated(_pid);
     }
 
     /**
@@ -812,6 +820,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function revertFailedBridge(uint256 _pid) external onlyOwner {
         isBridged[_pid] = false;
+        emit RevertFailedBridge(_pid);
     }
 
     /**
