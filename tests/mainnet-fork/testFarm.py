@@ -293,6 +293,8 @@ def test_SF_reward_logic(SF, accounts, interface):
     user1.transfer(SF, amount)
     user2.transfer(SF, amount)
     userInfo1 = SF.userInfo(PredefinedPool.wstETH, user1)
-    userInfo1 = SF.userInfo(PredefinedPool.wstETH, user2)
+    userInfo2 = SF.userInfo(PredefinedPool.wstETH, user2)
+    
+    chain.mine(SF.endBlock()-chain.height)
     
     assert False
