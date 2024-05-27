@@ -48,6 +48,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when the the updatePool function is called
     event PoolUpdated(uint256 indexed pid);
 
+    error ZeroAddress();
     error PoolExists();
     error PoolDoesNotExist();
     error AlreadyInitialized();
@@ -119,7 +120,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert AlreadyInitialized();
         }
 
-        if (_pointsPerBlock < 1e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
             revert InvalidPointsPerBlock();
         }
         pointsPerBlock = _pointsPerBlock;
@@ -129,7 +130,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
         startBlock = _startBlock;
 
-        if (_boosterMultiplier < 1e18) {
+        if (_boosterMultiplier < 1e18 || _boosterMultiplier > 10e18) {
             revert InvalidBooster();
         }
         boosterMultiplier = _boosterMultiplier;
@@ -162,6 +163,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @return uint256 The pid of the newly created asset
      */
     function add(uint256 _allocPoint, address _lpToken, string memory _description) public onlyOwner returns (uint256) {
+        if (_lpToken == address(0)) {
+            revert ZeroAddress();
+        }
         if (poolExists[_lpToken]) {
             revert PoolExists();
         }
@@ -275,8 +279,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /**
      * @notice Updates the bridge contract
      */
-    function setBridge(BridgeLike _bridge) public onlyOwner {
-        bridge = _bridge;
+    function setBridge(address _bridge) public onlyOwner {
+        if (_bridge == address(0)) {
+            revert ZeroAddress();
+        }
+        bridge = BridgeLike(_bridge);
     }
 
     /**
@@ -285,6 +292,12 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _l2Farm the l2Farm address
      */
     function setL2FarmForPool(uint256 _pid, address _l2Farm) public onlyOwner {
+        if (_l2Farm == address(0)) {
+            revert ZeroAddress();
+        }
+        if (address(poolInfo[_pid].lpToken) == address(0)) {
+            revert PoolDoesNotExist();
+        }
         poolInfo[_pid].l2Farm = _l2Farm;
     }
 
@@ -334,7 +347,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_pointsPerBlock < 1e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
             revert InvalidPointsPerBlock();
         }
 
@@ -347,7 +360,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _boosterMultiplier booster multiplier to set
      */
     function setBoosterMultiplier(uint256 _boosterMultiplier) public onlyOwner {
-        if (_boosterMultiplier < 1e18) {
+        if (_boosterMultiplier < 1e18 || _boosterMultiplier > 10e18) {
             revert InvalidBooster();
         }
         if (isFarmingEnded()) {
@@ -820,6 +833,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid of the failed bridge to revert
      */
     function revertFailedBridge(uint256 _pid) external onlyOwner {
+        if (address(poolInfo[_pid].lpToken) == address(0)) {
+            revert PoolDoesNotExist();
+        }
         isBridged[_pid] = false;
         emit RevertFailedBridge(_pid);
     }
