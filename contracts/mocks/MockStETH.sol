@@ -44,4 +44,9 @@ contract MockStETH is MockERC20, IstETH {
     function burn(address usr, uint wad) external override {
         revert Unsupported();
     }
+
+    function getSharesByPooledEth(uint256 _ethAmount) external view returns (uint256) {
+        // TODO
+        revert Unsupported();
+    }
 }

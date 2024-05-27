@@ -806,10 +806,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @return uint256 out amount
      */
     function _ethTOstEth(uint256 _amount) internal returns (uint256) {
-        // submit function does not return exact amount of stETH so we need to check balances
-        uint256 balanceBefore = IERC20(stETH).balanceOf(address(this));
-        IstETH(stETH).submit{value: _amount}(address(this));
-        return (IERC20(stETH).balanceOf(address(this)) - balanceBefore);
+        // submit function does not return exact amount of stETH
+        uint256 shares = IstETH(stETH).submit{value: _amount}(address(this));
+        return  IstETH(stETH).getSharesByPooledEth(shares);
     }
 
     /**
@@ -831,7 +830,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function _ethTOeEth(uint256 _amount) internal returns (uint256) {
         // deposit returns exact amount of eETH
-        return IeETHLiquidityPool(eETHLiquidityPool).deposit{value: _amount}(address(this));
+        uint256 shares =  IeETHLiquidityPool(eETHLiquidityPool).deposit{value: _amount}(address(this));
+        return IeETHLiquidityPool(eETHLiquidityPool).amountForShare(shares);
+
     }
 
     /**
