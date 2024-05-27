@@ -184,14 +184,13 @@ def test_SF_deposit_stETH(SF, WETH, wstETH, stETH, accounts, interface, chain):
     assert True
     
 def test_SF_deposit_eETH(SF, eETH, weETH, accounts, interface):
-    
     holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
     user1 = accounts[1]
     amount = 100e18
     eETH.transfer(user1, amount, {"from": holder})
     eETH.approve(SF, 2**256-1, {"from": user1})
 
-    SF.depositeEth(amount, 0, {"from": user1})
+    SF.depositeEth(amount, PredefinedPool.weETH, {"from": user1})
     userInfo = SF.userInfo(PredefinedPool.weETH, user1)
     assert weETH.balanceOf(SF) == userInfo[0]
 
@@ -202,10 +201,10 @@ def test_SF_deposit_eETH(SF, eETH, weETH, accounts, interface):
 
     assert eETH.balanceOf(user1) >  (int(amount) - 6) # due to interest rate on wstETH, also 1-2 wei bug
     
-    assert True
+    assert False
     
 
-def test_SF_deposit_ETH_weETH(SF, weETH, accounts, interface):
+def test_SF_deposit_ETH_weETH(SF, weETH, eETH, accounts, interface):
     user1 = accounts[1]
     amount = 10e18
     SF.depositEth(0, PredefinedPool.weETH, {"from": user1, "value": amount})
@@ -218,6 +217,20 @@ def test_SF_deposit_ETH_weETH(SF, weETH, accounts, interface):
     interface.IwstETH(weETH).unwrap(weETH.balanceOf(user1), {"from": user1})
 
     assert True
+
+def test_SF_deposit_ETH_weETH_eETH_leak(SF, weETH, eETH, accounts, interface):
+    user1 = accounts[1]
+    amount = 10e18
+    SF.depositEth(0, PredefinedPool.weETH, {"from": user1, "value": amount})
+    userInfo = SF.userInfo(PredefinedPool.weETH, user1)
+    assert weETH.balanceOf(SF) == userInfo[0]
+
+    SF.withdraw(PredefinedPool.weETH, userInfo[0], {"from": user1})
+    assert weETH.balanceOf(SF) == 0
+
+    interface.IwstETH(weETH).unwrap(weETH.balanceOf(user1), {"from": user1})
+
+    assert eETH.balanceOf(SF) == 0
     
 def test_SF_deposit_ETH_wstETH(SF, wstETH, stETH, accounts, interface):
     user1 = accounts[1]
