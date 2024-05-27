@@ -181,7 +181,8 @@ def test_SF_deposit_stETH(SF, WETH, wstETH, stETH, accounts, interface, chain):
 
     assert stETH.balanceOf(user1) >  (int(amount) - 6) # due to interest rate on wstETH, also 1-2 wei bug
     
-    assert True
+    # check for leak
+    assert stETH.balanceOf(SF) == 0
     
 def test_SF_deposit_eETH(SF, eETH, weETH, accounts, interface):
     holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
