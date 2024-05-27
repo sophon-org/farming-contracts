@@ -107,13 +107,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     /**
      * @notice Initialize the farm
-     * @param ethAllocPoint_ eth alloc points
+     * @param wstEthAllocPoint_ wstEth alloc points
+     * @param weEthAllocPoint_ weEth alloc points
      * @param sDAIAllocPoint_ sdai alloc points
      * @param _pointsPerBlock points per block
      * @param _startBlock start block
      * @param _boosterMultiplier booster multiplier
      */
-    function initialize(uint256 ethAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) public virtual onlyOwner {
+    function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) public virtual onlyOwner {
         if (_initialized) {
             revert AlreadyInitialized();
         }
@@ -145,11 +146,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         IERC20(dai).approve(sDAI, 2**256-1);
 
         // wstETH
-        typeToId[PredefinedPool.wstETH] = add(ethAllocPoint_, wstETH, "wstETH");
+        typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, wstETH, "wstETH");
         IERC20(stETH).approve(wstETH, 2**256-1);
 
         // weETH
-        typeToId[PredefinedPool.weETH] = add(ethAllocPoint_, weETH, "weETH");
+        typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, weETH, "weETH");
         IERC20(eETH).approve(weETH, 2**256-1);
     }
 

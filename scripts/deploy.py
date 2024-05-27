@@ -115,7 +115,7 @@ def createMockSetup(deployTokens = False):
     if deployTokens == True:
         wstETH = MockWstETH.deploy(stETH, {"from": acct})
         dbSet("mock_wsteth", wstETH.address)
-    wstETHAllocPoint = 20000
+    wstEthAllocPoint = 20000
 
     ## mock eETH
     if deployTokens == True:
@@ -131,6 +131,7 @@ def createMockSetup(deployTokens = False):
     if deployTokens == True:
         weETH = MockWeETH.deploy(eETH, {"from": acct})
         dbSet("mock_weETH", weETH.address)
+    weEthAllocPoint = 20000
 
     ## mock DAI
     if deployTokens == True:
@@ -148,7 +149,7 @@ def createMockSetup(deployTokens = False):
     startBlock = chain.height
     boosterMultiplier = 2e18
 
-    createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, weETH, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
+    createFarm(weth, stETH, wstETH, wstEthAllocPoint, eETH, eETHLiquidityPool, weETH, weEthAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
 
     acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = getMocks()
 
@@ -253,13 +254,14 @@ def testMainnetOnFork():
     sDAI = Contract.from_abi("sDAI", "0x83F20F44975D03b1b09e64809B757c47f942BEeA", MockSDAI.abi)
     dbSet("mock_sdai", sDAI.address)
 
-    wstETHAllocPoint = 20000
+    wstEthAllocPoint = 20000
+    weEthAllocPoint = 20000
     sDAIAllocPoint = 20000
     pointsPerBlock = 25*10**18
     startBlock = chain.height
     boosterMultiplier = 2e18
 
-    createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, weETH, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
+    createFarm(weth, stETH, wstETH, wstEthAllocPoint, eETH, eETHLiquidityPool, weETH, weEthAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
 
     acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = getMocks()
 
@@ -343,7 +345,7 @@ def createMockToken(count=0, force=False):
 
     return mock
 
-def createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, weETH, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier):
+def createFarm(weth, stETH, wstETH, wstEthAllocPoint, eETH, eETHLiquidityPool, weETH, weEthAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier):
     global acct
 
     if "fork" in NETWORK:
@@ -367,7 +369,7 @@ def createFarm(weth, stETH, wstETH, wstETHAllocPoint, eETH, eETHLiquidityPool, w
     farm = Contract.from_abi("farm", proxy.address, SophonContract.abi)
     dbSet("farm", farm.address)
 
-    farm.initialize(wstETHAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier, {'from': acct})
+    farm.initialize(wstEthAllocPoint, weEthAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier, {'from': acct})
 
     return farm
 
