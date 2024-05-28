@@ -298,17 +298,83 @@ def test_SF_upgrade(SF, SophonFarming, accounts, interface):
     
     
     assert True
+
+
+
+     
+def test_SF_reward_logic_fairness(SF, accounts, wstETH, stETH, eETH, weETH, interface):
     
-def test_SF_reward_logic(SF, accounts, interface):
-    
+    from collections import namedtuple
+    UserInfo = namedtuple('UserInfo', ['amount', 'boostAmount', 'depositAmount', 'rewardSettled', 'rewardDebt'])
+
+
     user1 = accounts[1]
     user2 = accounts[2]
+    
     amount = 10e18
+    acc1startblock = chain.height
     user1.transfer(SF, amount)
-    user2.transfer(SF, amount)
     userInfo1 = SF.userInfo(PredefinedPool.wstETH, user1)
+    userInfo1 = UserInfo._make(userInfo1)
+    
+    chain.mine(100)
+
+    SF.withdraw(PredefinedPool.wstETH, userInfo1.depositAmount, {"from": user1})
+    acc1endblock = chain.height
+    
+    
+    # part 2
+    acc2startblock = chain.height
+    user2.transfer(SF, amount)
     userInfo2 = SF.userInfo(PredefinedPool.wstETH, user2)
+    userInfo2 = UserInfo._make(userInfo2)
+    
+    chain.mine(100)
+
+    SF.withdraw(PredefinedPool.wstETH, userInfo2.depositAmount, {"from": user2})
+    acc2endblock = chain.height
     
     chain.mine(SF.endBlock()-chain.height)
     
-    assert False
+    assert abs(SF.pendingPoints(PredefinedPool.wstETH, user1) - SF.pendingPoints(PredefinedPool.wstETH, user2)) <= 1
+
+def test_SF_reward_logic_fairness2(SF, accounts, wstETH, stETH, eETH, weETH, interface):
+    
+    from collections import namedtuple
+    UserInfo = namedtuple('UserInfo', ['amount', 'boostAmount', 'depositAmount', 'rewardSettled', 'rewardDebt'])
+
+
+    user1 = accounts[1]
+    user2 = accounts[2]
+    
+    amount = 10e18
+    acc1startblock = chain.height
+    user1.transfer(SF, amount)
+    userInfo1 = SF.userInfo(PredefinedPool.wstETH, user1)
+    userInfo1 = UserInfo._make(userInfo1)
+    
+    chain.mine(100)
+    
+    acc2startblock = chain.height
+    user2.transfer(SF, amount)
+
+
+    chain.mine(1000)
+    SF.withdraw(PredefinedPool.wstETH, userInfo1.depositAmount, {"from": user1})
+    acc1endblock = chain.height
+
+    
+    # part 2
+
+    userInfo2 = SF.userInfo(PredefinedPool.wstETH, user2)
+    userInfo2 = UserInfo._make(userInfo2)
+    
+    chain.mine(100)
+
+    SF.withdraw(PredefinedPool.wstETH, userInfo2.depositAmount, {"from": user2})
+    acc2endblock = chain.height
+    
+    chain.mine(SF.endBlock()-chain.height)
+    
+    assert abs(SF.pendingPoints(PredefinedPool.wstETH, user1) - SF.pendingPoints(PredefinedPool.wstETH, user2)) <= 1
+    assert True

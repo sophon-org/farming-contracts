@@ -22,6 +22,7 @@ interface ISophonFarming {
     struct UserInfo {
         uint256 amount; // Amount of LP tokens the user is earning yield on from deposits and boosts
         uint256 boostAmount; // Boosted value purchased by the user
+        uint256 depositAmount; // remaining deposits not applied to a boost purchases
         uint256 rewardSettled; // Reward settled.
         uint256 rewardDebt; // Reward debt. See explanation below.
         //
@@ -84,7 +85,6 @@ interface ISophonFarming {
     function withdrawProceeds(uint256 _pid) external;
     function getPoolInfo() external view returns (PoolInfo[] memory);
     function getOptimizedUserInfo(address[] memory _users) external view returns (uint256[4][][] memory);
-    function getUserInfo(address[] memory _users) external view returns (UserInfo[][] memory);
     function getPendingPoints(address[] memory _users) external view returns (uint256[][] memory);
     function getBlockMultiplier(uint256 _from, uint256 _to) external view returns (uint256);
 
