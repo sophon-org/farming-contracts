@@ -471,7 +471,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _boostAmount amount to boost
      */
     function depositStEth(uint256 _amount, uint256 _boostAmount) external {
-        IERC20(stETH).safeTransferFrom(
+        IStETH(stETH).transferSharesFrom(
             msg.sender,
             address(this),
             _amount
@@ -486,7 +486,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _boostAmount amount to boost
      */
     function depositeEth(uint256 _amount, uint256 _boostAmount) external {
-        IStETH(eETH).transferSharesFrom(
+        IERC20(eETH).safeTransferFrom(
             msg.sender,
             address(this),
             _amount
