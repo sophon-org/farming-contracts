@@ -808,7 +808,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     function _ethTOstEth(uint256 _amount) internal returns (uint256) {
         // submit function does not return exact amount of stETH
         uint256 shares = IStETH(stETH).submit{value: _amount}(address(this));
-        return  IStETH(stETH).getSharesByPooledEth(shares);
+        return  IStETH(stETH).getPooledEthByShares(shares);
     }
 
     /**
