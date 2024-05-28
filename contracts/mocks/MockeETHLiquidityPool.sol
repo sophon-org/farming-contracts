@@ -37,4 +37,9 @@ contract MockeETHLiquidityPool is IeETHLiquidityPool {
 
         return returnAmount;
     }
+
+    function amountForShare(uint256 _share) public view returns (uint256) {
+        // TODO
+        revert Unsupported();
+    }
 }
