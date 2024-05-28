@@ -2,9 +2,9 @@
 pragma solidity 0.8.25;
 
 import "./MockERC20.sol";
-import "../farm/interfaces/IstETH.sol";
+import "../farm/interfaces/IStETH.sol";
 
-contract MockStETH is MockERC20, IstETH {
+contract MockStETH is MockERC20, IStETH {
 
     error TransferOutFailed();
     error Unsupported();
@@ -46,6 +46,25 @@ contract MockStETH is MockERC20, IstETH {
     }
 
     function getSharesByPooledEth(uint256 _ethAmount) external view returns (uint256) {
+        // TODO
+        revert Unsupported();
+    }
+
+
+    function getPooledEthByShares(uint256 sharesAmount) external view returns (uint256) {
+        // TODO
+        revert Unsupported();
+    }
+
+    function transferShares(address to, uint256 amount) external {
+        // TODO
+        revert Unsupported();
+    }
+    function transferSharesFrom(
+        address _sender,
+        address _recipient,
+        uint256 _sharesAmount
+    ) external returns (uint256) {
         // TODO
         revert Unsupported();
     }
