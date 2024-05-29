@@ -914,12 +914,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Returns info about each pool
      * @return poolInfos all pool info
      */
-    function getPoolInfo() external view returns (PoolInfo[] memory poolInfos) {
-        uint256 length = poolInfo.length;
-        poolInfos = new PoolInfo[](length);
-        for(uint256 pid = 0; pid < length; ++pid) {
-            poolInfos[pid] = poolInfo[pid];
-        }
+    function getPoolInfo() external view returns (PoolInfo[] memory) {
+        return poolInfo;
     }
 
     /**
