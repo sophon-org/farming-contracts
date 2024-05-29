@@ -928,13 +928,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @return userInfos optimized user info
      */
     function getOptimizedUserInfo(address[] memory _users) external view returns (uint256[4][][] memory userInfos) {
-        uint256 usersLength = _users.length;
-        userInfos = new uint256[4][][](usersLength);
-        uint256 poolLength = poolInfo.length;
-        for(uint256 i = 0; i < usersLength; i++) {
+        uint256 usersLen = _users.length;
+        userInfos = new uint256[4][][](usersLen);
+        uint256 poolLen = poolInfo.length;
+        for(uint256 i = 0; i < usersLen; i++) {
             address _user = _users[i];
-            userInfos[i] = new uint256[4][](poolLength);
-            for(uint256 pid = 0; pid < poolLength; ++pid) {
+            userInfos[i] = new uint256[4][](poolLen);
+            for(uint256 pid = 0; pid < poolLen; ++pid) {
                 UserInfo memory uinfo = userInfo[pid][_user];
                 userInfos[i][pid][0] = uinfo.amount;
                 userInfos[i][pid][1] = uinfo.boostAmount;
@@ -950,13 +950,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @return pendings accured points for user
      */
     function getPendingPoints(address[] memory _users) external view returns (uint256[][] memory pendings) {
-        uint256 usersLength = _users.length;
-        pendings = new uint256[][](usersLength);
-        uint256 poolLength = poolInfo.length;
-        for(uint256 i = 0; i < usersLength; i++) {
+        uint256 usersLen = _users.length;
+        pendings = new uint256[][](usersLen);
+        uint256 poolLen = poolInfo.length;
+        for(uint256 i = 0; i < usersLen; i++) {
             address _user = _users[i];
-            pendings[i] = new uint256[](poolLength);
-            for(uint256 pid = 0; pid < poolLength; ++pid) {
+            pendings[i] = new uint256[](poolLen);
+            for(uint256 pid = 0; pid < poolLen; ++pid) {
                 pendings[i][pid] = _pendingPoints(pid, _user);
             }
         }
