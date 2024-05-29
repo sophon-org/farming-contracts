@@ -205,7 +205,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid The pid to update
      * @param _allocPoint The new alloc point to set for the pool
      */
-    function set(uint256 _pid, uint256 _allocPoint) public onlyOwner {
+    function set(uint256 _pid, uint256 _allocPoint) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -264,7 +264,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /**
      * @notice Updates the bridge contract
      */
-    function setBridge(address _bridge) public onlyOwner {
+    function setBridge(address _bridge) external onlyOwner {
         if (_bridge == address(0)) {
             revert ZeroAddress();
         }
@@ -276,7 +276,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid the pid
      * @param _l2Farm the l2Farm address
      */
-    function setL2FarmForPool(uint256 _pid, address _l2Farm) public onlyOwner {
+    function setL2FarmForPool(uint256 _pid, address _l2Farm) external onlyOwner {
         if (_l2Farm == address(0)) {
             revert ZeroAddress();
         }
@@ -290,7 +290,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Set the start block of the farm
      * @param _startBlock the start block
      */
-    function setStartBlock(uint256 _startBlock) public onlyOwner {
+    function setStartBlock(uint256 _startBlock) external onlyOwner {
         if (_startBlock == 0 || (endBlock != 0 && _startBlock >= endBlock)) {
             revert InvalidStartBlock();
         }
@@ -305,7 +305,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _endBlock the end block
      * @param _withdrawalBlocks the last block that withdrawals are allowed
      */
-    function setEndBlock(uint256 _endBlock, uint256 _withdrawalBlocks) public onlyOwner {
+    function setEndBlock(uint256 _endBlock, uint256 _withdrawalBlocks) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -328,7 +328,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Set points per block
      * @param _pointsPerBlock points per block to set
      */
-    function setPointsPerBlock(uint256 _pointsPerBlock) public onlyOwner {
+    function setPointsPerBlock(uint256 _pointsPerBlock) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -344,7 +344,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Set booster multiplier
      * @param _boosterMultiplier booster multiplier to set
      */
-    function setBoosterMultiplier(uint256 _boosterMultiplier) public onlyOwner {
+    function setBoosterMultiplier(uint256 _boosterMultiplier) external onlyOwner {
         if (_boosterMultiplier < 1e18 || _boosterMultiplier > 10e18) {
             revert InvalidBooster();
         }
@@ -423,9 +423,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function massUpdatePools() public {
         uint256 length = poolInfo.length;
-        for(uint256 pid = 0; pid < length;) {
+        for(uint256 pid = 0; pid < length; ++pid) {
             updatePool(pid);
-            unchecked { ++pid; }
         }
     }
 
@@ -897,10 +896,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid to withdraw proceeds from
      */
     function withdrawProceeds(uint256 _pid) external onlyOwner {
-        PoolInfo storage pool = poolInfo[_pid];
         uint256 _proceeds = heldProceeds[_pid];
         heldProceeds[_pid] = 0;
-        pool.lpToken.safeTransfer(msg.sender, _proceeds);
+        poolInfo[_pid].lpToken.safeTransfer(msg.sender, _proceeds);
         emit WithdrawProceeds(_pid, _proceeds);
     }
 
@@ -917,13 +915,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Returns info about each pool
      * @return poolInfos all pool info
      */
-    function getPoolInfo() external view returns (PoolInfo[] memory poolInfos) {
-        uint256 length = poolInfo.length;
-        poolInfos = new PoolInfo[](length);
-        for(uint256 pid = 0; pid < length;) {
-            poolInfos[pid] = poolInfo[pid];
-            unchecked { ++pid; }
-        }
+    function getPoolInfo() external view returns (PoolInfo[] memory) {
+        return poolInfo;
     }
 
     /**
@@ -932,20 +925,19 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @return userInfos optimized user info
      */
     function getOptimizedUserInfo(address[] memory _users) external view returns (uint256[4][][] memory userInfos) {
-        userInfos = new uint256[4][][](_users.length);
-        uint256 len = poolInfo.length;
-        for(uint256 i = 0; i < _users.length;) {
+        uint256 usersLen = _users.length;
+        userInfos = new uint256[4][][](usersLen);
+        uint256 poolLen = poolInfo.length;
+        for(uint256 i = 0; i < usersLen; i++) {
             address _user = _users[i];
-            userInfos[i] = new uint256[4][](len);
-            for(uint256 pid = 0; pid < len;) {
+            userInfos[i] = new uint256[4][](poolLen);
+            for(uint256 pid = 0; pid < poolLen; ++pid) {
                 UserInfo memory uinfo = userInfo[pid][_user];
                 userInfos[i][pid][0] = uinfo.amount;
                 userInfos[i][pid][1] = uinfo.boostAmount;
                 userInfos[i][pid][2] = uinfo.depositAmount;
                 userInfos[i][pid][3] = _pendingPoints(pid, _user);
-                unchecked { ++pid; }
             }
-            unchecked { i++; }
         }
     }
 
@@ -955,16 +947,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @return pendings accured points for user
      */
     function getPendingPoints(address[] memory _users) external view returns (uint256[][] memory pendings) {
-        pendings = new uint256[][](_users.length);
-        uint256 len = poolInfo.length;
-        for(uint256 i = 0; i < _users.length;) {
+        uint256 usersLen = _users.length;
+        pendings = new uint256[][](usersLen);
+        uint256 poolLen = poolInfo.length;
+        for(uint256 i = 0; i < usersLen; i++) {
             address _user = _users[i];
-            pendings[i] = new uint256[](len);
-            for(uint256 pid = 0; pid < len;) {
+            pendings[i] = new uint256[](poolLen);
+            for(uint256 pid = 0; pid < poolLen; ++pid) {
                 pendings[i][pid] = _pendingPoints(pid, _user);
-                unchecked { ++pid; }
             }
-            unchecked { i++; }
         }
     }
 }
