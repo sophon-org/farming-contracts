@@ -205,7 +205,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid The pid to update
      * @param _allocPoint The new alloc point to set for the pool
      */
-    function set(uint256 _pid, uint256 _allocPoint) public onlyOwner {
+    function set(uint256 _pid, uint256 _allocPoint) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -264,7 +264,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /**
      * @notice Updates the bridge contract
      */
-    function setBridge(address _bridge) public onlyOwner {
+    function setBridge(address _bridge) external onlyOwner {
         if (_bridge == address(0)) {
             revert ZeroAddress();
         }
@@ -276,7 +276,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid the pid
      * @param _l2Farm the l2Farm address
      */
-    function setL2FarmForPool(uint256 _pid, address _l2Farm) public onlyOwner {
+    function setL2FarmForPool(uint256 _pid, address _l2Farm) external onlyOwner {
         if (_l2Farm == address(0)) {
             revert ZeroAddress();
         }
@@ -290,7 +290,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Set the start block of the farm
      * @param _startBlock the start block
      */
-    function setStartBlock(uint256 _startBlock) public onlyOwner {
+    function setStartBlock(uint256 _startBlock) external onlyOwner {
         if (_startBlock == 0 || (endBlock != 0 && _startBlock >= endBlock)) {
             revert InvalidStartBlock();
         }
@@ -305,7 +305,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _endBlock the end block
      * @param _withdrawalBlocks the last block that withdrawals are allowed
      */
-    function setEndBlock(uint256 _endBlock, uint256 _withdrawalBlocks) public onlyOwner {
+    function setEndBlock(uint256 _endBlock, uint256 _withdrawalBlocks) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -328,7 +328,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Set points per block
      * @param _pointsPerBlock points per block to set
      */
-    function setPointsPerBlock(uint256 _pointsPerBlock) public onlyOwner {
+    function setPointsPerBlock(uint256 _pointsPerBlock) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -344,7 +344,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Set booster multiplier
      * @param _boosterMultiplier booster multiplier to set
      */
-    function setBoosterMultiplier(uint256 _boosterMultiplier) public onlyOwner {
+    function setBoosterMultiplier(uint256 _boosterMultiplier) external onlyOwner {
         if (_boosterMultiplier < 1e18 || _boosterMultiplier > 10e18) {
             revert InvalidBooster();
         }
