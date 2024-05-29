@@ -13,4 +13,5 @@ interface IStETH {
         address _recipient,
         uint256 _sharesAmount
     ) external returns (uint256);
+    function sharesOf(address _account) external view returns (uint256);
 }

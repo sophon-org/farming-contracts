@@ -57,7 +57,7 @@ interface ISophonFarming {
     event WithdrawProceeds(uint256 indexed pid, uint256 amount);
     event Bridge(address indexed user, uint256 indexed pid, uint256 amount);
 
-    function initialize(uint256 ethAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) external;
+    function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) external;
     function add(uint256 _allocPoint, address _lpToken, string memory _description, bool _withUpdate) external returns (uint256);
     function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) external;
     function poolLength() external view returns (uint256);

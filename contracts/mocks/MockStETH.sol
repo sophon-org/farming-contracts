@@ -68,4 +68,9 @@ contract MockStETH is MockERC20, IStETH {
         // TODO
         revert Unsupported();
     }
+
+    function sharesOf(address _account) external view returns (uint256) {
+        // TODO
+        revert Unsupported();        
+    }
 }
