@@ -35,19 +35,8 @@ contract SophonFarmingState {
         uint256 amount; // Amount of LP tokens the user is earning yield on from deposits and boosts
         uint256 boostAmount; // Boosted value purchased by the user
         uint256 depositAmount; // remaining deposits not applied to a boost purchases
-        uint256 rewardSettled; // Reward settled.
-        uint256 rewardDebt; // Reward debt. See explanation below.
-        //
-        // We do some fancy math here. Basically, any point in time, the amount of points
-        // entitled to a user but is pending to be distributed is:
-        //
-        //   pending reward = (user.amount * pool.accPointsPerShare) - user.rewardDebt
-        //
-        // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accPointsPerShare` (and `lastRewardBlock`) gets updated.
-        //   2. User receives the pending reward sent to his/her address.
-        //   3. User's `amount` gets updated.
-        //   4. User's `rewardDebt` gets updated.
+        uint256 rewardSettled; // rewards settled
+        uint256 rewardDebt; // rewards debt
     }
 
     enum PredefinedPool {
