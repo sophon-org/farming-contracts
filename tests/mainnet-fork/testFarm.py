@@ -370,7 +370,7 @@ def test_SF_reward_logic_fairness2(SF, accounts, wstETH, stETH, eETH, weETH, int
 
     chain.mine(1000)
     SF.withdraw(PredefinedPool.wstETH, userInfo1.depositAmount, {"from": user1})
-    acc1endblock = chain.height
+    acc1endblock = chain.heightreward_logic_fairness2
 
     
     # part 2
@@ -387,3 +387,4 @@ def test_SF_reward_logic_fairness2(SF, accounts, wstETH, stETH, eETH, weETH, int
     
     assert abs(SF.pendingPoints(PredefinedPool.wstETH, user1) - SF.pendingPoints(PredefinedPool.wstETH, user2)) <= 1
     assert True
+    
