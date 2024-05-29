@@ -423,9 +423,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function massUpdatePools() public {
         uint256 length = poolInfo.length;
-        for(uint256 pid = 0; pid < length;) {
+        for(uint256 pid = 0; pid < length; ++pid) {
             updatePool(pid);
-            unchecked { ++pid; }
         }
     }
 
@@ -919,9 +918,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     function getPoolInfo() external view returns (PoolInfo[] memory poolInfos) {
         uint256 length = poolInfo.length;
         poolInfos = new PoolInfo[](length);
-        for(uint256 pid = 0; pid < length;) {
+        for(uint256 pid = 0; pid < length; ++pid) {
             poolInfos[pid] = poolInfo[pid];
-            unchecked { ++pid; }
         }
     }
 
@@ -934,18 +932,16 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         uint256 usersLength = _users.length;
         userInfos = new uint256[4][][](usersLength);
         uint256 poolLength = poolInfo.length;
-        for(uint256 i = 0; i < usersLength;) {
+        for(uint256 i = 0; i < usersLength; i++) {
             address _user = _users[i];
             userInfos[i] = new uint256[4][](poolLength);
-            for(uint256 pid = 0; pid < poolLength;) {
+            for(uint256 pid = 0; pid < poolLength; ++pid) {
                 UserInfo memory uinfo = userInfo[pid][_user];
                 userInfos[i][pid][0] = uinfo.amount;
                 userInfos[i][pid][1] = uinfo.boostAmount;
                 userInfos[i][pid][2] = uinfo.depositAmount;
                 userInfos[i][pid][3] = _pendingPoints(pid, _user);
-                unchecked { ++pid; }
             }
-            unchecked { i++; }
         }
     }
 
@@ -958,14 +954,12 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         uint256 usersLength = _users.length;
         pendings = new uint256[][](usersLength);
         uint256 poolLength = poolInfo.length;
-        for(uint256 i = 0; i < usersLength;) {
+        for(uint256 i = 0; i < usersLength; i++) {
             address _user = _users[i];
             pendings[i] = new uint256[](poolLength);
-            for(uint256 pid = 0; pid < poolLength;) {
+            for(uint256 pid = 0; pid < poolLength; ++pid) {
                 pendings[i][pid] = _pendingPoints(pid, _user);
-                unchecked { ++pid; }
             }
-            unchecked { i++; }
         }
     }
 }
