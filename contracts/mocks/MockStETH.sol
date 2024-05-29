@@ -38,6 +38,14 @@ contract MockStETH is MockERC20, IstETH {
         return returnAmount;
     }
 
+    function getSharesByPooledEth(uint256 _ethAmount) external view returns (uint256) {
+        return _ethAmount;
+    }
+
+    function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256) {
+        return _sharesAmount;
+    }
+
     function mint(address usr, uint wad) external override {
         revert Unsupported();
     }
