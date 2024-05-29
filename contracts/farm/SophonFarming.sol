@@ -895,10 +895,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid to withdraw proceeds from
      */
     function withdrawProceeds(uint256 _pid) external onlyOwner {
-        PoolInfo storage pool = poolInfo[_pid];
         uint256 _proceeds = heldProceeds[_pid];
         heldProceeds[_pid] = 0;
-        pool.lpToken.safeTransfer(msg.sender, _proceeds);
+        poolInfo[_pid].lpToken.safeTransfer(msg.sender, _proceeds);
         emit WithdrawProceeds(_pid, _proceeds);
     }
 
