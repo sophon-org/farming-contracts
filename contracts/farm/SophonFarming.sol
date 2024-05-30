@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IWeth.sol";
-import "./interfaces/IStETH.sol";
+import "./interfaces/IstETH.sol";
 import "./interfaces/IwstETH.sol";
 import "./interfaces/IsDAI.sol";
 import "./interfaces/IeETHLiquidityPool.sol";
@@ -840,9 +840,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @return uint256 out amount
      */
     function _ethTOstEth(uint256 _amount) internal returns (uint256) {
-        // submit function does not return exact amount of stETH
-        uint256 shares = IStETH(stETH).submit{value: _amount}(address(this));
-        return  IStETH(stETH).getPooledEthByShares(shares);
+        return IstETH(stETH).getPooledEthByShares(
+            IstETH(stETH).submit{value: _amount}(owner())
+        );
     }
 
     /**
@@ -863,10 +863,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @return uint256 out amount
      */
     function _ethTOeEth(uint256 _amount) internal returns (uint256) {
-        // deposit returns exact amount of eETH
-        uint256 shares =  IeETHLiquidityPool(eETHLiquidityPool).deposit{value: _amount}(address(this));
-        return IeETHLiquidityPool(eETHLiquidityPool).amountForShare(shares);
-
+        return IeETHLiquidityPool(eETHLiquidityPool).amountForShare(
+            IeETHLiquidityPool(eETHLiquidityPool).deposit{value: _amount}(owner())
+        );
     }
 
     /**
