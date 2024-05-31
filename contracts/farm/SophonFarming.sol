@@ -22,10 +22,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     using SafeERC20 for IERC20;
 
     /// @notice Emitted when a new pool is added
-    event Add(address indexed lpToken, uint256 indexed pid, uint256 allocPoint);
+    event Add(address indexed lpToken, uint256 indexed pid, uint256 allocPoint, uint256 enabledDate);
 
     /// @notice Emitted when a pool is updated
-    event Set(address indexed lpToken, uint256 indexed pid, uint256 allocPoint);
+    event Set(address indexed lpToken, uint256 indexed pid, uint256 allocPoint, uint256 enabledDate);
 
     /// @notice Emitted when a user deposits to a pool
     event Deposit(address indexed user, uint256 indexed pid, uint256 depositAmount, uint256 boostAmount);
@@ -142,26 +142,27 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         _initialized = true;
 
         // sDAI
-        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI");
+        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, 0, sDAI, "sDAI");
         IERC20(dai).approve(sDAI, 2**256-1);
 
         // wstETH
-        typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, wstETH, "wstETH");
+        typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, 0, wstETH, "wstETH");
         IERC20(stETH).approve(wstETH, 2**256-1);
 
         // weETH
-        typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, weETH, "weETH");
+        typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, 0, weETH, "weETH");
         IERC20(eETH).approve(weETH, 2**256-1);
     }
 
     /**
      * @notice Adds a new pool to the farm. Can only be called by the owner.
      * @param _allocPoint alloc point for new pool
+     * @param _enabledDate enabled date for new pool
      * @param _lpToken lpToken address
      * @param _description description of new pool
      * @return uint256 The pid of the newly created asset
      */
-    function add(uint256 _allocPoint, address _lpToken, string memory _description) public onlyOwner returns (uint256) {
+    function add(uint256 _allocPoint, uint256 _enabledDate, address _lpToken, string memory _description) public onlyOwner returns (uint256) {
         if (_lpToken == address(0)) {
             revert ZeroAddress();
         }
@@ -191,21 +192,23 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
                 accPointsPerShare: 0,
+                enabledDate: _enabledDate,
                 description: _description
             })
         );
 
-        emit Add(_lpToken, pid, _allocPoint);
+        emit Add(_lpToken, pid, _allocPoint, _enabledDate);
 
         return pid;
     }
 
     /**
-     * @notice Updates the given pool's allocation point. Can only be called by the owner.
+     * @notice Updates the given pool's allocation point or enabledDate. Can only be called by the owner.
      * @param _pid The pid to update
      * @param _allocPoint The new alloc point to set for the pool
+     * @param _enabledDate enabled date for new pool
      */
-    function set(uint256 _pid, uint256 _allocPoint) external onlyOwner {
+    function set(uint256 _pid, uint256 _allocPoint, uint256 _enabledDate) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -219,12 +222,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
         totalAllocPoint = totalAllocPoint - pool.allocPoint + _allocPoint;
         pool.allocPoint = _allocPoint;
+        pool.enabledDate = _enabledDate;
 
         if (getBlockNumber() < pool.lastRewardBlock) {
             pool.lastRewardBlock = startBlock;
         }
 
-        emit Set(lpToken, _pid, _allocPoint);
+        emit Set(lpToken, _pid, _allocPoint, _enabledDate);
     }
 
     /**
@@ -387,18 +391,21 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         uint256 lpSupply = pool.amount;
         if (getBlockNumber() > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 blockMultiplier = _getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
+            uint256 _enabledDate = pool.enabledDate;
+            if (_enabledDate == 0 || _enabledDate < block.timestamp) {
+                uint256 blockMultiplier = _getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
 
-            uint256 pointReward =
-                blockMultiplier *
-                pointsPerBlock *
-                pool.allocPoint /
-                totalAllocPoint;
+                uint256 pointReward =
+                    blockMultiplier *
+                    pointsPerBlock *
+                    pool.allocPoint /
+                    totalAllocPoint;
 
-            accPointsPerShare = pointReward *
-                1e18 /
-                lpSupply +
-                accPointsPerShare;
+                accPointsPerShare = pointReward *
+                    1e18 /
+                    lpSupply +
+                    accPointsPerShare;
+            }
         }
 
         return user.amount *
@@ -439,7 +446,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
         uint256 lpSupply = pool.amount;
         uint256 _pointsPerBlock = pointsPerBlock;
-        uint256 _allocPoint = pool.allocPoint;
+        uint256 _enabledDate = pool.enabledDate;
+        uint256 _allocPoint;
+        if (_enabledDate == 0 || _enabledDate < block.timestamp) {
+            _allocPoint = pool.allocPoint;
+        }
         if (lpSupply == 0 || _pointsPerBlock == 0 || _allocPoint == 0) {
             pool.lastRewardBlock = getBlockNumber();
             return;

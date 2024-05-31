@@ -27,6 +27,7 @@ contract SophonFarmingState {
         uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
         uint256 lastRewardBlock; // Last block number that points distribution occurs.
         uint256 accPointsPerShare; // Accumulated points per share, times 1e18. See below.
+        uint256 enabledDate; // anticipated date the pool is enabled (if 0, the pool is assumed enabled)
         string description; // Description of pool.
     }
 
