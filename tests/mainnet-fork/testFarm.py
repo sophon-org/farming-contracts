@@ -388,3 +388,42 @@ def test_SF_reward_logic_fairness2(SF, accounts, wstETH, stETH, eETH, weETH, int
     assert abs(SF.pendingPoints(PredefinedPool.wstETH, user1) - SF.pendingPoints(PredefinedPool.wstETH, user2)) <= 1
     assert True
     
+
+
+def test_SF_deposit_eETH_withBoost(SF, eETH, weETH, accounts, interface):
+    holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
+    user1 = accounts[1]
+    amount = 100e18
+    boostAmount = 1e18
+    eETH.transfer(user1, amount, {"from": holder})
+    eETH.approve(SF, 2**256-1, {"from": user1})
+
+    SF.depositeEth(amount, boostAmount, {"from": user1})
+   
+    userInfo = SF.userInfo(PredefinedPool.weETH, user1)
+    
+    from collections import namedtuple
+    UserInfo = namedtuple('UserInfo', ['amount', 'boostAmount', 'depositAmount', 'rewardSettled', 'rewardDebt'])
+    userInfo = UserInfo._make(userInfo)
+    
+    assert weETH.balanceOf(SF) - userInfo[0] <= 1
+
+    balanceBefore = weETH.balanceOf(user1)
+    SF.withdraw(PredefinedPool.weETH, userInfo.depositAmount, {"from": user1})
+    
+    balanceAfter = weETH.balanceOf(user1)
+    assert balanceAfter - balanceBefore == userInfo.depositAmount
+    chain.mine()
+    
+    userInfoAfter = SF.userInfo(PredefinedPool.weETH, user1)
+    userInfoAfter = UserInfo._make(userInfoAfter)
+    
+    assert userInfoAfter.depositAmount == 0
+    assert weETH.balanceOf(SF) == SF.heldProceeds(PredefinedPool.weETH)
+
+    assert False
+    interface.IwstETH(weETH).unwrap(weETH.balanceOf(user1), {"from": user1})
+
+    assert eETH.balanceOf(user1) >  (int(amount) - 6) # due to interest rate on wstETH, also 1-2 wei bug
+    
+    assert True
