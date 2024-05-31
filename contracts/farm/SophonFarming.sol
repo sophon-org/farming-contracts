@@ -37,10 +37,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
 
     /// @notice Emitted when all pool funds are bridged to Sophon blockchain
-    event Bridge(address indexed user, uint256 indexed pid, uint256 amount);
+    event BridgePool(address indexed user, uint256 indexed pid, uint256 amount);
 
-    /// @notice Emitted when the admin withdraws booster proceeds
-    event WithdrawProceeds(uint256 indexed pid, uint256 proceeds);
+    /// @notice Emitted when the admin bridges booster proceeds
+    event BridgeProceeds(uint256 indexed pid, uint256 proceeds);
 
     /// @notice Emitted when the the revertFailedBridge function is called
     event RevertFailedBridge(uint256 indexed pid);
@@ -787,6 +787,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid to bridge
      */
     function bridgePool(uint256 _pid) external {
+        revert Unauthorized(); // NOTE: function not fully implemented
+
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
         }
@@ -815,7 +817,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             owner()                 // _refundRecipient
         );
 
-        emit Bridge(msg.sender, _pid, depositAmount);
+        emit BridgePool(msg.sender, _pid, depositAmount);
     }
 
     // TODO: does this function need to call claimFailedDeposit on the bridge?
@@ -825,6 +827,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid of the failed bridge to revert
      */
     function revertFailedBridge(uint256 _pid) external onlyOwner {
+        revert Unauthorized(); // NOTE: function not fully implemented
+
         if (address(poolInfo[_pid].lpToken) == address(0)) {
             revert PoolDoesNotExist();
         }
@@ -901,15 +905,20 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         return IsDAI(sDAI).deposit(_amount, address(this));
     }
 
+    // This is pending the launch of Sophon testnet
     /**
-     * @notice Allows an admin to withdraw booster proceeds
-     * @param _pid pid to withdraw proceeds from
+     * @notice Allows an admin to bridge booster proceeds
+     * @param _pid pid to bridge proceeds from
      */
-    function withdrawProceeds(uint256 _pid) external onlyOwner {
+    function bridgeProceeds(uint256 _pid) external onlyOwner {
+        revert Unauthorized(); // NOTE: function not fully implemented
+
         uint256 _proceeds = heldProceeds[_pid];
         heldProceeds[_pid] = 0;
-        poolInfo[_pid].lpToken.safeTransfer(msg.sender, _proceeds);
-        emit WithdrawProceeds(_pid, _proceeds);
+
+        // TODO: add bridging logic
+
+        emit BridgeProceeds(_pid, _proceeds);
     }
 
     /**
