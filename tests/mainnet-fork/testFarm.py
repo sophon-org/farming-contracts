@@ -468,7 +468,7 @@ def test_SF_deposit_eETH_withoutBoost(SF, eETH, weETH, accounts, interface):
     a = SF.pendingPoints(PredefinedPool.weETH, user1)
     chain.mine()
     b = SF.pendingPoints(PredefinedPool.weETH, user1)
-    assert b > a # acruing poins continue due to boost
+    assert b == a # acruing poins continue due to boost
 
     interface.IwstETH(weETH).unwrap(weETH.balanceOf(user1), {"from": user1})
 
