@@ -35,6 +35,10 @@ def eETH(interface):
 def weETH(interface):
     return interface.IERC20("0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee")
 
+@pytest.fixture(scope="module")
+def USDC(interface):
+    return interface.IERC20("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
+
 
 
 @pytest.fixture(scope="module")
@@ -119,3 +123,48 @@ def test_SF_early_deposit(SF, accounts, wstETH, stETH, eETH, weETH, interface):
     assert SF.pendingPoints(PredefinedPool.wstETH, user1) >0
     
     assert True
+    
+    
+    
+    
+    # ompare USDC pool with DAI pool point emission
+def test_SF_deposit_USDC_non18_decimal(SF, eETH, weETH, accounts, USDC, DAI, sDAI, interface):
+        
+        
+    usdcAllocationPoint = 20000
+    SF.add(usdcAllocationPoint, USDC, "USDC", {"from": accounts[0]})
+    
+    
+    holdersDAI = "0x6337f2366E6f47FB26Ec08293867a607BCc7A0dB"
+    user1 = accounts[1]
+    amount = 10000e18
+    sDAI.transfer(user1, amount, {"from": holdersDAI})
+    sDAI.approve(SF, 2**256-1, {"from": user1})
+    
+    PID = 0
+    SF.deposit(PID, amount, 0, {"from": user1})
+    
+    holderUSDC = "0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa"
+    user1 = accounts[1]
+    amount = 10000e6
+    USDC.transfer(user1, amount, {"from": holderUSDC})
+    USDC.approve(SF, 2**256-1, {"from": user1})
+    PID = 3
+    SF.deposit(PID, amount, 0, {"from": user1})
+    
+    
+    
+    # wait farming start   
+    chain.mine(SF.startBlock()- chain.height)
+
+        
+    chain.mine()
+    
+    # points are flowing same speed in both pools
+    assert SF.pendingPoints(0, user1) == SF.pendingPoints(3, user1)
+    
+    chain.mine(1000)
+    assert SF.pendingPoints(0, user1) == SF.pendingPoints(3, user1)
+    
+    # TODO compare no boost emission stop
+    #
