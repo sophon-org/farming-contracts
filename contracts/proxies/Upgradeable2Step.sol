@@ -24,9 +24,9 @@ contract Upgradeable2Step is Ownable2Step {
         if (msg.sender != pendingImplementation) {
             revert OwnableUnauthorizedAccount(msg.sender);
         }
-        emit ReplaceImplementation(implementation, msg.sender);
         delete pendingImplementation;
         implementation = msg.sender;
+        emit ReplaceImplementation(implementation, msg.sender);
     }
 
     // called on an inheriting implementation contract
