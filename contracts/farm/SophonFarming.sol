@@ -55,11 +55,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error NotFound(address lpToken);
     error FarmingIsStarted();
     error FarmingIsEnded();
+    error TransferNotAllowed();
+    error TransferTooHigh(uint256 maxAllowed);
     error InvalidStartBlock();
     error InvalidEndBlock();
     error InvalidDeposit();
     error InvalidBooster();
     error InvalidPointsPerBlock();
+    error InvalidTransfer();
     error WithdrawNotAllowed();
     error WithdrawTooHigh(uint256 maxAllowed);
     error WithdrawIsZero();
@@ -628,6 +631,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         updatePool(_pid);
 
         uint256 userAmount = user.amount;
+
         user.rewardSettled =
             userAmount *
             pool.accPointsPerShare /
@@ -688,6 +692,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         updatePool(_pid);
 
         uint256 userAmount = user.amount;
+
         user.rewardSettled =
             userAmount *
             pool.accPointsPerShare /
@@ -758,6 +763,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
 
         uint256 userAmount = user.amount;
+
         user.rewardSettled =
             userAmount *
             pool.accPointsPerShare /
@@ -787,7 +793,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid to bridge
      */
     function bridgePool(uint256 _pid) external {
-        revert Unauthorized(); // NOTE: function not fully implemented
+        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
 
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
@@ -827,13 +833,76 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid of the failed bridge to revert
      */
     function revertFailedBridge(uint256 _pid) external onlyOwner {
-        revert Unauthorized(); // NOTE: function not fully implemented
+        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
 
         if (address(poolInfo[_pid].lpToken) == address(0)) {
             revert PoolDoesNotExist();
         }
         isBridged[_pid] = false;
         emit RevertFailedBridge(_pid);
+    }
+
+    /**
+     * @notice Called by an whitelisted user to transfer their points to another user
+     * @param _pid pid of the pool to transfer points from
+     * @param _receiver address to receive the points by the transfer
+     * @param _transferAmount amount of points to transfer
+     */
+    function transferPoints(uint256 _pid, address _receiver, uint256 _transferAmount) external {
+
+        if (!whitelist[msg.sender]) {
+            revert TransferNotAllowed();
+        }
+
+        if (msg.sender == _receiver || _receiver == address(this) || _transferAmount == 0) {
+            revert InvalidTransfer();
+        }
+
+        PoolInfo storage pool = poolInfo[_pid];
+
+        if (address(pool.lpToken) == address(0)) {
+            revert PoolDoesNotExist();
+        }
+
+        updatePool(_pid);
+        uint256 accPointsPerShare = pool.accPointsPerShare;
+
+        UserInfo storage userFrom = userInfo[_pid][msg.sender];
+        UserInfo storage userTo = userInfo[_pid][_receiver];
+
+        uint256 userFromAmount = userFrom.amount;
+        uint256 userToAmount = userTo.amount;
+
+        uint userFromRewardSettled =
+            userFromAmount *
+            accPointsPerShare /
+            1e18 +
+            userFrom.rewardSettled -
+            userFrom.rewardDebt;
+
+        if (_transferAmount == type(uint256).max) {
+            _transferAmount = userFromRewardSettled;
+        } else if (_transferAmount > userFromRewardSettled) {
+            revert TransferTooHigh(userFromRewardSettled);
+        }
+
+        userFrom.rewardSettled = userFromRewardSettled - _transferAmount;
+
+        userTo.rewardSettled =
+            userToAmount *
+            accPointsPerShare /
+            1e18 +
+            userTo.rewardSettled -
+            userTo.rewardDebt +
+            _transferAmount;
+
+        userFrom.rewardDebt = userFromAmount *
+            accPointsPerShare /
+            1e18;
+
+        userTo.rewardDebt = userToAmount *
+            accPointsPerShare /
+            1e18;
     }
 
     /**
@@ -911,7 +980,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid to bridge proceeds from
      */
     function bridgeProceeds(uint256 _pid) external onlyOwner {
-        revert Unauthorized(); // NOTE: function not fully implemented
+        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
 
         uint256 _proceeds = heldProceeds[_pid];
         heldProceeds[_pid] = 0;
