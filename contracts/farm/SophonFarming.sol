@@ -33,6 +33,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when a user withdraws from a pool
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
+    /// @notice Emitted when a whitelisted user transfers their points to another user
+    event TransferPoints(address indexed user, address indexed receiver, uint256 indexed pid, uint256 amount);
+
     /// @notice Emitted when a user increases the boost of an existing deposit
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
 
@@ -377,6 +380,17 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             return (_to - _from) * 1e18;
         } else {
             return 0;
+        }
+    }
+
+    /**
+     * @notice Adds or removes users from the whitelist
+     * @param _users list of users
+     * @param _isInWhitelist to add or remove
+     */
+    function setUsersWhitelisted(address[] memory _users, bool _isInWhitelist) external onlyOwner {
+        for(uint i = 0; i < _users.length; i++) {
+            whitelist[_users[i]] = _isInWhitelist;
         }
     }
 
@@ -903,6 +917,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         userTo.rewardDebt = userToAmount *
             accPointsPerShare /
             1e18;
+
+        emit TransferPoints(msg.sender, _receiver, _pid, _transferAmount);
     }
 
     /**
