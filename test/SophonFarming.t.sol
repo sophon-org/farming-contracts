@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 import {Test, console} from "forge-std/Test.sol";
 import {SophonFarming} from "../contracts/farm/SophonFarming.sol";
-// import {PoolShareToken} from "./../contracts/farm/PoolShareToken.sol";
 import {SophonFarmingState, BridgeLike} from "./../contracts/farm/SophonFarmingState.sol";
 import {SophonFarmingProxy} from "./../contracts/proxies/SophonFarmingProxy.sol";
 import {Proxy} from "./../contracts/proxies/Proxy.sol";
@@ -16,7 +15,6 @@ import {MockeETHLiquidityPool} from "./../contracts/mocks/MockeETHLiquidityPool.
 import {MockWeETH} from "./../contracts/mocks/MockweETH.sol";
 import {MockSDAI} from "./../contracts/mocks/MockSDAI.sol";
 import {MockBridge} from "./../contracts/mocks/MockBridge.sol";
-// import {PermitTester} from "./utils/PermitTester.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SophonFarmingTest is Test {
@@ -47,6 +45,7 @@ contract SophonFarmingTest is Test {
     MockSDAI internal sDAI;
 
     uint256 internal wstETHAllocPoint;
+    uint256 internal weETHAllocPoint;
     uint256 internal sDAIAllocPoint;
     uint256 internal pointsPerBlock;
     uint256 internal startBlock;
@@ -111,6 +110,7 @@ contract SophonFarmingTest is Test {
         eETHLiquidityPool = new MockeETHLiquidityPool(eETH);
 
         weETH = new MockWeETH(eETH);
+        weETHAllocPoint = 20000;
 
         // mock DAI
         dai = new MockERC20("Mock Dai Token", "MockDAI", 18);
@@ -145,10 +145,10 @@ contract SophonFarmingTest is Test {
         sophonFarmingProxy = new SophonFarmingProxy(implementation);
 
         // Grant the implementation interface to the proxy
-        sophonFarming = SophonFarming(payable(address(implementation)));
+        sophonFarming = SophonFarming(payable(address(sophonFarmingProxy)));
 
         // Initialize SophonFarming
-        sophonFarming.initialize(wstETHAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier);
+        sophonFarming.initialize(wstETHAllocPoint, weETHAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier);
 
         weth.approve(address(sophonFarming), maxUint);
         stETH.approve(address(sophonFarming), maxUint);
@@ -390,7 +390,36 @@ contract SophonFarmingTest is Test {
         vm.startPrank(deployer);
 
         vm.expectRevert(SophonFarming.AlreadyInitialized.selector);
-        sophonFarming.initialize(0, 0, 0, 0, 0);
+        sophonFarming.initialize(0, 0, 0, 0, 0, 0);
+    }
+
+    function test_Initialize_RevertWhen_InvalidPointsPerBlock() public {
+        vm.startPrank(deployer);
+
+        address _implementation = address(
+            new SophonFarming(
+                [
+                    address(dai),
+                    address(sDAI),
+                    address(weth),
+                    address(stETH),
+                    address(wstETH),
+                    address(eETH),
+                    address(eETHLiquidityPool),
+                    address(weETH)
+                ]
+            )
+        );
+
+        // Deploy proxy
+        SophonFarmingProxy _sophonFarmingProxy = new SophonFarmingProxy(_implementation);
+        (_sophonFarmingProxy);
+
+        // Grant the implementation interface to the proxy
+        SophonFarming _sophonFarming = SophonFarming(payable(address(_implementation)));
+
+        vm.expectRevert(SophonFarming.InvalidPointsPerBlock.selector);
+        _sophonFarming.initialize(0, 0, 0, 0, 0, 0);
     }
 
     function test_Initialize_RevertWhen_InvalidStartBlock() public {
@@ -419,7 +448,7 @@ contract SophonFarmingTest is Test {
         SophonFarming _sophonFarming = SophonFarming(payable(address(_implementation)));
 
         vm.expectRevert(SophonFarming.InvalidStartBlock.selector);
-        _sophonFarming.initialize(0, 0, 0, 0, 0);
+        _sophonFarming.initialize(0, 0, 0, 1e18, 0, 0);
     }
 
     function test_Initialize_RevertWhen_InvalidBooster() public {
@@ -442,7 +471,7 @@ contract SophonFarmingTest is Test {
 
         vm.expectRevert(SophonFarming.InvalidBooster.selector);
         SophonFarming(payable(newImplementation)).initialize(
-            wstETHAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, 1
+            wstETHAllocPoint, weETHAllocPoint, sDAIAllocPoint, pointsPerBlock, startBlock, 1
         );
     }
 
@@ -453,7 +482,7 @@ contract SophonFarmingTest is Test {
 
         MockERC20 mock = new MockERC20("Mock", "M", 18);
         uint256 startingAllocPoint = sophonFarming.totalAllocPoint();
-        uint256 poolId = sophonFarming.add(newAllocPoints, address(mock), mock.name(), true);
+        uint256 poolId = sophonFarming.add(newAllocPoints, 0, address(mock), mock.name());
 
         SophonFarmingState.PoolInfo[] memory PoolInfo;
 
@@ -480,7 +509,7 @@ contract SophonFarmingTest is Test {
         MockERC20 mock = new MockERC20("Mock", "M", 18);
 
         vm.expectRevert(SophonFarming.FarmingIsEnded.selector);
-        sophonFarming.add(10000, address(mock), "Mock", true);
+        sophonFarming.add(10000, 0, address(mock), "Mock");
     }
 
     function test_Add_RevertWhen_PoolExists() public {
@@ -490,7 +519,17 @@ contract SophonFarmingTest is Test {
         vm.roll(block.number + 2);
 
         vm.expectRevert(SophonFarming.PoolExists.selector);
-        sophonFarming.add(sDAIAllocPoint, address(sDAI), "sDAI", false);
+        sophonFarming.add(sDAIAllocPoint, 0, address(sDAI), "sDAI");
+    }
+
+    function test_Add_RevertWhen_ZeroAddress() public {
+        vm.startPrank(deployer);
+
+        sophonFarming.setEndBlock(block.number + 1, 1);
+        vm.roll(block.number + 2);
+
+        vm.expectRevert(SophonFarming.ZeroAddress.selector);
+        sophonFarming.add(sDAIAllocPoint, 0, address(0), "Zero");
     }
 
     // SET FUNCTION /////////////////////////////////////////////////////////////////
@@ -506,7 +545,7 @@ contract SophonFarmingTest is Test {
         SophonFarmingState.PoolInfo[] memory startingPoolInfo;
         startingPoolInfo = sophonFarming.getPoolInfo();
 
-        sophonFarming.set(poolId, newAllocPoints, true);
+        sophonFarming.set(poolId, newAllocPoints, 0);
 
         SophonFarmingState.PoolInfo[] memory finalPoolInfo;
         finalPoolInfo = sophonFarming.getPoolInfo();
@@ -527,17 +566,7 @@ contract SophonFarmingTest is Test {
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
 
         vm.expectRevert(SophonFarming.FarmingIsEnded.selector);
-        sophonFarming.set(poolId, 10000, true);
-    }
-
-    function test_Set_RevertWhen_PoolDoesNotExist() public {
-        vm.startPrank(deployer);
-
-        uint256 startingAllocPoint = sophonFarming.totalAllocPoint();
-        uint256 poolId = sophonFarming.add(1000, address(0), "Zero", true);
-
-        vm.expectRevert(SophonFarming.PoolDoesNotExist.selector);
-        sophonFarming.set(poolId, 10000, true);
+        sophonFarming.set(poolId, 10000, 0);
     }
 
     // IS_FARMING_ENDED FUNCTION /////////////////////////////////////////////////////////////////
@@ -559,9 +588,16 @@ contract SophonFarmingTest is Test {
 
         MockBridge bridge = new MockBridge();
 
-        sophonFarming.setBridge(bridge);
+        sophonFarming.setBridge(address(bridge));
 
         assertEq(address(sophonFarming.bridge()), address(bridge));
+    }
+
+    function test_SetBridge_RevertWhen_ZeroAddress() public {
+        vm.startPrank(deployer);
+
+        vm.expectRevert(SophonFarming.ZeroAddress.selector);
+        sophonFarming.setBridge(address(0));
     }
 
     // SET_L2_FARM_FOR_POOL FUNCTION /////////////////////////////////////////////////////////////////
@@ -578,6 +614,16 @@ contract SophonFarmingTest is Test {
         PoolInfo = sophonFarming.getPoolInfo();
 
         assertEq(PoolInfo[poolId].l2Farm, l2Farm);
+    }
+
+    function test_SetL2FarmForPool_RevertWhen_ZeroAddress() public {
+        vm.startPrank(deployer);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+        address l2Farm = address(0);
+
+        vm.expectRevert(SophonFarming.ZeroAddress.selector);
+        sophonFarming.setL2FarmForPool(poolId, l2Farm);
     }
 
     // SET_START_BLOCK FUNCTION /////////////////////////////////////////////////////////////////
@@ -647,7 +693,7 @@ contract SophonFarmingTest is Test {
 
     // SET_POINTS_PER_BLOCK FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_SetPointsPerBlock(uint256 newPointsPerBlock) public {
-        vm.assume(newPointsPerBlock > 0 && newPointsPerBlock <= 100e18);
+        newPointsPerBlock = bound(newPointsPerBlock, 1e18, 1000e18);
         vm.startPrank(deployer);
 
         sophonFarming.setPointsPerBlock(newPointsPerBlock);
@@ -665,9 +711,17 @@ contract SophonFarmingTest is Test {
         sophonFarming.setPointsPerBlock(newPointsPerBlock);
     }
 
+    function test_SetPointsPerBlock_RevertWhen_InvalidPointsPerBlock() public {
+        vm.startPrank(deployer);
+
+        uint256 newPointsPerBlock = 1;
+        vm.expectRevert(SophonFarming.InvalidPointsPerBlock.selector);
+        sophonFarming.setPointsPerBlock(newPointsPerBlock);
+    }
+
     // SET_BOOSTER_MULTIPLIER FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_SetBoosterMultiplier(uint256 newBoosterMultiplier) public {
-        vm.assume(newBoosterMultiplier > 1e18 && newBoosterMultiplier <= 10000e18);
+        vm.assume(newBoosterMultiplier > 1e18 && newBoosterMultiplier <= 10e18);
         vm.startPrank(deployer);
 
         sophonFarming.setBoosterMultiplier(newBoosterMultiplier);
@@ -711,6 +765,31 @@ contract SophonFarmingTest is Test {
 
         to = block.number + 1000;
         assertEq(harnessImplementation.getBlockMultiplier(from, to), (newEndBlock - from) * 1e18);
+    }
+
+    // SET_USERS_WHITELISTED FUNCTION /////////////////////////////////////////////////////////////////
+    function test_SetUsersWhitelisted(uint256 accountAmount) public {
+        accountAmount = bound(accountAmount, 1, 10);
+        vm.startPrank(deployer);
+
+        address[] memory accounts = new address[](accountAmount);
+
+        for (uint256 i = 0; i < accountAmount; i++) {
+            accounts[i] = address(uint160(i));
+            assertEq(sophonFarming.whitelist(accounts[i]), false);
+        }
+
+        sophonFarming.setUsersWhitelisted(accounts, true);
+
+        for (uint256 i = 0; i < accountAmount; i++) {
+            assertEq(sophonFarming.whitelist(accounts[i]), true);
+        }
+
+        sophonFarming.setUsersWhitelisted(accounts, false);
+
+        for (uint256 i = 0; i < accountAmount; i++) {
+            assertEq(sophonFarming.whitelist(accounts[i]), false);
+        }
     }
 
     // MASS_UPDATE_POOLS FUNCTION /////////////////////////////////////////////////////////////////
@@ -1607,38 +1686,7 @@ contract SophonFarmingTest is Test {
     }
 
     // BRIDGE_POOL FUNCTION /////////////////////////////////////////////////////////////////
-    function test_BridgePool() public {
-        vm.startPrank(deployer);
-
-        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
-
-        MockBridge bridge = new MockBridge();
-        sophonFarming.setBridge(bridge);
-
-        sophonFarming.setL2FarmForPool(poolId, address(0xF));
-
-        vm.stopPrank();
-        vm.startPrank(account1);
-
-        uint256 amountToDeposit = 1e18;
-        vm.deal(account1, amountToDeposit);
-        weth.deposit{value: amountToDeposit}();
-        assertEq(weth.balanceOf(account1), amountToDeposit);
-
-        weth.approve(address(sophonFarming), amountToDeposit);
-        sophonFarming.depositWeth(amountToDeposit, 0, SophonFarmingState.PredefinedPool.wstETH);
-        assertEq(weth.balanceOf(account1), 0);
-
-        vm.stopPrank();
-        vm.startPrank(deployer);
-
-        sophonFarming.setEndBlock(block.number + 10, 1);
-        vm.roll(block.number + 12);
-
-        sophonFarming.bridgePool(poolId);
-        assertEq(sophonFarming.isBridged(poolId), true);
-    }
-
+    // NOTE: function not fully implemented, an upgrade will implement this later
     function test_BridgePool_RevertWhen_Unauthorized() public {
         vm.startPrank(account1);
 
@@ -1648,52 +1696,15 @@ contract SophonFarmingTest is Test {
         sophonFarming.bridgePool(poolId);
     }
 
-    function test_BridgePool_RevertWhen_BridgeInvalid() public {
-        vm.startPrank(deployer);
-
-        sophonFarming.setEndBlock(block.number + 10, 1);
-        vm.roll(block.number + 12);
-
-        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
-
-        vm.expectRevert(SophonFarming.BridgeInvalid.selector);
-        sophonFarming.bridgePool(poolId);
-    }
-
     // REVERT_FAILED_BRIDGE FUNCTION /////////////////////////////////////////////////////////////////
-    function test_RevertFailedBridge() public {
+    // NOTE: function not fully implemented, an upgrade will implement this later
+    function test_RevertFailedBridge_RevertWhen_Unauthorized() public {
         vm.startPrank(deployer);
 
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
 
-        MockBridge bridge = new MockBridge();
-        sophonFarming.setBridge(bridge);
-
-        sophonFarming.setL2FarmForPool(poolId, address(0xF));
-
-        vm.stopPrank();
-        vm.startPrank(account1);
-
-        uint256 amountToDeposit = 1e18;
-        vm.deal(account1, amountToDeposit);
-        weth.deposit{value: amountToDeposit}();
-        assertEq(weth.balanceOf(account1), amountToDeposit);
-
-        weth.approve(address(sophonFarming), amountToDeposit);
-        sophonFarming.depositWeth(amountToDeposit, 0, SophonFarmingState.PredefinedPool.wstETH);
-        assertEq(weth.balanceOf(account1), 0);
-
-        vm.stopPrank();
-        vm.startPrank(deployer);
-
-        sophonFarming.setEndBlock(block.number + 10, 1);
-        vm.roll(block.number + 12);
-
-        sophonFarming.bridgePool(poolId);
-        assertEq(sophonFarming.isBridged(poolId), true);
-
+        vm.expectRevert(Unauthorized.selector);
         sophonFarming.revertFailedBridge(poolId);
-        assertEq(sophonFarming.isBridged(poolId), false);
     }
 
     // INCREASE_BOOST FUNCTION /////////////////////////////////////////////////////////////////
@@ -1733,6 +1744,227 @@ contract SophonFarmingTest is Test {
         assertEq(userInfo.rewardDebt, 0);
     }
 
+    // TRANSFER_POINTS FUNCTION /////////////////////////////////////////////////////////////////
+    function testFuzz_TransferPoints_ReceiverWithoutDeposit(uint256 amountToDeposit, uint256 rollBlocks, uint256 transferFraction) public {
+        amountToDeposit = bound(amountToDeposit, 1e6, 1_000_000_000e18);
+        rollBlocks = bound(rollBlocks, 1, 100);
+        transferFraction = bound(transferFraction, 1, 10);
+
+        vm.startPrank(deployer);
+
+        // whitelist user
+        address[] memory accounts = new address[](1);
+        accounts[0] = account1;
+        sophonFarming.setUsersWhitelisted(accounts, true);
+        assertEq(sophonFarming.whitelist(account1), true);
+
+        vm.stopPrank();
+        vm.startPrank(account1);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        deal(address(wstETH), account1, amountToDeposit * 2);
+        wstETH.approve(address(sophonFarming), amountToDeposit * 2);
+        sophonFarming.deposit(poolId, amountToDeposit, 0);
+
+        vm.roll(block.number + rollBlocks);
+
+        sophonFarming.deposit(poolId, amountToDeposit, 0);
+        assertEq(wstETH.balanceOf(account1), 0);
+
+        SophonFarmingState.UserInfo memory user1Info;
+        (user1Info.amount, user1Info.boostAmount, user1Info.depositAmount, user1Info.rewardSettled, user1Info.rewardDebt) =
+            sophonFarming.userInfo(poolId, account1);
+
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        uint256 transferPoints = user1Info.amount * PoolInfo[poolId].accPointsPerShare / 1e18 + user1Info.rewardSettled - user1Info.rewardDebt;
+        uint256 transferPointsFraction = transferPoints / transferFraction;
+
+        // If transferFraction is 1, transfer all points by using type(uint256).max
+        if (transferFraction == 1) {
+            sophonFarming.transferPoints(poolId, account2, type(uint256).max);
+        } else {
+            sophonFarming.transferPoints(poolId, account2, transferPointsFraction);
+        }
+
+        SophonFarmingState.UserInfo memory user2Info;
+        (user2Info.amount, user2Info.boostAmount, user2Info.depositAmount, user2Info.rewardSettled, user2Info.rewardDebt) =
+            sophonFarming.userInfo(poolId, account2);
+
+        assertEq(user2Info.amount, 0);
+        assertEq(user2Info.boostAmount, 0);
+        assertEq(user2Info.depositAmount, 0);
+        assertEq(user2Info.rewardSettled, transferPointsFraction);
+        assertEq(user2Info.rewardDebt, 0);
+
+        SophonFarmingState.UserInfo memory user1InfoFinal;
+        (user1InfoFinal.amount, user1InfoFinal.boostAmount, user1InfoFinal.depositAmount, user1InfoFinal.rewardSettled, user1InfoFinal.rewardDebt) =
+            sophonFarming.userInfo(poolId, account1);
+
+        assertEq(user1InfoFinal.amount, user1Info.amount);
+        assertEq(user1InfoFinal.boostAmount, user1Info.boostAmount);
+        assertEq(user1InfoFinal.depositAmount, user1Info.depositAmount);
+        assertEq(user1InfoFinal.rewardSettled, transferPoints - transferPointsFraction);
+        assertEq(user1InfoFinal.rewardDebt, user1Info.rewardDebt);
+    }
+
+    function testFuzz_TransferPoints_ReceiverWithDeposit(uint256 amountToDeposit, uint256 rollBlocks, uint256 transferFraction) public {
+        amountToDeposit = bound(amountToDeposit, 1e6, 1_000_000_000e18);
+        rollBlocks = bound(rollBlocks, 1, 100);
+        transferFraction = bound(transferFraction, 1, 10);
+
+        vm.startPrank(deployer);
+
+        // whitelist user
+        address[] memory accounts = new address[](1);
+        accounts[0] = account1;
+        sophonFarming.setUsersWhitelisted(accounts, true);
+        assertEq(sophonFarming.whitelist(account1), true);
+
+        vm.stopPrank();
+        vm.startPrank(account1);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        deal(address(wstETH), account1, amountToDeposit * 2);
+        wstETH.approve(address(sophonFarming), amountToDeposit * 2);
+        sophonFarming.deposit(poolId, amountToDeposit, 0);
+
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        deal(address(wstETH), account2, amountToDeposit);
+        wstETH.approve(address(sophonFarming), amountToDeposit);
+        sophonFarming.deposit(poolId, amountToDeposit, 0);
+
+        vm.stopPrank();
+        vm.startPrank(account1);
+
+        vm.roll(block.number + rollBlocks);
+
+        sophonFarming.deposit(poolId, amountToDeposit, 0);
+        assertEq(wstETH.balanceOf(account1), 0);
+
+        SophonFarmingState.UserInfo memory user1Info;
+        (user1Info.amount, user1Info.boostAmount, user1Info.depositAmount, user1Info.rewardSettled, user1Info.rewardDebt) =
+            sophonFarming.userInfo(poolId, account1);
+
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        uint256 transferPoints = user1Info.amount * PoolInfo[poolId].accPointsPerShare / 1e18 + user1Info.rewardSettled - user1Info.rewardDebt;
+        uint256 transferPointsFraction = transferPoints / transferFraction;
+
+        SophonFarmingState.UserInfo memory user2Info;
+        (user2Info.amount, user2Info.boostAmount, user2Info.depositAmount, user2Info.rewardSettled, user2Info.rewardDebt) =
+            sophonFarming.userInfo(poolId, account2);
+
+        // If transferFraction is 1, transfer all points by using type(uint256).max
+        if (transferFraction == 1) {
+            sophonFarming.transferPoints(poolId, account2, type(uint256).max);
+        } else {
+            sophonFarming.transferPoints(poolId, account2, transferPointsFraction);
+        }
+
+        SophonFarmingState.UserInfo memory user2InfoFinal;
+        (user2InfoFinal.amount, user2InfoFinal.boostAmount, user2InfoFinal.depositAmount, user2InfoFinal.rewardSettled, user2InfoFinal.rewardDebt) =
+            sophonFarming.userInfo(poolId, account2);
+
+        assertEq(user2InfoFinal.amount, amountToDeposit);
+        assertEq(user2InfoFinal.boostAmount, 0);
+        assertEq(user2InfoFinal.depositAmount, amountToDeposit);
+        assertEq(user2InfoFinal.rewardSettled, user2Info.amount * PoolInfo[poolId].accPointsPerShare / 1e18 + user2Info.rewardSettled - user2Info.rewardDebt + transferPointsFraction); 
+        assertEq(user2InfoFinal.rewardDebt, user2Info.amount * PoolInfo[poolId].accPointsPerShare / 1e18);
+
+        SophonFarmingState.UserInfo memory user1InfoFinal;
+        (user1InfoFinal.amount, user1InfoFinal.boostAmount, user1InfoFinal.depositAmount, user1InfoFinal.rewardSettled, user1InfoFinal.rewardDebt) =
+            sophonFarming.userInfo(poolId, account1);
+
+        assertEq(user1InfoFinal.amount, user1Info.amount);
+        assertEq(user1InfoFinal.boostAmount, user1Info.boostAmount);
+        assertEq(user1InfoFinal.depositAmount, user1Info.depositAmount);
+        assertEq(user1InfoFinal.rewardSettled, transferPoints - transferPointsFraction);
+        assertEq(user1InfoFinal.rewardDebt, user1Info.rewardDebt);
+    }
+
+    function testFuzz_TransferPoints_RevertWhen_TransferNotAllowed() public {
+        vm.startPrank(account1);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        vm.expectRevert(abi.encodeWithSelector(SophonFarming.TransferNotAllowed.selector));
+        sophonFarming.transferPoints(poolId, account2, 1);
+    }
+
+    function testFuzz_TransferPoints_RevertWhen_InvalidTransfer() public {
+        vm.startPrank(deployer);
+
+        // whitelist user
+        address[] memory accounts = new address[](1);
+        accounts[0] = account1;
+        sophonFarming.setUsersWhitelisted(accounts, true);
+        assertEq(sophonFarming.whitelist(account1), true);
+
+        vm.stopPrank();
+        vm.startPrank(account1);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        vm.expectRevert(abi.encodeWithSelector(SophonFarming.InvalidTransfer.selector));
+        sophonFarming.transferPoints(poolId, account1, 1);
+
+        vm.expectRevert(abi.encodeWithSelector(SophonFarming.InvalidTransfer.selector));
+        sophonFarming.transferPoints(poolId, address(sophonFarming), 1);
+
+        vm.expectRevert(abi.encodeWithSelector(SophonFarming.InvalidTransfer.selector));
+        sophonFarming.transferPoints(poolId, account2, 0);
+    }
+
+    function testFuzz_TransferPoints_TransferTooHigh(uint256 amountToDeposit, uint256 rollBlocks) public {
+        amountToDeposit = bound(amountToDeposit, 1e6, 1_000_000_000e18);
+        rollBlocks = bound(rollBlocks, 1, 100);
+
+        vm.startPrank(deployer);
+
+        // whitelist user
+        address[] memory accounts = new address[](1);
+        accounts[0] = account1;
+        sophonFarming.setUsersWhitelisted(accounts, true);
+        assertEq(sophonFarming.whitelist(account1), true);
+
+        vm.stopPrank();
+        vm.startPrank(account1);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        deal(address(wstETH), account1, amountToDeposit * 2);
+        wstETH.approve(address(sophonFarming), amountToDeposit * 2);
+        sophonFarming.deposit(poolId, amountToDeposit, 0);
+
+        vm.roll(block.number + rollBlocks);
+
+        sophonFarming.deposit(poolId, amountToDeposit, 0);
+        assertEq(wstETH.balanceOf(account1), 0);
+
+        SophonFarmingState.UserInfo memory user1Info;
+        (user1Info.amount, user1Info.boostAmount, user1Info.depositAmount, user1Info.rewardSettled, user1Info.rewardDebt) =
+            sophonFarming.userInfo(poolId, account1);
+
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        uint256 transferPoints = user1Info.amount * PoolInfo[poolId].accPointsPerShare / 1e18 + user1Info.rewardSettled - user1Info.rewardDebt;
+
+        vm.expectRevert(abi.encodeWithSelector(SophonFarming.TransferTooHigh.selector, transferPoints));
+        sophonFarming.transferPoints(poolId, account2, type(uint256).max - 1);
+    }
+
+    // INCREASE_BOOST FUNCTION /////////////////////////////////////////////////////////////////
     function test_IncreaseBoost_RevertWhen_FarmingIsEnded() public {
         vm.prank(deployer);
         sophonFarming.setEndBlock(block.number + 9, 1);
@@ -1795,43 +2027,15 @@ contract SophonFarmingTest is Test {
         assertEq(sophonFarming.getMaxAdditionalBoost(account1, poolId), wsthDepositedAmount);
     }
 
-    // WITHDRAW_PROCEEDS FUNCTION /////////////////////////////////////////////////////////////////
-    function testFuzz_WithdrawProceeds(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
-
-        amountToDeposit = 1e18;
-
-        uint256 wsthDepositedAmount = amountToDeposit;
-        uint256 amountToBoost = amountToDeposit / boostFraction;
-        uint256 boostAmount = amountToBoost * wsthDepositedAmount / amountToDeposit;
-        uint256 finalBoostAmount = boostAmount * sophonFarming.boosterMultiplier() / 1e18;
-        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
-        uint256 startingDeployerBalance = wstETH.balanceOf(deployer);
-
-        vm.startPrank(account1);
-        deal(address(wstETH), account1, amountToDeposit);
-        assertEq(wstETH.balanceOf(account1), amountToDeposit);
-
-        wstETH.approve(address(sophonFarming), amountToDeposit);
-        sophonFarming.deposit(poolId, amountToDeposit, amountToBoost);
-        assertEq(wstETH.balanceOf(account1), 0);
-
-        SophonFarmingState.UserInfo memory userInfo;
-        (userInfo.amount, userInfo.boostAmount, userInfo.depositAmount, userInfo.rewardSettled, userInfo.rewardDebt) =
-            sophonFarming.userInfo(poolId, account1);
-
-        assertEq(userInfo.amount, wsthDepositedAmount - boostAmount + finalBoostAmount);
-        assertEq(userInfo.boostAmount, finalBoostAmount);
-        assertEq(userInfo.depositAmount, wsthDepositedAmount - boostAmount);
-        assertEq(userInfo.rewardSettled, 0);
-        assertEq(userInfo.rewardDebt, 0);
-
-        vm.stopPrank();
+    // BRIDGE_PROCEEDS FUNCTION /////////////////////////////////////////////////////////////////
+    // NOTE: function not fully implemented, an upgrade will implement this later
+    function test_BridgeProceeds_RevertWhen_Unauthorized() public {
         vm.startPrank(deployer);
-        sophonFarming.withdrawProceeds(poolId);
 
-        assertEq(wstETH.balanceOf(deployer), startingDeployerBalance + amountToBoost);
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        vm.expectRevert(Unauthorized.selector);
+        sophonFarming.bridgeProceeds(poolId);
     }
 
     // GET_BLOCK_NUMBER FUNCTION /////////////////////////////////////////////////////////////////
@@ -1861,6 +2065,7 @@ contract SophonFarmingTest is Test {
             uint256 allocPoint,
             uint256 lastRewardBlock,
             uint256 accPointsPerShare,
+            uint256 enabledDate,
             string memory description
         ) = sophonFarming.poolInfo(poolId);
 
@@ -1872,6 +2077,7 @@ contract SophonFarmingTest is Test {
         assertEq(PoolInfo.allocPoint, allocPoint);
         assertEq(PoolInfo.lastRewardBlock, lastRewardBlock);
         assertEq(PoolInfo.accPointsPerShare, accPointsPerShare);
+        assertEq(PoolInfo.enabledDate, enabledDate);
         assertEq(abi.encode(PoolInfo.description), abi.encode(description));
     }
 
