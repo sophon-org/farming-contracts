@@ -30,7 +30,7 @@ NETWORK = network.show_active()
 
 if "fork" not in NETWORK:
     from brownie.network.gas.strategies import LinearScalingStrategy
-    gas_strategy = LinearScalingStrategy("30 gwei", "50 gwei", 1.1)
+    gas_strategy = LinearScalingStrategy("5 gwei", "50 gwei", 1.1)
     gas_price(gas_strategy) ## gas_price(20e9)
 
 gas_limit(5000000)
@@ -145,7 +145,7 @@ def createMockSetup(deployTokens = False):
         dbSet("mock_sdai", sDAI.address)
     sDAIAllocPoint = 20000
 
-    pointsPerBlock = 25*10**18
+    pointsPerBlock = 100*10**18
     startBlock = chain.height
     boosterMultiplier = 2e18
 
