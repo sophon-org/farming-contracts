@@ -49,13 +49,40 @@ interface ISophonFarming {
         pufETH
     }
     
-
-    event Add(address indexed lpToken, uint256 indexed pid, uint256 allocPoint);
+    event Add(address indexed lpToken, uint256 indexed pid, uint256 allocPoint, uint256 enabledDate);
+    event Set(address indexed lpToken, uint256 indexed pid, uint256 allocPoint, uint256 enabledDate);
     event Deposit(address indexed user, uint256 indexed pid, uint256 depositAmount, uint256 boostAmount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
+    event TransferPoints(address indexed user, address indexed receiver, uint256 indexed pid, uint256 amount);
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
-    event WithdrawProceeds(uint256 indexed pid, uint256 amount);
-    event Bridge(address indexed user, uint256 indexed pid, uint256 amount);
+    event BridgePool(address indexed user, uint256 indexed pid, uint256 amount);
+    event BridgeProceeds(uint256 indexed pid, uint256 proceeds);
+    event RevertFailedBridge(uint256 indexed pid);
+    event PoolUpdated(uint256 indexed pid);
+
+    error ZeroAddress();
+    error PoolExists();
+    error PoolDoesNotExist();
+    error AlreadyInitialized();
+    error NotFound(address lpToken);
+    error FarmingIsStarted();
+    error FarmingIsEnded();
+    error TransferNotAllowed();
+    error TransferTooHigh(uint256 maxAllowed);
+    error InvalidStartBlock();
+    error InvalidEndBlock();
+    error InvalidDeposit();
+    error InvalidBooster();
+    error InvalidPointsPerBlock();
+    error InvalidTransfer();
+    error WithdrawNotAllowed();
+    error WithdrawTooHigh(uint256 maxAllowed);
+    error WithdrawIsZero();
+    error NothingInPool();
+    error NoEthSent();
+    error BoostTooHigh(uint256 maxAllowed);
+    error BoostIsZero();
+    error BridgeInvalid();
 
     function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) external;
     function add(uint256 _allocPoint, address _lpToken, string memory _description) external returns (uint256);
@@ -87,6 +114,7 @@ interface ISophonFarming {
     function getOptimizedUserInfo(address[] memory _users) external view returns (uint256[4][][] memory);
     function getPendingPoints(address[] memory _users) external view returns (uint256[][] memory);
     function getBlockMultiplier(uint256 _from, uint256 _to) external view returns (uint256);
+    function isInWhitelist(address user) external view returns (bool);
 
 
     function typeToId(PredefinedPool poolType) external view returns (uint256);
@@ -102,7 +130,7 @@ interface ISophonFarming {
     function endBlockForWithdrawals() external view returns (uint256);
     function bridge() external view returns (address);
     function isBridged(uint256 poolId) external view returns (bool);
-
+    function transferPoints(uint256 _pid, address _sender, address _receiver, uint256 _transferAmount) external;
     
     
     function pendingOwner() external view returns (address);
@@ -113,6 +141,7 @@ interface ISophonFarming {
     function replaceImplementation(address impl_) external;
     function becomeImplementation(address proxy) external;
     function pendingImplementation() external returns(address);
+    function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external;
 
     
 }

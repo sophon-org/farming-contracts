@@ -828,7 +828,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         isBridged[_pid] = false;
         emit RevertFailedBridge(_pid);
     }
-
+    event Logger(string name, uint256 value);
     /**
      * @notice Called by an whitelisted admin to transfer points to another user
      * @param _pid pid of the pool to transfer points from
@@ -837,7 +837,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _transferAmount amount of points to transfer
      */
     function transferPoints(uint256 _pid, address _sender, address _receiver, uint256 _transferAmount) external {
-
+        emit Logger("transferPoints", 0);
         if (!whitelist[msg.sender][_sender]) {
             revert TransferNotAllowed();
         }

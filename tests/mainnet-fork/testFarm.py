@@ -191,10 +191,11 @@ def test_SF_deposit_stETH(SF, WETH, wstETH, stETH, accounts, interface, chain):
     assert stETH.balanceOf(SF) == 0
     
 def test_SF_deposit_eETH(SF, eETH, weETH, accounts, interface):
-    holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
+    holder = "0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000"
     user1 = accounts[1]
     amount = 100e18
     boostAmount = 0
+    user1.transfer(holder, 1e18)
     eETH.transfer(user1, amount, {"from": holder})
     eETH.approve(SF, 2**256-1, {"from": user1})
 
@@ -391,10 +392,11 @@ def test_SF_reward_logic_fairness2(SF, accounts, wstETH, stETH, eETH, weETH, int
 
 
 def test_SF_deposit_eETH_withBoost(SF, eETH, weETH, accounts, interface):
-    holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
+    holder = "0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000"
     user1 = accounts[1]
     amount = 100e18
     boostAmount = 1e18
+    user1.transfer(holder, 1e18)
     eETH.transfer(user1, amount, {"from": holder})
     eETH.approve(SF, 2**256-1, {"from": user1})
 
@@ -436,10 +438,11 @@ def test_SF_deposit_eETH_withBoost(SF, eETH, weETH, accounts, interface):
 
 
 def test_SF_deposit_eETH_withoutBoost(SF, eETH, weETH, accounts, interface):
-    holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
+    holder = "0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000"
     user1 = accounts[1]
     amount = 100e18
     boostAmount = 0
+    user1.transfer(holder, 1e18)
     eETH.transfer(user1, amount, {"from": holder})
     eETH.approve(SF, 2**256-1, {"from": user1})
 
@@ -476,3 +479,34 @@ def test_SF_deposit_eETH_withoutBoost(SF, eETH, weETH, accounts, interface):
     
     assert True
     
+
+
+
+def test_SF_transferPointFunction(SF, eETH, weETH, accounts, interface):
+    
+    
+    holder = "0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000"
+    user1 = accounts[1]
+    user2 = accounts[2]
+    user3 = accounts[3]
+    amount = 100e18
+    boostAmount = 0
+    user1.transfer(holder, 1e18)
+    eETH.transfer(user1, amount, {"from": holder})
+    eETH.approve(SF, 2**256-1, {"from": user1})
+
+    SF.depositeEth(amount, boostAmount, {"from": user1})
+   
+
+    chain.mine(10)
+    userInfo = SF.userInfo(PredefinedPool.weETH, user1)
+    pendingPoints = SF.pendingPoints(PredefinedPool.weETH, user1)
+    
+    SF.setUsersWhitelisted(user2, [user1], True, {"from": accounts[0]})
+    
+    # transfer everything
+    SF.transferPoints(PredefinedPool.weETH, user1, user3, 2*256-1, {"from": user2})
+    
+    # since I transfered everything. user3 has to have more than user1 in new block
+    assert SF.pendingPoints(PredefinedPool.weETH, user1) < SF.pendingPoints(PredefinedPool.weETH, user3)
+    assert True
