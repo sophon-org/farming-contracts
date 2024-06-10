@@ -80,5 +80,5 @@ contract SophonFarmingState {
     BridgeLike public bridge;
     mapping(uint256 => bool) public isBridged;
 
-    mapping(address user => bool inWhitelist) public whitelist;
+    mapping(address => mapping(address => bool inWhitelist)) public whitelist;
 }

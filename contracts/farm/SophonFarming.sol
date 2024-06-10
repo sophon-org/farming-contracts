@@ -388,12 +388,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     /**
      * @notice Adds or removes users from the whitelist
+     * @param _userAdmin an admin user who can transfer points for users
      * @param _users list of users
      * @param _isInWhitelist to add or remove
      */
-    function setUsersWhitelisted(address[] memory _users, bool _isInWhitelist) external onlyOwner {
+    function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external onlyOwner {
         for(uint i = 0; i < _users.length; i++) {
-            whitelist[_users[i]] = _isInWhitelist;
+            whitelist[_userAdmin][_users[i]] = _isInWhitelist;
         }
     }
 
@@ -857,17 +858,19 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     /**
      * @notice Called by an whitelisted user to transfer their points to another user
+     * @param _userAdmin whitelisted admin that can move user points
+     * @param _user user that has accrued points
      * @param _pid pid of the pool to transfer points from
      * @param _receiver address to receive the points by the transfer
      * @param _transferAmount amount of points to transfer
      */
-    function transferPoints(uint256 _pid, address _receiver, uint256 _transferAmount) external {
+    function transferPoints(address _userAdmin, address _user, uint256 _pid, address _receiver, uint256 _transferAmount) external {
 
-        if (!whitelist[msg.sender]) {
+        if (!whitelist[_userAdmin][_user]) {
             revert TransferNotAllowed();
         }
 
-        if (msg.sender == _receiver || _receiver == address(this) || _transferAmount == 0) {
+        if (_user == _receiver || _receiver == address(this) || _transferAmount == 0) {
             revert InvalidTransfer();
         }
 
@@ -880,7 +883,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         updatePool(_pid);
         uint256 accPointsPerShare = pool.accPointsPerShare;
 
-        UserInfo storage userFrom = userInfo[_pid][msg.sender];
+        UserInfo storage userFrom = userInfo[_pid][_user];
         UserInfo storage userTo = userInfo[_pid][_receiver];
 
         uint256 userFromAmount = userFrom.amount;
