@@ -410,19 +410,22 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         uint256 accPointsPerShare = pool.accPointsPerShare * 1e18;
 
         uint256 lpSupply = pool.amount;
-        if (getBlockNumber() > pool.lastRewardBlock && lpSupply != 0 && block.timestamp > pool.enabledDate) {
-            uint256 blockMultiplier = _getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
+        if (getBlockNumber() > pool.lastRewardBlock && lpSupply != 0) {
+            uint256 _enabledDate = pool.enabledDate;
+            if (_enabledDate == 0 || _enabledDate < block.timestamp) {
+                uint256 blockMultiplier = _getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
 
-            uint256 pointReward =
-                blockMultiplier *
-                pointsPerBlock *
-                pool.allocPoint /
-                totalAllocPoint;
+                uint256 pointReward =
+                    blockMultiplier *
+                    pointsPerBlock *
+                    pool.allocPoint /
+                    totalAllocPoint;
 
-            accPointsPerShare = pointReward *
-                1e18 /
-                lpSupply +
-                accPointsPerShare;
+                accPointsPerShare = pointReward *
+                    1e18 /
+                    lpSupply +
+                    accPointsPerShare;
+            }
         }
 
         return user.amount *
@@ -463,8 +466,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
         uint256 lpSupply = pool.amount;
         uint256 _pointsPerBlock = pointsPerBlock;
+        uint256 _enabledDate = pool.enabledDate;
         uint256 _allocPoint;
-        if (block.timestamp > pool.enabledDate) {
+        if (_enabledDate == 0 || _enabledDate < block.timestamp) {
             _allocPoint = pool.allocPoint;
         }
         if (lpSupply == 0 || _pointsPerBlock == 0 || _allocPoint == 0) {
