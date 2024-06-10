@@ -191,7 +191,7 @@ def test_SF_deposit_stETH(SF, WETH, wstETH, stETH, accounts, interface, chain):
     assert stETH.balanceOf(SF) == 0
     
 def test_SF_deposit_eETH(SF, eETH, weETH, accounts, interface):
-    holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
+    holder = "0x1de713F78aA5f29874bBcc95e125721F002Da7f2"
     user1 = accounts[1]
     amount = 100e18
     boostAmount = 0
@@ -391,7 +391,7 @@ def test_SF_reward_logic_fairness2(SF, accounts, wstETH, stETH, eETH, weETH, int
 
 
 def test_SF_deposit_eETH_withBoost(SF, eETH, weETH, accounts, interface):
-    holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
+    holder = "0x1de713F78aA5f29874bBcc95e125721F002Da7f2"
     user1 = accounts[1]
     amount = 100e18
     boostAmount = 1e18
@@ -436,7 +436,7 @@ def test_SF_deposit_eETH_withBoost(SF, eETH, weETH, accounts, interface):
 
 
 def test_SF_deposit_eETH_withoutBoost(SF, eETH, weETH, accounts, interface):
-    holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
+    holder = "0x1de713F78aA5f29874bBcc95e125721F002Da7f2"
     user1 = accounts[1]
     amount = 100e18
     boostAmount = 0
@@ -476,3 +476,33 @@ def test_SF_deposit_eETH_withoutBoost(SF, eETH, weETH, accounts, interface):
     
     assert True
     
+
+
+def test_SF_deposit_WETH_wstETH_manipulate_distribution_points(SF, WETH, wstETH, stETH, accounts, interface, chain):
+    holder = "0x5fEC2f34D80ED82370F733043B6A536d7e9D7f8d"
+    user1 = accounts[1]
+    user2 = accounts[2]
+    amount1 = 1
+    amount2 = 1e18
+    
+    user1.transfer(holder, 1e18)
+    wstETH.transfer(user1, amount1, {"from": holder})
+    wstETH.approve(SF, 2**256-1, {"from": user1})
+    
+    wstETH.transfer(user2, amount2, {"from": holder})
+    wstETH.approve(SF, 2**256-1, {"from": user2})
+
+    SF.deposit(PredefinedPool.wstETH, amount1, 0, {"from": user1})
+    
+    poolInfo = SF.getPoolInfo()
+    wstETHPoolInfo = poolInfo[1]
+    chain.mine()
+
+    
+    SF.deposit(PredefinedPool.wstETH, amount2, 0, {"from": user2})
+    
+    chain.mine()
+    chain.mine()
+    
+    assert abs(SF.pendingPoints(1, user1) - SF.pendingPoints(1, user2)) < 100
+    assert True
