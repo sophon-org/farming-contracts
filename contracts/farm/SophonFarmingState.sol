@@ -64,9 +64,6 @@ contract SophonFarmingState {
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint;
 
-    // The block number when point mining starts.
-    uint256 public startBlock;
-
     // The block number when point mining ends.
     uint256 public endBlock;
 

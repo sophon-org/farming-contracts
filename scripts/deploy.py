@@ -146,15 +146,15 @@ def createMockSetup(deployTokens = False):
     sDAIAllocPoint = 20000
 
     pointsPerBlock = 100*10**18
-    startBlock = chain.height
+    startBlock = chain.height + 45
     boosterMultiplier = 2e18
 
     createFarm(weth, stETH, wstETH, wstEthAllocPoint, eETH, eETHLiquidityPool, weETH, weEthAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
 
     acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = getMocks()
 
-    farm.add(10000, mock0, "mock0", {"from": acct})
-    farm.add(30000, mock1, "mock1", {"from": acct})
+    farm.add(10000, mock0, "mock0", startBlock, {"from": acct})
+    farm.add(30000, mock1, "mock1", startBlock, {"from": acct})
 
 
     ## Approvals
@@ -258,15 +258,15 @@ def testMainnetOnFork():
     weEthAllocPoint = 20000
     sDAIAllocPoint = 20000
     pointsPerBlock = 25*10**18
-    startBlock = chain.height
+    startBlock = chain.height + 45
     boosterMultiplier = 2e18
 
     createFarm(weth, stETH, wstETH, wstEthAllocPoint, eETH, eETHLiquidityPool, weETH, weEthAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
 
     acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = getMocks()
 
-    farm.add(10000, mock0, "mock0", {"from": acct})
-    farm.add(30000, mock1, "mock1", {"from": acct})
+    farm.add(10000, mock0, "mock0", startBlock, {"from": acct})
+    farm.add(30000, mock1, "mock1", startBlock, {"from": acct})
 
 
     ## Approvals

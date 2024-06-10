@@ -117,10 +117,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param weEthAllocPoint_ weEth alloc points
      * @param sDAIAllocPoint_ sdai alloc points
      * @param _pointsPerBlock points per block
-     * @param _startBlock start block
+     * @param _initialPoolStartBlock start block
      * @param _boosterMultiplier booster multiplier
      */
-    function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) public virtual onlyOwner {
+    function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _initialPoolStartBlock, uint256 _boosterMultiplier) public virtual onlyOwner {
         if (_initialized) {
             revert AlreadyInitialized();
         }
@@ -129,11 +129,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert InvalidPointsPerBlock();
         }
         pointsPerBlock = _pointsPerBlock;
-
-        if (_startBlock == 0) {
-            revert InvalidStartBlock();
-        }
-        startBlock = _startBlock;
 
         if (_boosterMultiplier < 1e18 || _boosterMultiplier > 10e18) {
             revert InvalidBooster();
@@ -148,15 +143,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         _initialized = true;
 
         // sDAI
-        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI");
+        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", _initialPoolStartBlock);
         IERC20(dai).approve(sDAI, 2**256-1);
 
         // wstETH
-        typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, wstETH, "wstETH");
+        typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, wstETH, "wstETH", _initialPoolStartBlock);
         IERC20(stETH).approve(wstETH, 2**256-1);
 
         // weETH
-        typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, weETH, "weETH");
+        typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, weETH, "weETH", _initialPoolStartBlock);
         IERC20(eETH).approve(weETH, 2**256-1);
     }
 
@@ -165,10 +160,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _allocPoint alloc point for new pool
      * @param _lpToken lpToken address
      * @param _description description of new pool
-     * @param _startBlock block at which points start to accrue
+     * @param _poolStartBlock block at which points start to accrue for the pool
      * @return uint256 The pid of the newly created asset
      */
-    function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _startBlock) public onlyOwner returns (uint256) {
+    function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock) public onlyOwner returns (uint256) {
         if (_lpToken == address(0)) {
             revert ZeroAddress();
         }
@@ -182,7 +177,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         massUpdatePools();
 
         uint256 lastRewardBlock =
-            getBlockNumber() > _startBlock ? getBlockNumber() : _startBlock;
+            getBlockNumber() > _poolStartBlock ? getBlockNumber() : _poolStartBlock;
         totalAllocPoint = totalAllocPoint + _allocPoint;
         poolExists[_lpToken] = true;
 
@@ -211,9 +206,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Updates the given pool's allocation point. Can only be called by the owner.
      * @param _pid The pid to update
      * @param _allocPoint The new alloc point to set for the pool
-     * @param _startBlock block at which points start to accrue
+     * @param _poolStartBlock block at which points start to accrue for the pool
      */
-    function set(uint256 _pid, uint256 _allocPoint, uint256 _startBlock) external onlyOwner {
+    function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -228,9 +223,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         totalAllocPoint = totalAllocPoint - pool.allocPoint + _allocPoint;
         pool.allocPoint = _allocPoint;
 
-        // you can always move further pool starting block unless its already started
+        // pool starting block is updated, unless it's already started
         if (getBlockNumber() < pool.lastRewardBlock) {
-            pool.lastRewardBlock = _startBlock;
+            pool.lastRewardBlock = _poolStartBlock;
         }
 
         emit Set(lpToken, _pid, _allocPoint);
@@ -296,23 +291,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     }
 
     /**
-     * @notice Set the start block of the farm
-     * @param _startBlock the start block
-     */
-    function setStartBlock(uint256 _startBlock) external onlyOwner {
-        uint256 blockNumber = getBlockNumber();
-        if (_startBlock == 0 || blockNumber > _startBlock || (endBlock != 0 && _startBlock >= endBlock)) {
-            revert InvalidStartBlock();
-        }
-        if (blockNumber > startBlock) {
-            revert FarmingIsStarted();
-        }
-
-        massUpdatePools();
-        startBlock = _startBlock;
-    }
-
-    /**
      * @notice Set the end block of the farm
      * @param _endBlock the end block
      * @param _withdrawalBlocks the last block that withdrawals are allowed
@@ -323,7 +301,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
         uint256 _endBlockForWithdrawals;
         if (_endBlock != 0) {
-            if (_endBlock <= startBlock || getBlockNumber() > _endBlock) {
+            if (getBlockNumber() > _endBlock) {
                 revert InvalidEndBlock();
             }
             _endBlockForWithdrawals = _endBlock + _withdrawalBlocks;
