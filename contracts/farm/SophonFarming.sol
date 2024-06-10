@@ -33,8 +33,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when a user withdraws from a pool
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
-    /// @notice Emitted when a whitelisted user transfers their points to another user
-    event TransferPoints(address indexed user, address indexed receiver, uint256 indexed pid, uint256 amount);
+    /// @notice Emitted when a whitelisted admin transfers points from one user to another
+    event TransferPoints(address indexed sender, address indexed receiver, uint256 indexed pid, uint256 amount);
 
     /// @notice Emitted when a user increases the boost of an existing deposit
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
@@ -857,19 +857,19 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     }
 
     /**
-     * @notice Called by an whitelisted user to transfer their points to another user
-     * @param _user user that has accrued points
+     * @notice Called by an whitelisted admin to transfer points to another user
      * @param _pid pid of the pool to transfer points from
-     * @param _receiver address to receive the points by the transfer
+     * @param _sender address to send accrued points
+     * @param _receiver address to receive accrued points
      * @param _transferAmount amount of points to transfer
      */
-    function transferPoints(address _user, uint256 _pid, address _receiver, uint256 _transferAmount) external {
+    function transferPoints(uint256 _pid, address _sender, address _receiver, uint256 _transferAmount) external {
 
-        if (!whitelist[msg.sender][_user]) {
+        if (!whitelist[msg.sender][_sender]) {
             revert TransferNotAllowed();
         }
 
-        if (_user == _receiver || _receiver == address(this) || _transferAmount == 0) {
+        if (_sender == _receiver || _receiver == address(this) || _transferAmount == 0) {
             revert InvalidTransfer();
         }
 
@@ -882,7 +882,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         updatePool(_pid);
         uint256 accPointsPerShare = pool.accPointsPerShare;
 
-        UserInfo storage userFrom = userInfo[_pid][_user];
+        UserInfo storage userFrom = userInfo[_pid][_sender];
         UserInfo storage userTo = userInfo[_pid][_receiver];
 
         uint256 userFromAmount = userFrom.amount;
@@ -919,7 +919,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             accPointsPerShare /
             1e18;
 
-        emit TransferPoints(msg.sender, _receiver, _pid, _transferAmount);
+        emit TransferPoints(_sender, _receiver, _pid, _transferAmount);
     }
 
     /**
