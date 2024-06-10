@@ -301,12 +301,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _startBlock the start block
      */
     function setStartBlock(uint256 _startBlock) external onlyOwner {
-        if (_startBlock == 0 || (endBlock != 0 && _startBlock >= endBlock)) {
+        uint256 blockNumber = getBlockNumber();
+        if (_startBlock == 0 || blockNumber > _startBlock || (endBlock != 0 && _startBlock >= endBlock)) {
             revert InvalidStartBlock();
         }
-        if (getBlockNumber() > startBlock) {
+        if (blockNumber > startBlock) {
             revert FarmingIsStarted();
         }
+
+        massUpdatePools();
         startBlock = _startBlock;
     }
 
