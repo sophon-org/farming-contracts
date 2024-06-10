@@ -30,7 +30,7 @@ NETWORK = network.show_active()
 
 if "fork" not in NETWORK:
     from brownie.network.gas.strategies import LinearScalingStrategy
-    gas_strategy = LinearScalingStrategy("2 gwei", "5 gwei", 1.1)
+    gas_strategy = LinearScalingStrategy("5 gwei", "50 gwei", 1.1)
     gas_price(gas_strategy) ## gas_price(20e9)
 
 gas_limit(5000000)
@@ -145,7 +145,7 @@ def createMockSetup(deployTokens = False):
         dbSet("mock_sdai", sDAI.address)
     sDAIAllocPoint = 20000
 
-    pointsPerBlock = 25*10**18
+    pointsPerBlock = 100*10**18
     startBlock = chain.height
     boosterMultiplier = 2e18
 
@@ -328,6 +328,45 @@ def testMainnetOnFork():
         farm.addBlocks(50, {"from": acct})
 
     return getMocks()
+
+def sendTestTokens(receiver_list):
+    global acct
+
+    acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI = getMocks()
+
+    user_count = len(receiver_list)
+
+    weth.deposit({"from": acct, "value": 0.01e18 * user_count})
+    stETH.submit(acct, {"from": acct, "value": 0.01e18 * user_count})
+    eETHLiquidityPool.deposit(acct, {"from": acct, "value": 0.01e18 * user_count})
+    dai.mint(acct, 1000e18 * user_count, {"from": acct})
+
+    wstETH.wrap(stETH.balanceOf(acct) // 2, {"from": acct})
+    weETH.wrap(eETH.balanceOf(acct) // 2, {"from": acct})
+    sDAI.deposit(dai.balanceOf(acct) // 2, acct, {"from": acct})
+
+    weth_amount = weth.balanceOf(acct) // user_count
+    stETH_amount = stETH.balanceOf(acct) // user_count
+    wstETH_amount = wstETH.balanceOf(acct) // user_count
+    eETH_amount = eETH.balanceOf(acct) // user_count
+    weETH_amount = weETH.balanceOf(acct) // user_count
+    dai_amount = dai.balanceOf(acct) // user_count
+    sDAI_amount = sDAI.balanceOf(acct) // user_count
+
+    for receiver in receiver_list:
+        print("Distributing to:", receiver)
+        mock0.mint(receiver, 1000e18, {"from": acct})
+        mock1.mint(receiver, 1000e18, {"from": acct})
+        if receiver != acct.address:
+            weth.transfer(receiver, weth_amount, {"from": acct})
+            stETH.transfer(receiver, stETH_amount, {"from": acct})
+            wstETH.transfer(receiver, wstETH_amount, {"from": acct})
+            eETH.transfer(receiver, eETH_amount, {"from": acct})
+            weETH.transfer(receiver, weETH_amount, {"from": acct})
+            dai.transfer(receiver, dai_amount, {"from": acct})
+            sDAI.transfer(receiver, sDAI_amount, {"from": acct})
+
+    return acct, acct1, acct2, farm, mock0, mock1, weth, stETH, wstETH, eETH, eETHLiquidityPool, weETH, dai, sDAI
 
 def createMockToken(count=0, force=False):
     global acct

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.25;
+pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -78,4 +78,6 @@ contract SophonFarmingState {
 
     BridgeLike public bridge;
     mapping(uint256 => bool) public isBridged;
+
+    mapping(address userAdmin => mapping(address user => bool inWhitelist)) public whitelist;
 }

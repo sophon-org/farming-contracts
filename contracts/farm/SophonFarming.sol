@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.25;
+pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -33,14 +33,17 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when a user withdraws from a pool
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
+    /// @notice Emitted when a whitelisted admin transfers points from one user to another
+    event TransferPoints(address indexed sender, address indexed receiver, uint256 indexed pid, uint256 amount);
+
     /// @notice Emitted when a user increases the boost of an existing deposit
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
 
     /// @notice Emitted when all pool funds are bridged to Sophon blockchain
-    event Bridge(address indexed user, uint256 indexed pid, uint256 amount);
+    event BridgePool(address indexed user, uint256 indexed pid, uint256 amount);
 
-    /// @notice Emitted when the admin withdraws booster proceeds
-    event WithdrawProceeds(uint256 indexed pid, uint256 proceeds);
+    /// @notice Emitted when the admin bridges booster proceeds
+    event BridgeProceeds(uint256 indexed pid, uint256 proceeds);
 
     /// @notice Emitted when the the revertFailedBridge function is called
     event RevertFailedBridge(uint256 indexed pid);
@@ -55,11 +58,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error NotFound(address lpToken);
     error FarmingIsStarted();
     error FarmingIsEnded();
+    error TransferNotAllowed();
+    error TransferTooHigh(uint256 maxAllowed);
     error InvalidStartBlock();
     error InvalidEndBlock();
     error InvalidDeposit();
     error InvalidBooster();
     error InvalidPointsPerBlock();
+    error InvalidTransfer();
     error WithdrawNotAllowed();
     error WithdrawTooHigh(uint256 maxAllowed);
     error WithdrawIsZero();
@@ -380,6 +386,18 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     }
 
     /**
+     * @notice Adds or removes users from the whitelist
+     * @param _userAdmin an admin user who can transfer points for users
+     * @param _users list of users
+     * @param _isInWhitelist to add or remove
+     */
+    function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external onlyOwner {
+        for(uint i = 0; i < _users.length; i++) {
+            whitelist[_userAdmin][_users[i]] = _isInWhitelist;
+        }
+    }
+
+    /**
      * @notice Returns pending points for user in a pool
      * @param _pid pid of the pool
      * @param _user user in the pool
@@ -623,6 +641,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         updatePool(_pid);
 
         uint256 userAmount = user.amount;
+
         user.rewardSettled =
             userAmount *
             pool.accPointsPerShare /
@@ -683,6 +702,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         updatePool(_pid);
 
         uint256 userAmount = user.amount;
+
         user.rewardSettled =
             userAmount *
             pool.accPointsPerShare /
@@ -753,6 +773,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
 
         uint256 userAmount = user.amount;
+
         user.rewardSettled =
             userAmount *
             pool.accPointsPerShare /
@@ -782,6 +803,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid to bridge
      */
     function bridgePool(uint256 _pid) external {
+        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
+
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
         }
@@ -810,7 +833,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             owner()                 // _refundRecipient
         );
 
-        emit Bridge(msg.sender, _pid, depositAmount);
+        emit BridgePool(msg.sender, _pid, depositAmount);
     }
 
     // TODO: does this function need to call claimFailedDeposit on the bridge?
@@ -820,11 +843,79 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid of the failed bridge to revert
      */
     function revertFailedBridge(uint256 _pid) external onlyOwner {
+        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
+
         if (address(poolInfo[_pid].lpToken) == address(0)) {
             revert PoolDoesNotExist();
         }
         isBridged[_pid] = false;
         emit RevertFailedBridge(_pid);
+    }
+
+    /**
+     * @notice Called by an whitelisted admin to transfer points to another user
+     * @param _pid pid of the pool to transfer points from
+     * @param _sender address to send accrued points
+     * @param _receiver address to receive accrued points
+     * @param _transferAmount amount of points to transfer
+     */
+    function transferPoints(uint256 _pid, address _sender, address _receiver, uint256 _transferAmount) external {
+
+        if (!whitelist[msg.sender][_sender]) {
+            revert TransferNotAllowed();
+        }
+
+        if (_sender == _receiver || _receiver == address(this) || _transferAmount == 0) {
+            revert InvalidTransfer();
+        }
+
+        PoolInfo storage pool = poolInfo[_pid];
+
+        if (address(pool.lpToken) == address(0)) {
+            revert PoolDoesNotExist();
+        }
+
+        updatePool(_pid);
+        uint256 accPointsPerShare = pool.accPointsPerShare;
+
+        UserInfo storage userFrom = userInfo[_pid][_sender];
+        UserInfo storage userTo = userInfo[_pid][_receiver];
+
+        uint256 userFromAmount = userFrom.amount;
+        uint256 userToAmount = userTo.amount;
+
+        uint userFromRewardSettled =
+            userFromAmount *
+            accPointsPerShare /
+            1e18 +
+            userFrom.rewardSettled -
+            userFrom.rewardDebt;
+
+        if (_transferAmount == type(uint256).max) {
+            _transferAmount = userFromRewardSettled;
+        } else if (_transferAmount > userFromRewardSettled) {
+            revert TransferTooHigh(userFromRewardSettled);
+        }
+
+        userFrom.rewardSettled = userFromRewardSettled - _transferAmount;
+
+        userTo.rewardSettled =
+            userToAmount *
+            accPointsPerShare /
+            1e18 +
+            userTo.rewardSettled -
+            userTo.rewardDebt +
+            _transferAmount;
+
+        userFrom.rewardDebt = userFromAmount *
+            accPointsPerShare /
+            1e18;
+
+        userTo.rewardDebt = userToAmount *
+            accPointsPerShare /
+            1e18;
+
+        emit TransferPoints(_sender, _receiver, _pid, _transferAmount);
     }
 
     /**
@@ -896,15 +987,20 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         return IsDAI(sDAI).deposit(_amount, address(this));
     }
 
+    // This is pending the launch of Sophon testnet
     /**
-     * @notice Allows an admin to withdraw booster proceeds
-     * @param _pid pid to withdraw proceeds from
+     * @notice Allows an admin to bridge booster proceeds
+     * @param _pid pid to bridge proceeds from
      */
-    function withdrawProceeds(uint256 _pid) external onlyOwner {
+    function bridgeProceeds(uint256 _pid) external onlyOwner {
+        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
+
         uint256 _proceeds = heldProceeds[_pid];
         heldProceeds[_pid] = 0;
-        poolInfo[_pid].lpToken.safeTransfer(msg.sender, _proceeds);
-        emit WithdrawProceeds(_pid, _proceeds);
+
+        // TODO: add bridging logic
+
+        emit BridgeProceeds(_pid, _proceeds);
     }
 
     /**
