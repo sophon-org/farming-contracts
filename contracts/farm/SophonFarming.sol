@@ -858,15 +858,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     /**
      * @notice Called by an whitelisted user to transfer their points to another user
-     * @param _userAdmin whitelisted admin that can move user points
      * @param _user user that has accrued points
      * @param _pid pid of the pool to transfer points from
      * @param _receiver address to receive the points by the transfer
      * @param _transferAmount amount of points to transfer
      */
-    function transferPoints(address _userAdmin, address _user, uint256 _pid, address _receiver, uint256 _transferAmount) external {
+    function transferPoints(address _user, uint256 _pid, address _receiver, uint256 _transferAmount) external {
 
-        if (!whitelist[_userAdmin][_user]) {
+        if (!whitelist[msg.sender][_user]) {
             revert TransferNotAllowed();
         }
 
