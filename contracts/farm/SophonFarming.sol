@@ -780,7 +780,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Permissionless function to allow anyone to bridge during the correct period
      * @param _pid pid to bridge
      */
-    function bridgePool(uint256 _pid) external {
+    function bridgePool(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external payable {
         revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
 
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
@@ -800,14 +800,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         IERC20 lpToken = pool.lpToken;
         lpToken.approve(address(bridge), depositAmount);
 
-        // TODO: change _refundRecipient, verify l2Farm, _l2TxGasLimit and _l2TxGasPerPubdataByte
-        // These are pending the launch of Sophon testnet
-        bridge.deposit(
+        // Actual values are pending the launch of Sophon testnet
+        bridge.deposit{value: msg.value}(
             pool.l2Farm,            // _l2Receiver
             address(lpToken),       // _l1Token
             depositAmount,          // _amount
-            200000,                 // _l2TxGasLimit
-            0,                      // _l2TxGasPerPubdataByte
+            _l2TxGasLimit,          // _l2TxGasLimit
+            _l2TxGasPerPubdataByte, // _l2TxGasPerPubdataByte
             owner()                 // _refundRecipient
         );
 
@@ -970,7 +969,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Allows an admin to bridge booster proceeds
      * @param _pid pid to bridge proceeds from
      */
-    function bridgeProceeds(uint256 _pid) external onlyOwner {
+    function bridgeProceeds(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external payable onlyOwner {
         revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
 
         uint256 _proceeds = heldProceeds[_pid];
