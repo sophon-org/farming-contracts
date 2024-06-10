@@ -159,9 +159,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _allocPoint alloc point for new pool
      * @param _lpToken lpToken address
      * @param _description description of new pool
+     * @param _startBlock block at which points start to accrue
      * @return uint256 The pid of the newly created asset
      */
-    function add(uint256 _allocPoint, address _lpToken, string memory _description) public onlyOwner returns (uint256) {
+    function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _startBlock) public onlyOwner returns (uint256) {
         if (_lpToken == address(0)) {
             revert ZeroAddress();
         }
@@ -175,7 +176,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         massUpdatePools();
 
         uint256 lastRewardBlock =
-            getBlockNumber() > startBlock ? getBlockNumber() : startBlock;
+            getBlockNumber() > _startBlock ? getBlockNumber() : _startBlock;
         totalAllocPoint = totalAllocPoint + _allocPoint;
         poolExists[_lpToken] = true;
 
@@ -204,8 +205,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Updates the given pool's allocation point. Can only be called by the owner.
      * @param _pid The pid to update
      * @param _allocPoint The new alloc point to set for the pool
+     * @param _startBlock block at which points start to accrue
      */
-    function set(uint256 _pid, uint256 _allocPoint) external onlyOwner {
+    function set(uint256 _pid, uint256 _allocPoint, uint256 _startBlock) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -220,8 +222,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         totalAllocPoint = totalAllocPoint - pool.allocPoint + _allocPoint;
         pool.allocPoint = _allocPoint;
 
+        // you can always move further pool starting block unless its already started
         if (getBlockNumber() < pool.lastRewardBlock) {
-            pool.lastRewardBlock = startBlock;
+            pool.lastRewardBlock = _startBlock;
         }
 
         emit Set(lpToken, _pid, _allocPoint);
