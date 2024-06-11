@@ -11,10 +11,10 @@ interface ISophonFarming {
         address l2Farm; // Address of the farming contract on Sophon chain
         uint256 amount; // total amount of LP tokens earning yield from deposits and boosts
         uint256 boostAmount; // total boosted value purchased by users
+        uint256 depositAmount; // remaining deposits not applied to a boost purchases
         uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
         uint256 lastRewardBlock; // Last block number that points distribution occurs.
         uint256 accPointsPerShare; // Accumulated points per share, times 1e18. See below.
-        address poolShareToken; // the pool share token minted when a user deposits that represents their deposit
         string description; // Description of pool.
     }
 
@@ -85,7 +85,7 @@ interface ISophonFarming {
     error BridgeInvalid();
 
     function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) external;
-    function add(uint256 _allocPoint, address _lpToken, string memory _description) external returns (uint256);
+    function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock) external returns (uint256);
     function set(uint256 _pid, uint256 _allocPoint) external;
     function poolLength() external view returns (uint256);
     function isFarmingEnded() external view returns (bool);

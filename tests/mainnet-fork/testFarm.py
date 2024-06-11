@@ -38,6 +38,10 @@ def weETH(interface):
 
 
 @pytest.fixture(scope="module")
+def USDC(interface):
+    return interface.IERC20("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
+
+@pytest.fixture(scope="module")
 def SF(accounts, chain, SophonFarming, SophonFarmingProxy, interface):
     deployer = accounts[0]
 
@@ -505,8 +509,76 @@ def test_SF_transferPointFunction(SF, eETH, weETH, accounts, interface):
     SF.setUsersWhitelisted(user2, [user1], True, {"from": accounts[0]})
     
     # transfer everything
-    SF.transferPoints(PredefinedPool.weETH, user1, user3, 2*256-1, {"from": user2})
+    SF.transferPoints(PredefinedPool.weETH, user1, user3, 2**256-1, {"from": user2})
     
     # since I transfered everything. user3 has to have more than user1 in new block
     assert SF.pendingPoints(PredefinedPool.weETH, user1) < SF.pendingPoints(PredefinedPool.weETH, user3)
+    assert False
+    
+
+
+def test_SF_pointAllocation(SF, eETH, weETH, accounts, interface):
+    
+    
+    holder = "0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000"
+    user1 = accounts[1]
+    user2 = accounts[2]
+    user3 = accounts[3]
+    amount = 100e18
+    boostAmount = 0
+    user1.transfer(holder, 1e18)
+    eETH.transfer(user1, amount, {"from": holder})
+    eETH.approve(SF, 2**256-1, {"from": user1})
+
+    SF.depositeEth(amount, boostAmount, {"from": user1})
+    
+    numberOfBlocks = 10
+    poolInfo = SF.getPoolInfo()
+    poolAllocPoint = poolInfo[2][5]
+    chain.mine(numberOfBlocks)
+    
+    # since user is the single staker of this pool he should get all the points
+    assert SF.pendingPoints(PredefinedPool.weETH, user1) == int(SF.pointsPerBlock() * poolAllocPoint * numberOfBlocks / Decimal(SF.totalAllocPoint())) 
     assert True
+    
+
+
+def test_SF_overflow_accPointsPerShare(SF, eETH, weETH, DAI, sDAI, accounts, interface):
+    holder = "0x75e34757ce4e9C733f3B025690402a700B18f2F5"
+    user1 = accounts[1]
+    user2 = accounts[2]
+    amount = 1
+    amount2 = 1000000e18
+
+    sDAI.transfer(user1, amount, {"from": holder})
+    sDAI.approve(SF, 2**256-1, {"from": user1})
+    
+    sDAI.transfer(user2, amount2, {"from": holder})
+    sDAI.approve(SF, 2**256-1, {"from": user2})
+    
+    SF.deposit(PredefinedPool.sDAI, amount, 0, {"from": user1})
+    
+    SF.updatePool(PredefinedPool.sDAI, {"from": user1})
+    assert False
+    SF.deposit(PredefinedPool.sDAI, amount2, 0, {"from": user2})
+    assert False
+    
+    
+    
+def test_SF_overflow_accPointsPerShare1(SF, eETH, weETH, DAI, sDAI, accounts, USDC, interface): 
+    
+    holder = "0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa"
+    SF.add(60000, USDC.address, "USDC description", {"from": accounts[0]})
+    
+    user1 = accounts[1]
+    amount = 1
+    
+    USDC.transfer(user1, amount, {"from": holder})
+    USDC.approve(SF, 2**256-1, {"from": user1})
+    
+    SF.deposit(PredefinedPool.sDAI, amount, 0, {"from": user1})
+    
+    SF.updatePool(PredefinedPool.sDAI, {"from": user1})
+    
+    assert False
+    
