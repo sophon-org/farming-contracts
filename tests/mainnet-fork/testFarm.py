@@ -576,9 +576,9 @@ def test_SF_overflow_accPointsPerShare1(SF, eETH, weETH, DAI, sDAI, accounts, US
     USDC.transfer(user1, amount, {"from": holder})
     USDC.approve(SF, 2**256-1, {"from": user1})
     
-    SF.deposit(PredefinedPool.sDAI, amount, 0, {"from": user1})
+    SF.deposit(3, amount, 0, {"from": user1})
     
-    SF.updatePool(PredefinedPool.sDAI, {"from": user1})
+    SF.updatePool(3, {"from": user1})
     
     assert False
     
