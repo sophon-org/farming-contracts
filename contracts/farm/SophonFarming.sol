@@ -499,13 +499,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _boostAmount amount to boost
      */
     function depositStEth(uint256 _amount, uint256 _boostAmount) external {
+        uint256 beforeBalance = IERC20(stETH).balanceOf(address(this));
         IERC20(stETH).safeTransferFrom(
             msg.sender,
             address(this),
             _amount
         );
+        uint256 _finalAmount = IERC20(stETH).balanceOf(address(this)) - beforeBalance;
 
-        _depositPredefinedAsset(_amount, _amount, _boostAmount, PredefinedPool.wstETH);
+        _depositPredefinedAsset(_finalAmount, _amount, _boostAmount, PredefinedPool.wstETH);
     }
 
     /**
@@ -514,13 +516,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _boostAmount amount to boost
      */
     function depositeEth(uint256 _amount, uint256 _boostAmount) external {
+        uint256 beforeBalance = IERC20(eETH).balanceOf(address(this));
         IERC20(eETH).safeTransferFrom(
             msg.sender,
             address(this),
             _amount
         );
+        uint256 _finalAmount = IERC20(eETH).balanceOf(address(this)) - beforeBalance;
 
-        _depositPredefinedAsset(_amount, _amount, _boostAmount, PredefinedPool.weETH);
+        _depositPredefinedAsset(_finalAmount, _amount, _boostAmount, PredefinedPool.weETH);
     }
 
     /**
