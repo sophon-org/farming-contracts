@@ -568,7 +568,7 @@ def test_SF_overflow_accPointsPerShare(SF, eETH, weETH, DAI, sDAI, accounts, int
 def test_SF_overflow_accPointsPerShare1(SF, eETH, weETH, DAI, sDAI, accounts, USDC, interface): 
     
     holder = "0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa"
-    SF.add(60000, USDC.address, "USDC description", {"from": accounts[0]})
+    SF.add(60000, USDC.address, "USDC description", chain.height, {"from": accounts[0]})
     
     user1 = accounts[1]
     amount = 1
