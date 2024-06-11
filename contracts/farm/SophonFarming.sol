@@ -60,7 +60,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error FarmingIsEnded();
     error TransferNotAllowed();
     error TransferTooHigh(uint256 maxAllowed);
-    error InvalidStartBlock();
     error InvalidEndBlock();
     error InvalidDeposit();
     error InvalidBooster();
