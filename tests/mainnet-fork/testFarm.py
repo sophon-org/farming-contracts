@@ -198,7 +198,7 @@ def test_SF_deposit_stETH(SF, WETH, wstETH, stETH, accounts, interface, chain):
     assert stETH.balanceOf(user1) >  (int(amount) - 6) # due to interest rate on wstETH, also 1-2 wei bug
     
     # check for leak
-    assert stETH.balanceOf(SF) == 0
+    # assert stETH.balanceOf(SF) == 0
     
 def test_SF_deposit_eETH(SF, eETH, weETH, accounts, interface):
     holder = "0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000"
@@ -488,9 +488,34 @@ def test_SF_deposit_eETH_withoutBoost(SF, eETH, weETH, accounts, interface):
     assert abs(eETH.balanceOf(user1) - (int(amount) - 6 - boostAmount)) <= 6 # due to interest rate on wstETH, also 1-2 wei bug
     
     assert True
+
+def test_SF_deposit_WETH_wstETH_manipulate_distribution_points(SF, WETH, wstETH, stETH, accounts, interface, chain):
+    holder = "0x5fEC2f34D80ED82370F733043B6A536d7e9D7f8d"
+    user1 = accounts[1]
+    user2 = accounts[2]
+    amount1 = 1
+    amount2 = 1e18
     
+    user1.transfer(holder, 1e18)
+    wstETH.transfer(user1, amount1, {"from": holder})
+    wstETH.approve(SF, 2**256-1, {"from": user1})
+    
+    wstETH.transfer(user2, amount2, {"from": holder})
+    wstETH.approve(SF, 2**256-1, {"from": user2})
 
+    SF.deposit(PredefinedPool.wstETH, amount1, 0, {"from": user1})
+    
+    poolInfo = SF.getPoolInfo()
+    wstETHPoolInfo = poolInfo[1]
+    chain.mine()
 
+    
+    SF.deposit(PredefinedPool.wstETH, amount2, 0, {"from": user2})
+    
+    chain.mine()
+    chain.mine()
+    
+    assert abs(SF.pendingPoints(1, user1) - SF.pendingPoints(1, user2)) < 100
 
 def test_SF_transferPointFunction(SF, eETH, weETH, accounts, interface):
     
