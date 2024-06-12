@@ -38,6 +38,16 @@ def weETH(interface):
 
 
 @pytest.fixture(scope="module")
+def USDC(interface):
+    return interface.IERC20("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
+
+
+@pytest.fixture(scope="module")
+def PEPE(interface):
+    return interface.IERC20("0x6982508145454Ce325dDbE47a25d4ec3d2311933")
+
+
+@pytest.fixture(scope="module")
 def SF(accounts, chain, SophonFarming, SophonFarmingProxy, interface):
     deployer = accounts[0]
 
@@ -191,10 +201,11 @@ def test_SF_deposit_stETH(SF, WETH, wstETH, stETH, accounts, interface, chain):
     assert stETH.balanceOf(SF) == 0
     
 def test_SF_deposit_eETH(SF, eETH, weETH, accounts, interface):
-    holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
+    holder = "0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000"
     user1 = accounts[1]
     amount = 100e18
     boostAmount = 0
+    user1.transfer(holder, 1e18)
     eETH.transfer(user1, amount, {"from": holder})
     eETH.approve(SF, 2**256-1, {"from": user1})
 
@@ -391,10 +402,11 @@ def test_SF_reward_logic_fairness2(SF, accounts, wstETH, stETH, eETH, weETH, int
 
 
 def test_SF_deposit_eETH_withBoost(SF, eETH, weETH, accounts, interface):
-    holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
+    holder = "0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000"
     user1 = accounts[1]
     amount = 100e18
     boostAmount = 1e18
+    user1.transfer(holder, 1e18)
     eETH.transfer(user1, amount, {"from": holder})
     eETH.approve(SF, 2**256-1, {"from": user1})
 
@@ -436,10 +448,11 @@ def test_SF_deposit_eETH_withBoost(SF, eETH, weETH, accounts, interface):
 
 
 def test_SF_deposit_eETH_withoutBoost(SF, eETH, weETH, accounts, interface):
-    holder = "0xDdE0d6e90bfB74f1dC8ea070cFd0c0180C03Ad16"
+    holder = "0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000"
     user1 = accounts[1]
     amount = 100e18
     boostAmount = 0
+    user1.transfer(holder, 1e18)
     eETH.transfer(user1, amount, {"from": holder})
     eETH.approve(SF, 2**256-1, {"from": user1})
 
@@ -476,3 +489,183 @@ def test_SF_deposit_eETH_withoutBoost(SF, eETH, weETH, accounts, interface):
     
     assert True
     
+
+
+
+def test_SF_transferPointFunction(SF, eETH, weETH, accounts, interface):
+    
+    
+    holder = "0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000"
+    user1 = accounts[1]
+    user2 = accounts[2]
+    user3 = accounts[3]
+    user4 = accounts[4]
+    user5 = accounts[5]
+    
+    amount = 100e18
+    boostAmount = 0
+    user1.transfer(holder, 1e18)
+    eETH.transfer(user1, amount, {"from": holder})
+    eETH.approve(SF, 2**256-1, {"from": user1})
+
+    SF.depositeEth(amount, boostAmount, {"from": user1})
+   
+
+    chain.mine(10)
+    userInfo = SF.userInfo(PredefinedPool.weETH, user1)
+    pendingPoints = SF.pendingPoints(PredefinedPool.weETH, user1)
+    
+    SF.setUsersWhitelisted(user2, [user1], True, {"from": accounts[0]})
+    
+    # transfer everything
+    SF.transferPoints(PredefinedPool.weETH, user1, user3, 2**256-1, {"from": user2})
+    
+    # since I transfered everything. user3 has to have more than user1 in new block
+    user3Points = SF.pendingPoints(PredefinedPool.weETH, user3)
+    assert SF.pendingPoints(PredefinedPool.weETH, user1) < user3Points
+    
+    SF.setUsersWhitelisted(user4, [user3], True, {"from": accounts[0]})
+    SF.transferPoints(PredefinedPool.weETH, user3, user4, 2**256-1, {"from": user4})
+    
+    assert SF.pendingPoints(PredefinedPool.weETH, user3) == 0
+    # all points were transfered
+    assert SF.pendingPoints(PredefinedPool.weETH, user4) == user3Points
+    
+    
+    SF.withdraw(PredefinedPool.weETH, SF.userInfo(PredefinedPool.weETH, user1)[0], {"from": user1})
+    
+    
+    
+    amount = 100e18
+    boostAmount = 50E18
+    user5.transfer(holder, 1e18)
+    eETH.transfer(user5, amount, {"from": holder})
+    eETH.approve(SF, 2**256-1, {"from": user5})
+    SF.depositeEth(amount, boostAmount, {"from": user5})
+    
+    SF.setUsersWhitelisted(user3, [user5], True, {"from": accounts[0]})
+    
+    SF.transferPoints(PredefinedPool.weETH, user5, user3, 2**256-1, {"from": user3})
+    
+    assert SF.pendingPoints(PredefinedPool.weETH, user5) == 0
+    chain.mine()
+    assert SF.pendingPoints(PredefinedPool.weETH, user5) > 0
+    assert True
+    
+
+
+def test_SF_pointAllocation(SF, eETH, weETH, accounts, interface):
+    
+    
+    holder = "0x3d320286E014C3e1ce99Af6d6B00f0C1D63E3000"
+    user1 = accounts[1]
+    user2 = accounts[2]
+    user3 = accounts[3]
+    amount = 100e18
+    boostAmount = 0
+    user1.transfer(holder, 1e18)
+    eETH.transfer(user1, amount, {"from": holder})
+    eETH.approve(SF, 2**256-1, {"from": user1})
+
+    SF.depositeEth(amount, boostAmount, {"from": user1})
+    
+    numberOfBlocks = 10
+    poolInfo = SF.getPoolInfo()
+    poolAllocPoint = poolInfo[2][5]
+    chain.mine(numberOfBlocks)
+    
+    from decimal import Decimal, getcontext
+    # since user is the single staker of this pool he should get all the points
+    assert SF.pendingPoints(PredefinedPool.weETH, user1) == int(SF.pointsPerBlock() * poolAllocPoint * numberOfBlocks / Decimal(SF.totalAllocPoint())) 
+    assert True
+    
+
+
+def test_SF_overflow_accPointsPerShare(SF, eETH, weETH, DAI, sDAI, accounts, interface):
+    holder = "0x75e34757ce4e9C733f3B025690402a700B18f2F5"
+    user1 = accounts[1]
+    user2 = accounts[2]
+    amount = 1
+    amount2 = 1000000e18
+
+    sDAI.transfer(user1, amount, {"from": holder})
+    sDAI.approve(SF, 2**256-1, {"from": user1})
+    
+    sDAI.transfer(user2, amount2, {"from": holder})
+    sDAI.approve(SF, 2**256-1, {"from": user2})
+    
+    SF.deposit(PredefinedPool.sDAI, amount, 0, {"from": user1})
+    
+    SF.updatePool(PredefinedPool.sDAI, {"from": user1})
+    
+    SF.deposit(PredefinedPool.sDAI, amount2, 0, {"from": user2})
+    assert True
+    
+    
+    
+def test_SF_overflow_accPointsPerShare1(SF, eETH, weETH, DAI, sDAI, accounts, USDC, interface): 
+    
+    holder = "0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa"
+    SF.add(60000, USDC.address, "USDC description", chain.height, {"from": accounts[0]})
+    
+    user1 = accounts[1]
+    amount = 1
+    
+    USDC.transfer(user1, amount, {"from": holder})
+    USDC.approve(SF, 2**256-1, {"from": user1})
+    
+    SF.deposit(3, amount, 0, {"from": user1})
+    
+    SF.updatePool(3, {"from": user1})
+    
+    
+    user2 = accounts[2]
+    amount2 = 1e6*1e6
+    
+    USDC.transfer(user2, amount2, {"from": holder})
+    USDC.approve(SF, 2**256-1, {"from": user2})
+    
+    SF.deposit(3, amount2, 0, {"from": user2})
+    
+    
+    
+    user3 = accounts[3]
+    amount3 = 990000000*1e6
+        
+    USDC.transfer(user3, amount3, {"from": holder})
+    USDC.approve(SF, 2**256-1, {"from": user3})
+        
+    SF.deposit(3, amount3, 0, {"from": user3})
+    
+    assert True
+    
+    
+   
+def test_SF_overflow_PEPE(SF, PEPE, eETH, weETH, DAI, sDAI, accounts, USDC, interface): 
+    
+    holder = "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+    SF.add(60000, PEPE.address, "PEPE description", chain.height + 1, {"from": accounts[0]})
+    
+    user1 = accounts[1]
+    amount = 1
+    
+    PEPE.transfer(user1, amount, {"from": holder})
+    PEPE.approve(SF, 2**256-1, {"from": user1})
+    
+    SF.deposit(3, amount, 0, {"from": user1})
+    
+    SF.updatePool(3, {"from": user1})
+    
+    
+    
+    user2 = accounts[2]
+    amount2 = 1e12 * 1e18 # trillion 11 zeros. 10T here
+    
+    PEPE.transfer(user2, amount2, {"from": holder})
+    PEPE.approve(SF, 2**256-1, {"from": user2})
+    
+    SF.deposit(3, amount2, 0, {"from": user2})
+    
+    SF.updatePool(3, {"from": user2})
+    
+    assert True
