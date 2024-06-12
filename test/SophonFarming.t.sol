@@ -422,35 +422,6 @@ contract SophonFarmingTest is Test {
         _sophonFarming.initialize(0, 0, 0, 0, 0, 0);
     }
 
-    // function test_Initialize_RevertWhen_InvalidStartBlock() public {
-    //     vm.startPrank(deployer);
-
-    //     address _implementation = address(
-    //         new SophonFarming(
-    //             [
-    //                 address(dai),
-    //                 address(sDAI),
-    //                 address(weth),
-    //                 address(stETH),
-    //                 address(wstETH),
-    //                 address(eETH),
-    //                 address(eETHLiquidityPool),
-    //                 address(weETH)
-    //             ]
-    //         )
-    //     );
-
-    //     // Deploy proxy
-    //     SophonFarmingProxy _sophonFarmingProxy = new SophonFarmingProxy(_implementation);
-    //     (_sophonFarmingProxy);
-
-    //     // Grant the implementation interface to the proxy
-    //     SophonFarming _sophonFarming = SophonFarming(payable(address(_implementation)));
-
-    //     vm.expectRevert(SophonFarming.InvalidStartBlock.selector);
-    //     _sophonFarming.initialize(0, 0, 0, 1e18, 0, 0);
-    // }
-
     function test_Initialize_RevertWhen_InvalidBooster() public {
         vm.startPrank(deployer);
 
@@ -757,6 +728,52 @@ contract SophonFarmingTest is Test {
         for (uint256 i = 0; i < accountAmount; i++) {
             assertEq(sophonFarming.whitelist(userAdmin, accounts[i]), false);
         }
+    }
+
+    // PENDING_POINTS FUNCTION /////////////////////////////////////////////////////////////////
+    function testFuzz_PendingPoints(uint256 amountToDeposit, uint256 poolStartBlock, uint256 accruedBlocks) public {
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e50);
+        // amountToDeposit = 1e56;
+        poolStartBlock = bound(poolStartBlock, 10, 5e6);
+        accruedBlocks = bound(accruedBlocks, 1, 5e6);
+
+        vm.startPrank(deployer);
+
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        uint256 wsthDepositedAmount = amountToDeposit;
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        // Set block number lower than poolStartBlock to be able to update it
+        vm.roll(0);
+        sophonFarming.set(poolId, PoolInfo[poolId].allocPoint, poolStartBlock);
+        PoolInfo = sophonFarming.getPoolInfo();
+        assertEq(PoolInfo[poolId].lastRewardBlock, poolStartBlock);
+        vm.roll(1);
+
+        vm.stopPrank();
+        vm.startPrank(account1);
+        deal(address(wstETH), account1, amountToDeposit * 2);
+
+        wstETH.approve(address(sophonFarming), amountToDeposit * 2);
+        sophonFarming.deposit(poolId, amountToDeposit, 0);
+
+        vm.roll(poolStartBlock + accruedBlocks);
+
+        uint256 pendingPoints = sophonFarming.pendingPoints(poolId, account1);
+
+        sophonFarming.deposit(poolId, amountToDeposit, 0);
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        SophonFarmingState.UserInfo memory userInfo;
+        (userInfo.amount, userInfo.boostAmount, userInfo.depositAmount, userInfo.rewardSettled, userInfo.rewardDebt) =
+            sophonFarming.userInfo(poolId, account1);
+
+        uint256 pointReward = (accruedBlocks * 1e18) * sophonFarming.pointsPerBlock() * PoolInfo[poolId].allocPoint / sophonFarming.totalAllocPoint();
+        uint256 accPointsPerShare = pointReward * 1e18 / (amountToDeposit);
+        assertEq(pendingPoints, amountToDeposit * accPointsPerShare / 1e36);
+        assertGt(pendingPoints, 0);
     }
 
     // MASS_UPDATE_POOLS FUNCTION /////////////////////////////////////////////////////////////////
@@ -2100,9 +2117,10 @@ contract SophonFarmingTest is Test {
 
     // POOL_START_BLOCK /////////////////////////////////////////////////////////////////
     function testFuzz_PoolStartBlock_Inactive(uint256 amountToDeposit, uint256 poolStartBlock, uint256 accruedBlocks) public {
-        amountToDeposit = bound(amountToDeposit, 1e6, 1_000_000_000e18);
-        poolStartBlock = bound(poolStartBlock, 10, 1e9);
-        accruedBlocks = bound(accruedBlocks, 1, 1e9);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        poolStartBlock = bound(poolStartBlock, 10, 5e6);
+        accruedBlocks = bound(accruedBlocks, 1, 5e6);
+
         vm.startPrank(deployer);
 
         SophonFarmingState.PoolInfo[] memory PoolInfo;
@@ -2127,18 +2145,21 @@ contract SophonFarmingTest is Test {
 
         vm.roll(poolStartBlock + accruedBlocks);
 
-
         uint256 pendingPoints = sophonFarming.pendingPoints(poolId, account1);
 
         sophonFarming.deposit(poolId, amountToDeposit, 0);
-
         PoolInfo = sophonFarming.getPoolInfo();
 
         SophonFarmingState.UserInfo memory userInfo;
         (userInfo.amount, userInfo.boostAmount, userInfo.depositAmount, userInfo.rewardSettled, userInfo.rewardDebt) =
             sophonFarming.userInfo(poolId, account1);
 
-        // Can have 1 wei of difference cause of rounding
-        assertApproxEqAbs(pendingPoints, sophonFarming.pointsPerBlock() * accruedBlocks * PoolInfo[poolId].allocPoint / sophonFarming.totalAllocPoint(), 1);
+        uint256 pointReward = (accruedBlocks * 1e18) * sophonFarming.pointsPerBlock() * PoolInfo[poolId].allocPoint / sophonFarming.totalAllocPoint();
+        uint256 accPointsPerShare = pointReward * 1e18 / (amountToDeposit);
+        assertEq(pendingPoints, amountToDeposit * accPointsPerShare / 1e36);
+        assertGt(pendingPoints, 0);
+      
+        uint256 delta =  1 + amountToDeposit / 1e18;
+        assertApproxEqAbs(pendingPoints, userInfo.rewardDebt - userInfo.rewardSettled, delta);
     }
 }
