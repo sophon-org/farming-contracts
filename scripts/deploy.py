@@ -147,7 +147,7 @@ def createMockSetup(deployTokens = False):
 
     pointsPerBlock = 100*10**18
     startBlock = chain.height + 45
-    boosterMultiplier = 2e18
+    boosterMultiplier = 3e18
 
     createFarm(weth, stETH, wstETH, wstEthAllocPoint, eETH, eETHLiquidityPool, weETH, weEthAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
 
@@ -259,7 +259,7 @@ def testMainnetOnFork():
     sDAIAllocPoint = 20000
     pointsPerBlock = 25*10**18
     startBlock = chain.height + 45
-    boosterMultiplier = 2e18
+    boosterMultiplier = 3e18
 
     createFarm(weth, stETH, wstETH, wstEthAllocPoint, eETH, eETHLiquidityPool, weETH, weEthAllocPoint, dai, sDAI, sDAIAllocPoint, pointsPerBlock, startBlock, boosterMultiplier)
 
