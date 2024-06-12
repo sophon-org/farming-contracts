@@ -235,8 +235,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         totalAllocPoint = totalAllocPoint - pool.allocPoint + _allocPoint;
         pool.allocPoint = _allocPoint;
 
-        // pool starting block is updated, unless it's already started
-        if (getBlockNumber() < pool.lastRewardBlock) {
+        // pool starting block is updated if farming hasn't started and it's a future block
+        if (getBlockNumber() < pool.lastRewardBlock && getBlockNumber() < _poolStartBlock) {
             pool.lastRewardBlock = _poolStartBlock;
         }
 
