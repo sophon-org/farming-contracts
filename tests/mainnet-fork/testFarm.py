@@ -499,6 +499,9 @@ def test_SF_transferPointFunction(SF, eETH, weETH, accounts, interface):
     user1 = accounts[1]
     user2 = accounts[2]
     user3 = accounts[3]
+    user4 = accounts[4]
+    user5 = accounts[5]
+    
     amount = 100e18
     boostAmount = 0
     user1.transfer(holder, 1e18)
@@ -518,7 +521,35 @@ def test_SF_transferPointFunction(SF, eETH, weETH, accounts, interface):
     SF.transferPoints(PredefinedPool.weETH, user1, user3, 2**256-1, {"from": user2})
     
     # since I transfered everything. user3 has to have more than user1 in new block
-    assert SF.pendingPoints(PredefinedPool.weETH, user1) < SF.pendingPoints(PredefinedPool.weETH, user3)
+    user3Points = SF.pendingPoints(PredefinedPool.weETH, user3)
+    assert SF.pendingPoints(PredefinedPool.weETH, user1) < user3Points
+    
+    SF.setUsersWhitelisted(user4, [user3], True, {"from": accounts[0]})
+    SF.transferPoints(PredefinedPool.weETH, user3, user4, 2**256-1, {"from": user4})
+    
+    assert SF.pendingPoints(PredefinedPool.weETH, user3) == 0
+    # all points were transfered
+    assert SF.pendingPoints(PredefinedPool.weETH, user4) == user3Points
+    
+    
+    SF.withdraw(PredefinedPool.weETH, SF.userInfo(PredefinedPool.weETH, user1)[0], {"from": user1})
+    
+    
+    
+    amount = 100e18
+    boostAmount = 50E18
+    user5.transfer(holder, 1e18)
+    eETH.transfer(user5, amount, {"from": holder})
+    eETH.approve(SF, 2**256-1, {"from": user5})
+    SF.depositeEth(amount, boostAmount, {"from": user5})
+    
+    SF.setUsersWhitelisted(user3, [user5], True, {"from": accounts[0]})
+    
+    SF.transferPoints(PredefinedPool.weETH, user5, user3, 2**256-1, {"from": user3})
+    
+    assert SF.pendingPoints(PredefinedPool.weETH, user5) == 0
+    chain.mine()
+    assert SF.pendingPoints(PredefinedPool.weETH, user5) > 0
     assert True
     
 
