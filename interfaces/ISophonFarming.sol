@@ -11,10 +11,10 @@ interface ISophonFarming {
         address l2Farm; // Address of the farming contract on Sophon chain
         uint256 amount; // total amount of LP tokens earning yield from deposits and boosts
         uint256 boostAmount; // total boosted value purchased by users
+        uint256 depositAmount; // remaining deposits not applied to a boost purchases
         uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
         uint256 lastRewardBlock; // Last block number that points distribution occurs.
         uint256 accPointsPerShare; // Accumulated points per share, times 1e18. See below.
-        address poolShareToken; // the pool share token minted when a user deposits that represents their deposit
         string description; // Description of pool.
     }
 
@@ -23,43 +23,72 @@ interface ISophonFarming {
         uint256 amount; // Amount of LP tokens the user is earning yield on from deposits and boosts
         uint256 boostAmount; // Boosted value purchased by the user
         uint256 depositAmount; // remaining deposits not applied to a boost purchases
-        uint256 rewardSettled; // Reward settled.
-        uint256 rewardDebt; // Reward debt. See explanation below.
-        //
-        // We do some fancy math here. Basically, any point in time, the amount of points
-        // entitled to a user but is pending to be distributed is:
-        //
-        //   pending reward = (user.amount * pool.accPointsPerShare) - user.rewardDebt
-        //
-        // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accPointsPerShare` (and `lastRewardBlock`) gets updated.
-        //   2. User receives the pending reward sent to his/her address.
-        //   3. User's `amount` gets updated.
-        //   4. User's `rewardDebt` gets updated.
+        uint256 rewardSettled; // rewards settled
+        uint256 rewardDebt; // rewards debt
     }
 
     enum PredefinedPool {
-        sDAI,
-        wstETH,
-        weETH,
-        ezETH,
-        rsETH,
-        rswETH,
-        uniETH,
-        pufETH
+        sDAI,          // MakerDAO (sDAI)
+        wstETH,        // Lido (wstETH)
+        weETH          // ether.fi (weETH)
     }
     
-
+    /// @notice Emitted when a new pool is added
     event Add(address indexed lpToken, uint256 indexed pid, uint256 allocPoint);
+
+    /// @notice Emitted when a pool is updated
+    event Set(address indexed lpToken, uint256 indexed pid, uint256 allocPoint);
+
+    /// @notice Emitted when a user deposits to a pool
     event Deposit(address indexed user, uint256 indexed pid, uint256 depositAmount, uint256 boostAmount);
+
+    /// @notice Emitted when a user withdraws from a pool
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
+
+    /// @notice Emitted when a whitelisted admin transfers points from one user to another
+    event TransferPoints(address indexed sender, address indexed receiver, uint256 indexed pid, uint256 amount);
+
+    /// @notice Emitted when a user increases the boost of an existing deposit
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
-    event WithdrawProceeds(uint256 indexed pid, uint256 amount);
-    event Bridge(address indexed user, uint256 indexed pid, uint256 amount);
+
+    /// @notice Emitted when all pool funds are bridged to Sophon blockchain
+    event BridgePool(address indexed user, uint256 indexed pid, uint256 amount);
+
+    /// @notice Emitted when the admin bridges booster proceeds
+    event BridgeProceeds(uint256 indexed pid, uint256 proceeds);
+
+    /// @notice Emitted when the the revertFailedBridge function is called
+    event RevertFailedBridge(uint256 indexed pid);
+
+    /// @notice Emitted when the the updatePool function is called
+    event PoolUpdated(uint256 indexed pid);
+
+    error ZeroAddress();
+    error PoolExists();
+    error PoolDoesNotExist();
+    error AlreadyInitialized();
+    error NotFound(address lpToken);
+    error FarmingIsStarted();
+    error FarmingIsEnded();
+    error TransferNotAllowed();
+    error TransferTooHigh(uint256 maxAllowed);
+    error InvalidEndBlock();
+    error InvalidDeposit();
+    error InvalidBooster();
+    error InvalidPointsPerBlock();
+    error InvalidTransfer();
+    error WithdrawNotAllowed();
+    error WithdrawTooHigh(uint256 maxAllowed);
+    error WithdrawIsZero();
+    error NothingInPool();
+    error NoEthSent();
+    error BoostTooHigh(uint256 maxAllowed);
+    error BoostIsZero();
+    error BridgeInvalid();
 
     function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) external;
-    function add(uint256 _allocPoint, address _lpToken, string memory _description) external returns (uint256);
-    function set(uint256 _pid, uint256 _allocPoint) external;
+    function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock) external returns (uint256);
+    function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock) external;
     function poolLength() external view returns (uint256);
     function isFarmingEnded() external view returns (bool);
     function isWithdrawPeriodEnded() external view returns (bool);
@@ -79,14 +108,15 @@ interface ISophonFarming {
     function depositeEth(uint256 _amount, uint256 _boostAmount) external;
     function depositWeth(uint256 _amount, uint256 _boostAmount, PredefinedPool predefinedPool) external;
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external;
-    function bridgePool(uint256 _pid) external;
+    function bridgePool(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external;
     function revertFailedBridge(uint256 _pid) external;
     function increaseBoost(uint256 _pid, uint256 _boostAmount) external;
-    function withdrawProceeds(uint256 _pid) external;
+    function bridgeProceeds(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external;
     function getPoolInfo() external view returns (PoolInfo[] memory);
     function getOptimizedUserInfo(address[] memory _users) external view returns (uint256[4][][] memory);
     function getPendingPoints(address[] memory _users) external view returns (uint256[][] memory);
     function getBlockMultiplier(uint256 _from, uint256 _to) external view returns (uint256);
+    function isInWhitelist(address user) external view returns (bool);
 
 
     function typeToId(PredefinedPool poolType) external view returns (uint256);
@@ -102,7 +132,7 @@ interface ISophonFarming {
     function endBlockForWithdrawals() external view returns (uint256);
     function bridge() external view returns (address);
     function isBridged(uint256 poolId) external view returns (bool);
-
+    function transferPoints(uint256 _pid, address _sender, address _receiver, uint256 _transferAmount) external;
     
     
     function pendingOwner() external view returns (address);
@@ -113,6 +143,7 @@ interface ISophonFarming {
     function replaceImplementation(address impl_) external;
     function becomeImplementation(address proxy) external;
     function pendingImplementation() external returns(address);
+    function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external;
 
     
 }
