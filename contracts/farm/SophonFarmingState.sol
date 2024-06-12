@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.25;
+pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -64,9 +64,6 @@ contract SophonFarmingState {
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint;
 
-    // The block number when point mining starts.
-    uint256 public startBlock;
-
     // The block number when point mining ends.
     uint256 public endBlock;
 
@@ -78,4 +75,6 @@ contract SophonFarmingState {
 
     BridgeLike public bridge;
     mapping(uint256 => bool) public isBridged;
+
+    mapping(address userAdmin => mapping(address user => bool inWhitelist)) public whitelist;
 }
