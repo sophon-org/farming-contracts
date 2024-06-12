@@ -51,6 +51,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when the the updatePool function is called
     event PoolUpdated(uint256 indexed pid);
 
+    /// @notice Emitted when setPointsPerBlock is called
+    event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
+
     error ZeroAddress();
     error PoolExists();
     error PoolDoesNotExist();
@@ -142,15 +145,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         _initialized = true;
 
         // sDAI
-        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", _initialPoolStartBlock);
+        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", _initialPoolStartBlock, 0);
         IERC20(dai).approve(sDAI, 2**256-1);
 
         // wstETH
-        typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, wstETH, "wstETH", _initialPoolStartBlock);
+        typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, wstETH, "wstETH", _initialPoolStartBlock, 0);
         IERC20(stETH).approve(wstETH, 2**256-1);
 
         // weETH
-        typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, weETH, "weETH", _initialPoolStartBlock);
+        typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, weETH, "weETH", _initialPoolStartBlock, 0);
         IERC20(eETH).approve(weETH, 2**256-1);
     }
 
@@ -160,9 +163,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _lpToken lpToken address
      * @param _description description of new pool
      * @param _poolStartBlock block at which points start to accrue for the pool
+     * @param _newPointsPerBlock update global points per block; 0 means no update
      * @return uint256 The pid of the newly created asset
      */
-    function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock) public onlyOwner returns (uint256) {
+    function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
         if (_lpToken == address(0)) {
             revert ZeroAddress();
         }
@@ -173,7 +177,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert FarmingIsEnded();
         }
 
-        massUpdatePools();
+        if (_newPointsPerBlock != 0) {
+            setPointsPerBlock(_newPointsPerBlock);
+        } else {
+            massUpdatePools();
+        }
 
         uint256 lastRewardBlock =
             getBlockNumber() > _poolStartBlock ? getBlockNumber() : _poolStartBlock;
@@ -206,13 +214,18 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid The pid to update
      * @param _allocPoint The new alloc point to set for the pool
      * @param _poolStartBlock block at which points start to accrue for the pool
+     * @param _newPointsPerBlock update global points per block; 0 means no update
      */
-    function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock) external onlyOwner {
+    function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
 
-        massUpdatePools();
+        if (_newPointsPerBlock != 0) {
+            setPointsPerBlock(_newPointsPerBlock);
+        } else {
+            massUpdatePools();
+        }
 
         PoolInfo storage pool = poolInfo[_pid];
         address lpToken = address(pool.lpToken);
@@ -317,7 +330,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Set points per block
      * @param _pointsPerBlock points per block to set
      */
-    function setPointsPerBlock(uint256 _pointsPerBlock) external onlyOwner {
+    function setPointsPerBlock(uint256 _pointsPerBlock) public onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -326,6 +339,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
 
         massUpdatePools();
+
+        emit SetPointsPerBlock(pointsPerBlock, _pointsPerBlock);
+
         pointsPerBlock = _pointsPerBlock;
     }
 
