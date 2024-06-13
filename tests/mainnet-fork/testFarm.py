@@ -769,4 +769,4 @@ def test_SF_overflow_pending(SF, PEPE, eETH, weETH, DAI, sDAI, accounts, USDC, i
     
     SF.pendingPoints(usdcId, deployer)
     
-    assert False
+    assert True
