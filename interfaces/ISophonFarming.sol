@@ -87,14 +87,13 @@ interface ISophonFarming {
     error BridgeInvalid();
 
     function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) external;
-    function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock) external returns (uint256);
-    function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock) external;
+    function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external returns (uint256);
+    function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external;
     function poolLength() external view returns (uint256);
     function isFarmingEnded() external view returns (bool);
     function isWithdrawPeriodEnded() external view returns (bool);
     function setBridge(address _bridge) external;
     function setBridgeForPool(uint256 _pid, address _l2Farm) external;
-    function setStartBlock(uint256 _startBlock) external;
     function setEndBlock(uint256 _endBlock, uint256 _withdrawalBlocks) external;
     function setPointsPerBlock(uint256 _pointsPerBlock) external;
     function setBoosterMultiplier(uint256 _boosterMultiplier) external;
