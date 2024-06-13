@@ -744,7 +744,7 @@ def test_SF_overflow_PEPE(SF, PEPE, eETH, weETH, DAI, sDAI, accounts, USDC, inte
     
     assert True
     
-def test_SF_overflow_pending(SF, PEPE, eETH, weETH, DAI, sDAI, accounts, USDC, interfac, MockERC20): 
+def test_SF_overflow_pending(SF, PEPE, eETH, weETH, DAI, sDAI, accounts, USDC, interface, MockERC20): 
     
     deployer = accounts[0]
     usdc = MockERC20.deploy("Mock USDC Token", "MockUSDC", 18, {"from": deployer})
