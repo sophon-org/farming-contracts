@@ -453,7 +453,7 @@ contract SophonFarmingTest is Test {
 
         MockERC20 mock = new MockERC20("Mock", "M", 18);
         uint256 startingAllocPoint = sophonFarming.totalAllocPoint();
-        uint256 poolId = sophonFarming.add(newAllocPoints, address(mock), mock.name(), 0);
+        uint256 poolId = sophonFarming.add(newAllocPoints, address(mock), mock.name(), 0, 0);
 
         SophonFarmingState.PoolInfo[] memory PoolInfo;
 
@@ -471,6 +471,31 @@ contract SophonFarmingTest is Test {
         assertEq(startingAllocPoint + newAllocPoints, sophonFarming.totalAllocPoint());
     }
 
+   function testFuzz_Add_SetPointsPerBlock(uint256 newPointsPerBlock) public {
+        newPointsPerBlock = bound(newPointsPerBlock, 1e18, 1000e18);
+        vm.startPrank(deployer);
+
+        MockERC20 mock = new MockERC20("Mock", "M", 18);
+        uint256 startingAllocPoint = sophonFarming.totalAllocPoint();
+        uint256 poolId = sophonFarming.add(2000, address(mock), mock.name(), 0, newPointsPerBlock);
+
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        assertEq(address(PoolInfo[poolId].lpToken), address(mock));
+        assertEq(PoolInfo[poolId].amount, 0);
+        assertEq(PoolInfo[poolId].boostAmount, 0);
+        assertEq(PoolInfo[poolId].depositAmount, 0);
+        assertEq(PoolInfo[poolId].allocPoint, 2000);
+        assertEq(PoolInfo[poolId].lastRewardBlock, initialPoolStartBlock);
+        assertEq(PoolInfo[poolId].accPointsPerShare, 0);
+        assertEq(abi.encode(PoolInfo[poolId].description), abi.encode(mock.name()));
+
+        assertEq(startingAllocPoint + 2000, sophonFarming.totalAllocPoint());
+        assertEq(sophonFarming.pointsPerBlock(), newPointsPerBlock);
+    }
+
     function test_Add_RevertWhen_FarmingIsEnded() public {
         vm.startPrank(deployer);
 
@@ -480,7 +505,7 @@ contract SophonFarmingTest is Test {
         MockERC20 mock = new MockERC20("Mock", "M", 18);
 
         vm.expectRevert(SophonFarming.FarmingIsEnded.selector);
-        sophonFarming.add(10000, address(mock), "Mock",  0);
+        sophonFarming.add(10000, address(mock), "Mock",  0, 0);
     }
 
     function test_Add_RevertWhen_PoolExists() public {
@@ -490,7 +515,7 @@ contract SophonFarmingTest is Test {
         vm.roll(block.number + 2);
 
         vm.expectRevert(SophonFarming.PoolExists.selector);
-        sophonFarming.add(sDAIAllocPoint, address(sDAI), "sDAI", 0);
+        sophonFarming.add(sDAIAllocPoint, address(sDAI), "sDAI", 0, 0);
     }
 
     function test_Add_RevertWhen_ZeroAddress() public {
@@ -500,7 +525,7 @@ contract SophonFarmingTest is Test {
         vm.roll(block.number + 2);
 
         vm.expectRevert(SophonFarming.ZeroAddress.selector);
-        sophonFarming.add(sDAIAllocPoint, address(0), "Zero", 0);
+        sophonFarming.add(sDAIAllocPoint, address(0), "Zero", 0, 0);
     }
 
     // SET FUNCTION /////////////////////////////////////////////////////////////////
@@ -516,7 +541,7 @@ contract SophonFarmingTest is Test {
         SophonFarmingState.PoolInfo[] memory startingPoolInfo;
         startingPoolInfo = sophonFarming.getPoolInfo();
 
-        sophonFarming.set(poolId, newAllocPoints, 0);
+        sophonFarming.set(poolId, newAllocPoints, 0, 0);
 
         SophonFarmingState.PoolInfo[] memory finalPoolInfo;
         finalPoolInfo = sophonFarming.getPoolInfo();
@@ -528,6 +553,31 @@ contract SophonFarmingTest is Test {
         );
     }
 
+    function testFuzz_SetFunction_SetPointsPerBlock(uint256 newPointsPerBlock) public {
+        newPointsPerBlock = bound(newPointsPerBlock, 1e18, 1000e18);
+        vm.startPrank(deployer);
+
+        vm.roll(block.number - 1);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
+        uint256 startingTotalAllocPoint = sophonFarming.totalAllocPoint();
+
+        SophonFarmingState.PoolInfo[] memory startingPoolInfo;
+        startingPoolInfo = sophonFarming.getPoolInfo();
+
+        sophonFarming.set(poolId, 2000, 0, newPointsPerBlock);
+
+        SophonFarmingState.PoolInfo[] memory finalPoolInfo;
+        finalPoolInfo = sophonFarming.getPoolInfo();
+
+        assertEq(finalPoolInfo[poolId].allocPoint, 2000);
+        assertEq(
+            sophonFarming.totalAllocPoint(),
+            startingTotalAllocPoint - startingPoolInfo[poolId].allocPoint + 2000
+        );
+        assertEq(sophonFarming.pointsPerBlock(), newPointsPerBlock);
+    }
+
     function test_Set_RevertWhen_FarmingIsEnded() public {
         vm.startPrank(deployer);
 
@@ -537,7 +587,7 @@ contract SophonFarmingTest is Test {
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.sDAI);
 
         vm.expectRevert(SophonFarming.FarmingIsEnded.selector);
-        sophonFarming.set(poolId, 10000, 0);
+        sophonFarming.set(poolId, 10000, 0, 0);
     }
 
     // IS_FARMING_ENDED FUNCTION /////////////////////////////////////////////////////////////////
@@ -747,7 +797,7 @@ contract SophonFarmingTest is Test {
 
         // Set block number lower than poolStartBlock to be able to update it
         vm.roll(0);
-        sophonFarming.set(poolId, PoolInfo[poolId].allocPoint, poolStartBlock);
+        sophonFarming.set(poolId, PoolInfo[poolId].allocPoint, poolStartBlock, 0);
         PoolInfo = sophonFarming.getPoolInfo();
         assertEq(PoolInfo[poolId].lastRewardBlock, poolStartBlock);
         vm.roll(1);
@@ -2131,7 +2181,7 @@ contract SophonFarmingTest is Test {
 
         // Set block number lower than poolStartBlock to be able to update it
         vm.roll(0);
-        sophonFarming.set(poolId, PoolInfo[poolId].allocPoint, poolStartBlock);
+        sophonFarming.set(poolId, PoolInfo[poolId].allocPoint, poolStartBlock, 0);
         PoolInfo = sophonFarming.getPoolInfo();
         assertEq(PoolInfo[poolId].lastRewardBlock, poolStartBlock);
         vm.roll(1);
