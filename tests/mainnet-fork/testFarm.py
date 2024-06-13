@@ -718,7 +718,7 @@ def test_SF_reward_endBlock(SF, accounts, wstETH, stETH, eETH, weETH, interface)
 def test_SF_overflow_PEPE(SF, PEPE, eETH, weETH, DAI, sDAI, accounts, USDC, interface): 
     
     holder = "0xF977814e90dA44bFA03b6295A0616a897441aceC"
-    SF.add(60000, PEPE.address, "PEPE description", chain.height + 1, {"from": accounts[0]})
+    SF.add(60000, PEPE.address, "PEPE description", chain.height + 1, 0, {"from": accounts[0]})
     
     user1 = accounts[1]
     amount = 1
@@ -741,7 +741,7 @@ def test_SF_overflow_PEPE(SF, PEPE, eETH, weETH, DAI, sDAI, accounts, USDC, inte
     SF.deposit(3, amount2, 0, {"from": user2})
     
     SF.updatePool(3, {"from": user2})
-    
+    SF.pendingPoints(3, user2)
     assert True
     
 def test_SF_overflow_pending(SF, PEPE, eETH, weETH, DAI, sDAI, accounts, USDC, interface, MockERC20): 
