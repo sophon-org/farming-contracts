@@ -448,7 +448,7 @@ contract SophonFarmingTest is Test {
 
     // ADD FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_Add(uint256 newAllocPoints) public {
-        vm.assume(newAllocPoints > 0 && newAllocPoints <= 100000);
+        newAllocPoints = bound(newAllocPoints, 1, 100000);
         vm.startPrank(deployer);
 
         MockERC20 mock = new MockERC20("Mock", "M", 18);
@@ -471,7 +471,7 @@ contract SophonFarmingTest is Test {
         assertEq(startingAllocPoint + newAllocPoints, sophonFarming.totalAllocPoint());
     }
 
-   function testFuzz_Add_SetPointsPerBlock(uint256 newPointsPerBlock) public {
+    function testFuzz_Add_SetPointsPerBlock(uint256 newPointsPerBlock) public {
         newPointsPerBlock = bound(newPointsPerBlock, 1e18, 1000e18);
         vm.startPrank(deployer);
 
@@ -530,7 +530,7 @@ contract SophonFarmingTest is Test {
 
     // SET FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_SetFunction(uint256 newAllocPoints) public {
-        vm.assume(newAllocPoints > 0 && newAllocPoints <= 100000);
+        newAllocPoints = bound(newAllocPoints, 1, 100000);
         vm.startPrank(deployer);
 
         vm.roll(block.number - 1);
@@ -649,7 +649,7 @@ contract SophonFarmingTest is Test {
 
     // SET_END_BLOCK FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_SetEndBlock(uint256 newEndBlock) public {
-        vm.assume(newEndBlock > block.number && newEndBlock <= block.number + 100000);
+        newEndBlock = bound(newEndBlock, block.number + 1, block.number + 100000);
         vm.startPrank(deployer);
 
         newEndBlock = block.number + 10;
@@ -709,7 +709,7 @@ contract SophonFarmingTest is Test {
 
     // SET_BOOSTER_MULTIPLIER FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_SetBoosterMultiplier(uint256 newBoosterMultiplier) public {
-        vm.assume(newBoosterMultiplier > 1e18 && newBoosterMultiplier <= 10e18);
+        newBoosterMultiplier = bound(newBoosterMultiplier, 1e18, 10e18);
         vm.startPrank(deployer);
 
         sophonFarming.setBoosterMultiplier(newBoosterMultiplier);
@@ -756,7 +756,7 @@ contract SophonFarmingTest is Test {
     }
 
     // SET_USERS_WHITELISTED FUNCTION /////////////////////////////////////////////////////////////////
-    function test_SetUsersWhitelisted(uint256 accountAmount) public {
+    function testFuzz_SetUsersWhitelisted(uint256 accountAmount) public {
         accountAmount = bound(accountAmount, 1, 10);
         vm.startPrank(deployer);
 
@@ -783,7 +783,6 @@ contract SophonFarmingTest is Test {
     // PENDING_POINTS FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_PendingPoints(uint256 amountToDeposit, uint256 poolStartBlock, uint256 accruedBlocks) public {
         amountToDeposit = bound(amountToDeposit, 1e6, 1e50);
-        // amountToDeposit = 1e56;
         poolStartBlock = bound(poolStartBlock, 10, 5e6);
         accruedBlocks = bound(accruedBlocks, 1, 5e6);
 
@@ -863,7 +862,7 @@ contract SophonFarmingTest is Test {
 
     // DEPOSIT_ETH FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_DepositEth_NotBoosted(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
         vm.deal(account1, amountToDeposit);
         vm.startPrank(account1);
 
@@ -885,8 +884,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositEth_MultipleNotBoosted(uint256 amountToDeposit, uint256 multipleDeposits) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(multipleDeposits > 0 && multipleDeposits <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        multipleDeposits = bound(multipleDeposits, 1, 10);
         vm.deal(account1, amountToDeposit * multipleDeposits);
         vm.startPrank(account1);
 
@@ -910,8 +909,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositEth_Boosted(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         vm.deal(account1, amountToDeposit);
         vm.startPrank(account1);
@@ -937,8 +936,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositEth_RevertWhen_NoEthSent(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         vm.deal(account1, amountToDeposit);
         vm.startPrank(account1);
@@ -950,8 +949,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositEth_RevertWhen_FarmingIsEnded(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         vm.prank(deployer);
         sophonFarming.setEndBlock(block.number + 9, 1);
@@ -980,7 +979,7 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositEth_RevertWhen_BoostTooHigh(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         vm.deal(account1, amountToDeposit);
         vm.startPrank(account1);
@@ -993,7 +992,7 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositEthToWeETH_NotBoosted(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
         vm.deal(account1, amountToDeposit);
         vm.startPrank(account1);
 
@@ -1016,7 +1015,7 @@ contract SophonFarmingTest is Test {
 
     // DEPOSIT_WETH FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_DepositWeth_NotBoosted(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         uint256 wsthDepositedAmount = WstETHRate(StETHRate(amountToDeposit));
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
@@ -1042,8 +1041,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositWeth_Boosted(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         uint256 wsthDepositedAmount = WstETHRate(StETHRate(amountToDeposit));
         uint256 amountToBoost = amountToDeposit / boostFraction;
@@ -1072,8 +1071,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositWeth_RevertWhen_FarmingIsEnded(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         vm.prank(deployer);
         sophonFarming.setEndBlock(block.number + 9, 1);
@@ -1106,7 +1105,7 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositWeth_RevertWhen_BoostTooHigh(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         vm.startPrank(account1);
         vm.deal(account1, amountToDeposit);
@@ -1122,7 +1121,7 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositWethToWeETH_NotBoosted(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         uint256 weEthDepositedAmount = WeETHRate(eETHLPRate(amountToDeposit));
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.weETH);
@@ -1149,7 +1148,7 @@ contract SophonFarmingTest is Test {
 
     // DEPOSIT_EETH FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_DepositEEth_NotBoosted(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         uint256 weEthDepositedAmount = WeETHRate(amountToDeposit);
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.weETH);
@@ -1174,8 +1173,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositEEth_Boosted(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         uint256 weEthDepositedAmount = WeETHRate(amountToDeposit);
         uint256 amountToBoost = amountToDeposit / boostFraction;
@@ -1203,8 +1202,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositEEth_RevertWhen_FarmingIsEnded(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         vm.prank(deployer);
         sophonFarming.setEndBlock(block.number + 9, 1);
@@ -1219,7 +1218,7 @@ contract SophonFarmingTest is Test {
         sophonFarming.depositeEth(amountToDeposit, 0);
     }
 
-    function testFuzz_DepositEEth_RevertWhen_InvalidDeposit() public {
+    function test_DepositEEth_RevertWhen_InvalidDeposit() public {
         uint256 amountToDeposit = 1;
 
         vm.startPrank(account1);
@@ -1232,7 +1231,7 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositEEth_RevertWhen_BoostTooHigh(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         vm.startPrank(account1);
         deal(address(eETH), account1, amountToDeposit);
@@ -1248,7 +1247,7 @@ contract SophonFarmingTest is Test {
 
     // DEPOSIT_STETH FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_DepositStEth_NotBoosted(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         uint256 wsthDepositedAmount = WstETHRate(amountToDeposit);
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
@@ -1273,8 +1272,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositStEth_Boosted(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         uint256 wsthDepositedAmount = WstETHRate(amountToDeposit);
         uint256 amountToBoost = amountToDeposit / boostFraction;
@@ -1302,8 +1301,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositStEth_RevertWhen_FarmingIsEnded(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         vm.prank(deployer);
         sophonFarming.setEndBlock(block.number + 9, 1);
@@ -1318,7 +1317,7 @@ contract SophonFarmingTest is Test {
         sophonFarming.depositStEth(amountToDeposit, 0);
     }
 
-    function testFuzz_DepositStEth_RevertWhen_InvalidDeposit() public {
+    function test_DepositStEth_RevertWhen_InvalidDeposit() public {
         uint256 amountToDeposit = 1;
 
         vm.startPrank(account1);
@@ -1331,7 +1330,7 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositStEth_RevertWhen_BoostTooHigh(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         vm.startPrank(account1);
         deal(address(stETH), account1, amountToDeposit);
@@ -1347,7 +1346,7 @@ contract SophonFarmingTest is Test {
 
     // DEPOSIT FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_DepositWstEth_NotBoosted(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         uint256 wsthDepositedAmount = amountToDeposit;
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
@@ -1372,8 +1371,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositWstEth_Boosted(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         uint256 wsthDepositedAmount = amountToDeposit;
         uint256 amountToBoost = amountToDeposit / boostFraction;
@@ -1401,8 +1400,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositWstEth_RevertWhen_FarmingIsEnded(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         vm.prank(deployer);
         sophonFarming.setEndBlock(block.number + 9, 1);
@@ -1420,7 +1419,7 @@ contract SophonFarmingTest is Test {
         sophonFarming.deposit(poolId, amountToDeposit, amountToBoost);
     }
 
-    function testFuzz_DepositWstEth_RevertWhen_InvalidDeposit() public {
+    function test_DepositWstEth_RevertWhen_InvalidDeposit() public {
         uint256 amountToDeposit = 0;
 
         vm.startPrank(account1);
@@ -1435,7 +1434,7 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositWstEth_RevertWhen_BoostTooHigh(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         vm.startPrank(account1);
         deal(address(wstETH), account1, amountToDeposit);
@@ -1452,7 +1451,7 @@ contract SophonFarmingTest is Test {
 
     // DEPOSIT_DAI FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_DepositDai_NotBoostedDeposit(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         deal(address(dai), account1, amountToDeposit);
         assertEq(dai.balanceOf(account1), amountToDeposit);
@@ -1476,8 +1475,8 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositDai_BoostedDeposit(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction < 5);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 5);
 
         deal(address(dai), account1, amountToDeposit);
         assertEq(dai.balanceOf(account1), amountToDeposit);
@@ -1511,8 +1510,8 @@ contract SophonFarmingTest is Test {
 
     // WITHDRAW FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_DepositDai_NotBoostedWithdraw(uint256 amountToDeposit, uint256 fractionToWithdraw) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(fractionToWithdraw > 0 && fractionToWithdraw <= 10);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        fractionToWithdraw = bound(fractionToWithdraw, 1, 10);
 
         deal(address(dai), account1, amountToDeposit);
         assertEq(dai.balanceOf(account1), amountToDeposit);
@@ -1557,7 +1556,7 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositDai_RevertWhen_NotBoostedWithdraw_InvalidWithdraw(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         deal(address(dai), account1, amountToDeposit);
         assertEq(dai.balanceOf(account1), amountToDeposit);
@@ -1642,7 +1641,7 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositDai_MaxWithdraw(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         deal(address(dai), account1, amountToDeposit);
         assertEq(dai.balanceOf(account1), amountToDeposit);
@@ -1684,7 +1683,7 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_DepositDai_RevertWhen_WithdrawTooHigh(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         deal(address(dai), account1, amountToDeposit);
         assertEq(dai.balanceOf(account1), amountToDeposit);
@@ -1743,9 +1742,8 @@ contract SophonFarmingTest is Test {
 
     // INCREASE_BOOST FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_IncreaseBoost(uint256 amountToDeposit, uint256 boostFraction) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
-        vm.assume(boostFraction > 0 && boostFraction <= 10);
-        boostFraction = 1;
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
+        boostFraction = bound(boostFraction, 1, 10);
 
         uint256 wsthDepositedAmount = amountToDeposit;
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
@@ -1931,7 +1929,7 @@ contract SophonFarmingTest is Test {
         assertEq(user1InfoFinal.rewardDebt, user1Info.rewardDebt);
     }
 
-    function testFuzz_TransferPoints_RevertWhen_TransferNotAllowed() public {
+    function test_TransferPoints_RevertWhen_TransferNotAllowed() public {
         vm.startPrank(account1);
 
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
@@ -1940,7 +1938,7 @@ contract SophonFarmingTest is Test {
         sophonFarming.transferPoints(poolId, account1, account2, 1);
     }
 
-    function testFuzz_TransferPoints_RevertWhen_InvalidTransfer() public {
+    function test_TransferPoints_RevertWhen_InvalidTransfer() public {
         vm.startPrank(deployer);
 
         // whitelist user
@@ -2024,7 +2022,7 @@ contract SophonFarmingTest is Test {
     }
 
     function testFuzz_IncreaseBoost_RevertWhen_BoostTooHigh(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         uint256 wsthDepositedAmount = amountToDeposit;
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
@@ -2052,8 +2050,8 @@ contract SophonFarmingTest is Test {
     }
 
     // GET_MAX_ADDITIONAL_BOOST FUNCTION /////////////////////////////////////////////////////////////////
-    function test_GetMaxAdditionalBoost(uint256 amountToDeposit) public {
-        vm.assume(amountToDeposit > 1e6 && amountToDeposit <= 1_000_000_000e18);
+    function testFuzz_GetMaxAdditionalBoost(uint256 amountToDeposit) public {
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
 
         uint256 wsthDepositedAmount = amountToDeposit;
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
@@ -2124,8 +2122,8 @@ contract SophonFarmingTest is Test {
     }
 
     // MULTIPLE DEPOSITS AND POINT DISTRIBUTION /////////////////////////////////////////////////////////////////
-    function test_MultipleDeposits(uint256 rollBlocks) public {
-        vm.assume(rollBlocks > 0 && rollBlocks < 1e18);
+    function testFuzz_MultipleDeposits(uint256 rollBlocks) public {
+        rollBlocks = bound(rollBlocks, 1, 1e18);
         setOneDepositorPerPool();
         SophonFarmingState.UserInfo[][] memory userInfos =
             new SophonFarmingState.UserInfo[][](sophonFarming.getPoolInfo().length);
