@@ -795,6 +795,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /**
      * @notice Permissionless function to allow anyone to bridge during the correct period
      * @param _pid pid to bridge
+     * @param _l2TxGasLimit l2TxGasLimit for the bridge txn
+     * @param _l2TxGasPerPubdataByte l2TxGasPerPubdataByte for the bridge txn
      */
     function bridgePool(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external payable {
         revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
@@ -984,6 +986,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /**
      * @notice Allows an admin to bridge booster proceeds
      * @param _pid pid to bridge proceeds from
+     * @param _l2TxGasLimit l2TxGasLimit for the bridge txn
+     * @param _l2TxGasPerPubdataByte l2TxGasPerPubdataByte for the bridge txn
      */
     function bridgeProceeds(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external payable onlyOwner {
         revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
