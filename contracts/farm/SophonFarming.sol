@@ -213,7 +213,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Updates the given pool's allocation point. Can only be called by the owner.
      * @param _pid The pid to update
      * @param _allocPoint The new alloc point to set for the pool
-     * @param _poolStartBlock block at which points start to accrue for the pool
+     * @param _poolStartBlock block at which points start to accrue for the pool; 0 means no update
      * @param _newPointsPerBlock update global points per block; 0 means no update
      */
     function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external onlyOwner {
@@ -235,9 +235,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         totalAllocPoint = totalAllocPoint - pool.allocPoint + _allocPoint;
         pool.allocPoint = _allocPoint;
 
-        // pool starting block is updated if farming hasn't started and it's a future block
-        if (getBlockNumber() < pool.lastRewardBlock && getBlockNumber() < _poolStartBlock) {
-            pool.lastRewardBlock = _poolStartBlock;
+        // pool starting block is updated if farming hasn't started and _poolStartBlock is non-zero
+        if (_poolStartBlock != 0 && getBlockNumber() < pool.lastRewardBlock) {
+            pool.lastRewardBlock =
+                getBlockNumber() > _poolStartBlock ? getBlockNumber() : _poolStartBlock;
         }
 
         emit Set(lpToken, _pid, _allocPoint);
