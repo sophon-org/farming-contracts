@@ -631,7 +631,7 @@ def test_SF_overflow_accPointsPerShare(SF, eETH, weETH, DAI, sDAI, accounts, int
 def test_SF_overflow_accPointsPerShare1(SF, eETH, weETH, DAI, sDAI, accounts, USDC, interface): 
     
     holder = "0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa"
-    SF.add(60000, USDC.address, "USDC description", chain.height, {"from": accounts[0]})
+    SF.add(60000, USDC.address, "USDC description", chain.height, 0, {"from": accounts[0]})
     
     user1 = accounts[1]
     amount = 1
@@ -692,5 +692,81 @@ def test_SF_overflow_PEPE(SF, PEPE, eETH, weETH, DAI, sDAI, accounts, USDC, inte
     SF.deposit(3, amount2, 0, {"from": user2})
     
     SF.updatePool(3, {"from": user2})
+    
+    assert True
+    
+    
+def test_SF_reward_endBlock(SF, accounts, wstETH, stETH, eETH, weETH, interface):
+    
+    user1 = accounts[1]
+    user2 = accounts[2]
+    
+    amount = 10e18
+    acc1startblock = chain.height
+    user1.transfer(SF, amount)
+    
+    
+    chain.mine(SF.endBlock()-chain.height)
+    
+    chain.mine(10)
+    points = SF.pendingPoints(PredefinedPool.wstETH, user1)
+    SF.updatePool(PredefinedPool.wstETH, {"from": user1})
+    assert points == SF.pendingPoints(PredefinedPool.wstETH, user1)
+
+
+
+def test_SF_overflow_PEPE(SF, PEPE, eETH, weETH, DAI, sDAI, accounts, USDC, interface): 
+    
+    holder = "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+    SF.add(60000, PEPE.address, "PEPE description", chain.height + 1, 0, {"from": accounts[0]})
+    
+    user1 = accounts[1]
+    amount = 1
+    
+    PEPE.transfer(user1, amount, {"from": holder})
+    PEPE.approve(SF, 2**256-1, {"from": user1})
+    
+    SF.deposit(3, amount, 0, {"from": user1})
+    
+    SF.updatePool(3, {"from": user1})
+    
+    
+    
+    user2 = accounts[2]
+    amount2 = 1e12 * 1e18 # trillion 11 zeros. 10T here
+    
+    PEPE.transfer(user2, amount2, {"from": holder})
+    PEPE.approve(SF, 2**256-1, {"from": user2})
+    
+    SF.deposit(3, amount2, 0, {"from": user2})
+    
+    SF.updatePool(3, {"from": user2})
+    SF.pendingPoints(3, user2)
+    assert True
+    
+def test_SF_overflow_pending(SF, PEPE, eETH, weETH, DAI, sDAI, accounts, USDC, interface, MockERC20): 
+    
+    deployer = accounts[0]
+    usdc = MockERC20.deploy("Mock USDC Token", "MockUSDC", 18, {"from": deployer})
+    
+    usdc.mint(deployer, 10000e18)
+    
+    usdcId = SF.add(60000, usdc, "usdc", chain.height, 0, {"from": deployer})
+    usdcId = 3
+    
+    usdc.approve(SF, 10000e18)
+    
+    SF.deposit(usdcId, 1, 0, {"from": deployer})
+    chain.mine()
+    SF.updatePool(usdcId, {"from": deployer})
+    
+    from decimal import Decimal, getcontext
+    SF.deposit(usdcId, int(Decimal(10000e18) - 1), 0, {"from": deployer})
+    
+    chain.mine()
+    
+    SF.updatePool(usdcId, {"from": deployer})
+    
+    SF.pendingPoints(usdcId, deployer)
     
     assert True

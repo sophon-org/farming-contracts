@@ -400,7 +400,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
 
-        uint256 accPointsPerShare = pool.accPointsPerShare * 1e18;
+        uint256 accPointsPerShare = pool.accPointsPerShare;
 
         uint256 lpSupply = pool.amount;
         if (getBlockNumber() > pool.lastRewardBlock && lpSupply != 0) {
@@ -412,15 +412,14 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
                 pool.allocPoint /
                 totalAllocPoint;
 
-            accPointsPerShare = pointReward *
-                1e18 /
+            accPointsPerShare = pointReward /
                 lpSupply +
                 accPointsPerShare;
         }
 
         return user.amount *
             accPointsPerShare /
-            1e36 +
+            1e18 +
             user.rewardSettled -
             user.rewardDebt;
     }
