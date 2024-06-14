@@ -338,11 +338,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
             revert InvalidPointsPerBlock();
         }
-
         massUpdatePools();
-
         emit SetPointsPerBlock(pointsPerBlock, _pointsPerBlock);
-
         pointsPerBlock = _pointsPerBlock;
     }
 
