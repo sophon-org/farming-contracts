@@ -126,7 +126,6 @@ interface ISophonFarming {
     function poolInfo(uint256 pid) external view returns (PoolInfo memory);
     function userInfo(uint256 pid, address user) external view returns (UserInfo memory);
     function totalAllocPoint() external view returns (uint256);
-    function startBlock() external view returns (uint256);
     function endBlock() external view returns (uint256);
     function poolExists(address pool) external view returns (bool);
     function endBlockForWithdrawals() external view returns (uint256);
