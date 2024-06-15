@@ -61,9 +61,9 @@ def SF(accounts, chain, SophonFarming, SophonFarmingProxy, interface):
     dai                 = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
     sDAI                = "0x83F20F44975D03b1b09e64809B757c47f942BEeA"
     sDAIAllocPoint      = 20000
-    pointsPerBlock      = pointsPerBlock = 25*10**18
-    startBlock          = chain.height
-    boosterMultiplier   = 2e18
+    pointsPerBlock      = 25e18
+    startBlock          = 0  ## will be set to current block in initialize
+    boosterMultiplier   = 3e18
 
 
 

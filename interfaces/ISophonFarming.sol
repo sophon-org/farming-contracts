@@ -14,7 +14,8 @@ interface ISophonFarming {
         uint256 depositAmount; // remaining deposits not applied to a boost purchases
         uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
         uint256 lastRewardBlock; // Last block number that points distribution occurs.
-        uint256 accPointsPerShare; // Accumulated points per share, times 1e18. See below.
+        uint256 accPointsPerShare; // Accumulated points per share.
+        uint256 totalRewards; // Total rewards earned by the pool.
         string description; // Description of pool.
     }
 
