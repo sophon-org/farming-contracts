@@ -401,7 +401,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         return user.amount *
             accPointsPerShare /
-            1e30 +
+            1e18 +
             user.rewardSettled -
             user.rewardDebt;
     }
@@ -415,7 +415,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     function _settlePool(uint256 _pid) internal view returns (uint256 accPointsPerShare, uint256 totalRewards) {
         PoolInfo storage pool = poolInfo[_pid];
 
-        accPointsPerShare = pool.accPointsPerShare * 1e12;
+        accPointsPerShare = pool.accPointsPerShare;
         totalRewards = pool.totalRewards;
 
         uint256 lpSupply = pool.amount;
@@ -430,8 +430,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
             totalRewards = totalRewards + pointReward / 1e18;
 
-            accPointsPerShare = pointReward *
-                1e12 /
+            accPointsPerShare = pointReward /
                 lpSupply +
                 accPointsPerShare;
         }
