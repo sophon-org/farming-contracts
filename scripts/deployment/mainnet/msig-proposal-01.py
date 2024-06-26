@@ -18,11 +18,6 @@ safe_tx = safe.multisend_from_receipts()
 
 
 
-# Retrieve pending transactions from the transaction service
-safe.pending_transactions
-
-# Preview the side effects of all pending transactions
-safe.preview_pending()
 
 
 # Post it to the transaction service
@@ -32,6 +27,11 @@ for tx in tx_list:
     safe.sign_with_frame(sTxn)
     safe.post_transaction(sTxn)
 
+# Retrieve pending transactions from the transaction service
+safe.pending_transactions
+
+# Preview the side effects of all pending transactions
+safe.preview_pending()
 
 
 # Execute the transactions with enough signatures
