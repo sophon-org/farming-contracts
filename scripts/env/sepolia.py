@@ -14,7 +14,13 @@ BEAM = MockERC20.at("0x2E8F9867d1b3e5e94Cd86D3924419767A243e15C")
 stZENT = MockERC20.at("0xb4681a78200235A4131b9C5F07F7c48ff2D98dF7")
 
 
-
+class PredefinedPool:
+    sDAI = 0
+    wstETH = 1
+    weETH = 2
+    BEAM = 3
+    BEAM_ETH = 4
+    stZENT = 5
 
 
 
