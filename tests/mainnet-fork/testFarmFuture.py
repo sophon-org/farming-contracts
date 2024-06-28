@@ -52,6 +52,10 @@ def PEPE(interface):
 def BEAM(interface):
     return interface.IERC20("0x62D0A8458eD7719FDAF978fe5929C6D342B0bFcE")
 
+@pytest.fixture(scope="module")
+def BEAM_ETH_UNIV2(interface):
+    return interface.IERC20("0x180EFC1349A69390aDE25667487a826164C9c6E4")
+
 
 @pytest.fixture(scope="module")
 def SF(accounts, chain, SophonFarming, SophonFarmingProxy, interface):
@@ -66,7 +70,7 @@ class PredefinedPool:
     BEAM = 3
     BEAM_ETH = 4
 
-def test_SF(SF, DAI, sDAI, BEAM, accounts, interface):
+def test_SF(SF, DAI, sDAI, BEAM, accounts, interface, BEAM_ETH_UNIV2):
     
     poolInfo = SF.getPoolInfo()
     BEAM_ETH_pool = poolInfo[PredefinedPool.BEAM_ETH]
@@ -77,4 +81,30 @@ def test_SF(SF, DAI, sDAI, BEAM, accounts, interface):
     chain.mine(startBlock - chain.height)
     chain.mine()
     assert abs(SF.pointsPerBlock() - (SF.pendingPoints(PredefinedPool.BEAM_ETH, SF.owner()) + SF.pendingPoints(PredefinedPool.BEAM, SF.owner()))) < 100
+    assert False
+
+def test_SF_new_deposits(SF, DAI, sDAI, BEAM, accounts, interface, BEAM_ETH_UNIV2):
+    beam_holder = "0xA99F29A2fBdCaFbf057b3D8eFC47cfCEe670Bb43"
+    user1 = accounts[1]
+    amount = 1e6*1e18
+    BEAM.transfer(user1, amount, {"from": beam_holder})
+    BEAM.approve(SF, 2**256-1, {"from": user1})
+    
+    poolInfo = SF.getPoolInfo()
+    BEAM_pool = poolInfo[PredefinedPool.BEAM]
+    startBlock = BEAM_pool[6]
+    allocPoint = BEAM_pool[5]
+    # waiting farming start
+    chain.mine(startBlock - chain.height)
+    chain.mine()
+    
+    SF.deposit(PredefinedPool.BEAM, amount, 0, {"from": user1})
+    
+    SF.updatePool(PredefinedPool.BEAM, {"from": user1})
+    
+    SF.withdraw(PredefinedPool.BEAM, amount, {"from": user1})
+    assert BEAM.balanceOf(user1) == amount
+
+    
+    # WIP
     assert True
