@@ -12,7 +12,14 @@ deployer = accounts.load("sophon_sepolia")
 # USDC - 60000
 # sDAI - 60000
 
-newPointsPerBlock = 46e18
+sDAIPoints = 60000
+USDCPoints = 60000
+PEPEPoints = 50000
+stAethirPoints = 40000
+
+newPointsPerBlock = SF.pointsPerBlock() + (sDAIPoints+ USDCPoints + PEPEPoints + stAethirPoints) *1e14
+
+
 USDC = MockERC20.deploy("Mock USDC Token", "MockUSDC", 6, {"from": deployer})
 PEPE = MockERC20.deploy("Mock PEPE Token", "MockPEPE", 18, {"from": deployer})
 stAethir = MockERC20.deploy("Mock stAethir Token", "MockstAethir", 18, {"from": deployer})
