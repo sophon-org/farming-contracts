@@ -12,3 +12,5 @@ class PredefinedPool:
     weETH = 2
     BEAM = 3
     BEAM_ETH = 4
+    ZENT = 5
+    stZENT = 5
