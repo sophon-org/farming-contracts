@@ -11,7 +11,7 @@ networks:
     development:
         gas_limit: max
         gas_buffer: 1
-        gas_price: auto
+        gas_price: 0
         max_fee: null
         priority_fee: null
         reverting_tx_gas_limit: max
@@ -45,7 +45,6 @@ compiler:
             - "@erc721a=./node_modules/erc721a/contracts"
             - "@chainlink=./node_modules/@chainlink/contracts/src/v0.8"
             - "@openzeppelin=./node_modules/@openzeppelin"
-            - "@uniswap=./node_modules/@uniswap"
 
 console:
     show_colors: true
