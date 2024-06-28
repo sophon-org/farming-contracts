@@ -13,4 +13,4 @@ class PredefinedPool:
     BEAM = 3
     BEAM_ETH = 4
     ZENT = 5
-    stZENT = 5
+    stZENT = 6
