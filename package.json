@@ -31,10 +31,5 @@
     "hardhat-gas-reporter": "1.0.8",
     "solidity-coverage": "0.8.0",
     "typechain": "8.3.0"
-  },
-  "dependencies": {
-    "@uniswap/v2-core": "^1.0.1",
-    "@uniswap/v2-periphery": "^1.1.0-beta.0",
-    "@uniswap/v2-sdk": "^4.4.1"
   }
 }
