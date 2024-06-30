@@ -11,12 +11,20 @@ error TokenIsReceiver();
 
 contract SophonToken is ERC20Permit, Ownable2Step {
 
-    string internal constant _name = "Sophon";
-    string internal constant _symbol = "SOPH";
-    uint256 internal constant _maxSupply = 10_000_000_000e18;
+    constructor() ERC20Permit(name()) ERC20(name(), symbol()) Ownable(msg.sender) {
+        _mint(msg.sender, totalSupply());
+    }
 
-    constructor() ERC20Permit(_name) ERC20(_name, _symbol) Ownable(msg.sender) {
-        _mint(msg.sender, _maxSupply);
+    function name() public view override returns (string memory) {
+        return "Sophon";
+    }
+
+    function symbol() public view override returns (string memory) {
+        return "SOPH";
+    }
+
+    function totalSupply() public view override returns (uint256) {
+        return 10_000_000_000e18;
     }
 
     function rescue(IERC20 token) external onlyOwner {
