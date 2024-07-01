@@ -118,6 +118,15 @@ interface ISophonFarming {
     function getBlockMultiplier(uint256 _from, uint256 _to) external view returns (uint256);
     function isInWhitelist(address user) external view returns (bool);
 
+    function dai() external view returns (address);
+    function sDAI() external view returns (address);
+    function weth() external view returns (address);
+    function stETH() external view returns (address);
+    function wstETH() external view returns (address);
+    function eETH() external view returns (address);
+    function eETHLiquidityPool() external view returns (address);
+    function weETH() external view returns (address);
+
 
     function typeToId(PredefinedPool poolType) external view returns (uint256);
     function heldProceeds(uint256 poolId) external view returns (uint256);
@@ -142,6 +151,7 @@ interface ISophonFarming {
     function replaceImplementation(address impl_) external;
     function becomeImplementation(address proxy) external;
     function pendingImplementation() external returns(address);
+    function implementation() external view returns (address);
     function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external;
 
     
