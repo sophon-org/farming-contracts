@@ -2105,7 +2105,7 @@ contract SophonFarmingTest is Test {
             uint256 allocPoint,
             uint256 lastRewardBlock,
             uint256 accPointsPerShare,
-            // uint256 enabledDate,
+            uint256 totalRewards,
             string memory description
         ) = sophonFarming.poolInfo(poolId);
 
@@ -2117,7 +2117,7 @@ contract SophonFarmingTest is Test {
         assertEq(PoolInfo.allocPoint, allocPoint);
         assertEq(PoolInfo.lastRewardBlock, lastRewardBlock);
         assertEq(PoolInfo.accPointsPerShare, accPointsPerShare);
-        // assertEq(PoolInfo.enabledDate, enabledDate);
+        assertEq(PoolInfo.totalRewards, totalRewards);
         assertEq(abi.encode(PoolInfo.description), abi.encode(description));
     }
 
