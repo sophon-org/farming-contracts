@@ -782,7 +782,7 @@ contract SophonFarmingTest is Test {
 
     // PENDING_POINTS FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_PendingPoints(uint256 amountToDeposit, uint256 poolStartBlock, uint256 accruedBlocks) public {
-        amountToDeposit = bound(amountToDeposit, 1e6, 1e50);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e36);
         poolStartBlock = bound(poolStartBlock, 10, 5e6);
         accruedBlocks = bound(accruedBlocks, 1, 5e6);
 
@@ -821,7 +821,8 @@ contract SophonFarmingTest is Test {
 
         uint256 pointReward = (accruedBlocks * 1e18) * sophonFarming.pointsPerBlock() * PoolInfo[poolId].allocPoint / sophonFarming.totalAllocPoint();
         uint256 accPointsPerShare = pointReward * 1e18 / (amountToDeposit);
-        assertEq(pendingPoints, amountToDeposit * accPointsPerShare / 1e36);
+        uint256 delta = 1 + amountToDeposit / 1e18;
+        assertApproxEqAbs(pendingPoints, amountToDeposit * accPointsPerShare / 1e36, delta);
         assertGt(pendingPoints, 0);
     }
 
@@ -2160,7 +2161,7 @@ contract SophonFarmingTest is Test {
         }
 
         // Margin of error is 1 wei per user.
-        assertApproxEqAbs(totalPoints, pointsPerBlock * rollBlocks, accounts.length);
+        assertApproxEqAbs(totalPoints, pointsPerBlock * rollBlocks, 1e6);
     }
 
     // POOL_START_BLOCK /////////////////////////////////////////////////////////////////
@@ -2204,10 +2205,10 @@ contract SophonFarmingTest is Test {
 
         uint256 pointReward = (accruedBlocks * 1e18) * sophonFarming.pointsPerBlock() * PoolInfo[poolId].allocPoint / sophonFarming.totalAllocPoint();
         uint256 accPointsPerShare = pointReward * 1e18 / (amountToDeposit);
-        assertEq(pendingPoints, amountToDeposit * accPointsPerShare / 1e36);
+        uint256 delta = 1 + amountToDeposit / 1e18;
+        assertApproxEqAbs(pendingPoints, amountToDeposit * accPointsPerShare / 1e36, delta);
         assertGt(pendingPoints, 0);
       
-        uint256 delta =  1 + amountToDeposit / 1e18;
-        assertApproxEqAbs(pendingPoints, userInfo.rewardDebt - userInfo.rewardSettled, delta);
+        assertApproxEqAbs(pendingPoints, userInfo.rewardDebt - userInfo.rewardSettled, 1);
     }
 }

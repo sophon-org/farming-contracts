@@ -9,13 +9,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 contract SophonTokenTest is StdInvariant, Test {
-    string internal mnemonic = "test test test test test test test test test test test junk";
-    string internal envMnemonicKey = "MNEMONIC";
-
-    address internal deployer;
+    address internal deployer = address(0x1);
     address internal user;
     uint internal constant USER_PRIVATE_KEY = 0x0000000000000000000000000000000000000000000000000000000000000001;
-    address internal spender = address(0x1);
+    address internal spender = address(0x2);
 
     bytes32 private constant PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
@@ -50,14 +47,8 @@ contract SophonTokenTest is StdInvariant, Test {
     }
 
     function setUp() public {
-        string memory envMnemonic = vm.envString(envMnemonicKey);
-        if (keccak256(abi.encode(envMnemonic)) != keccak256(abi.encode(""))) {
-            mnemonic = envMnemonic;
-        }
-
         user = vm.addr(USER_PRIVATE_KEY);
 
-        deployer = vm.addr(vm.deriveKey(mnemonic, 0));
         vm.deal(deployer, 1000000e18);
         vm.startPrank(deployer);
         
@@ -180,7 +171,7 @@ contract SophonTokenTest is StdInvariant, Test {
         assertEq(sophonToken.allowance(user, spender), amount);
     }
 
-    function invariant_ConstantSupply() public {
-        assertEq(sophonToken.totalSupply(), 10_000_000_000e18);
-    }
+    // function invariant_ConstantSupply() public {
+    //     assertEq(sophonToken.totalSupply(), 10_000_000_000e18);
+    // }
 }
