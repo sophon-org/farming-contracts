@@ -815,7 +815,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _l2TxGasPerPubdataByte l2TxGasPerPubdataByte for the bridge txn
      */
     function bridgePool(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external payable {
-        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
 
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
@@ -845,6 +844,23 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         );
 
         emit BridgePool(msg.sender, _pid, depositAmount);
+    }
+
+    /**
+     * @notice Set L2Farming contract for particular pool
+     * @param _pid pid to bridge
+     * @param _l2Farm address of the contract for farming on L2 side
+     */
+    function setL2Farm(uint256 _pid, address _l2Farm) external onlyOwner {
+        if (_pid >= poolInfo.length) {
+            revert PoolExists();
+        }
+
+        if (_l2Farm == address(0)) {
+            revert ZeroAddress();
+        }
+
+        poolInfo[_pid].l2Farm = _l2Farm;
     }
 
     // TODO: does this function need to call claimFailedDeposit on the bridge?

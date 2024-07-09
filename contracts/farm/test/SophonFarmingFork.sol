@@ -16,10 +16,26 @@ contract SophonFarmingFork is SophonFarming {
     }
 
     function getBlockNumber() override public view returns (uint256) {
-        return internalBlockNumber;
+        return internalBlockNumber > 0? internalBlockNumber: block.number;
     }
 
     function addBlocks(uint256 count) public {
         internalBlockNumber += count;
     }
+
+    // Setter function for endBlock
+    function setEndBlock(uint256 _endBlock) external onlyOwner {
+        endBlock = _endBlock;
+    }
+
+    // Setter function for endBlock
+    function setInternalBlockNumber(uint256 _internalBlockNumber) external onlyOwner {
+        internalBlockNumber = _internalBlockNumber;
+    }
+
+    // Setter function for endBlockForWithdrawals
+    function setEndBlockForWithdrawals(uint256 _endBlockForWithdrawals) external onlyOwner {
+        endBlockForWithdrawals = _endBlockForWithdrawals;
+    }
+
 }
