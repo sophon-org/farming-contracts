@@ -153,6 +153,6 @@ interface ISophonFarming {
     function pendingImplementation() external returns(address);
     function implementation() external view returns (address);
     function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external;
-
+    function setL2Farm(uint256 _pid, address _l2Farm) external;
     
 }
