@@ -332,7 +332,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Set points per block
      * @param _pointsPerBlock points per block to set
      */
-    function setPointsPerBlock(uint256 _pointsPerBlock) public onlyOwner {
+    function setPointsPerBlock(uint256 _pointsPerBlock) virtual public onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -348,7 +348,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Set booster multiplier
      * @param _boosterMultiplier booster multiplier to set
      */
-    function setBoosterMultiplier(uint256 _boosterMultiplier) external onlyOwner {
+    function setBoosterMultiplier(uint256 _boosterMultiplier) virtual external onlyOwner {
         if (_boosterMultiplier < 1e18 || _boosterMultiplier > 10e18) {
             revert InvalidBooster();
         }
