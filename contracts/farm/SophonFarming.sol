@@ -1022,10 +1022,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Allows an admin to migrate AZUR to stAZUR 1:1
      * @param stAZUR address of the stakikng AZUR
      */
-    function migrateAzur(address  stAZUR) external onlyOwner {
-        PoolInfo storage pool = poolInfo[11];
+    function migrateAzur(address  stAZUR, uint256 pid) external onlyOwner {
+        PoolInfo storage pool = poolInfo[pid];
         uint256 amount = IERC20(pool.lpToken).balanceOf(address(this));
-        IERC20(pool.lpToken).approve(stAZUR, amount);
+        pool.lpToken.safeIncreaseAllowance(stAZUR, amount);
         ERC20Wrapper(stAZUR).depositFor(address(this), amount);
         pool.lpToken = IERC20(stAZUR);
         require(ERC20Wrapper(stAZUR).balanceOf(address(this)) == amount, "expecting 1:1 migration");
