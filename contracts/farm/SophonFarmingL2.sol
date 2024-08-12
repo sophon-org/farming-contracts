@@ -75,6 +75,34 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     }
 
 
+
+    function addPool(
+        IERC20 _lpToken,
+        address _l2Farm,
+        uint256 _amount,
+        uint256 _boostAmount,
+        uint256 _depositAmount,
+        uint256 _allocPoint,
+        uint256 _lastRewardBlock,
+        uint256 _accPointsPerShare,
+        uint256 _totalRewards,
+        string memory _description
+    ) external onlyOwner {
+        // TODO any safety checks
+        poolInfo.push(PoolInfo({
+            lpToken: _lpToken,
+            l2Farm: _l2Farm,
+            amount: _amount,
+            boostAmount: _boostAmount,
+            depositAmount: _depositAmount,
+            allocPoint: _allocPoint,
+            lastRewardBlock: _lastRewardBlock,
+            accPointsPerShare: _accPointsPerShare,
+            totalRewards: _totalRewards,
+            description: _description
+        }));
+    }
+
     /**
      * @notice Adds a new pool to the farm. Can only be called by the owner.
      * @param _allocPoint alloc point for new pool
