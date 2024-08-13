@@ -2,7 +2,7 @@
 # to bridge funds to L2.
 
 # prerequisites address of deployed SF-L2
-SF_L2 = "0x17cA6CfB56fE7105ED1eE58ed572Fa902Dec8182"
+SF_L2 = "0x4c98cB92EF417DC278cAe17faee647ca43f53301"
 # this is to be run on SEPOLIA
 
 # I am going to use existing deployments for sepolia tokens. however new SF contract
