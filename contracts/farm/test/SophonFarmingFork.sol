@@ -8,7 +8,7 @@ contract SophonFarmingFork is SophonFarming {
 
     uint256 internalBlockNumber;
 
-    constructor(address[8] memory tokens_) SophonFarming(tokens_) {}
+    constructor(address[8] memory tokens_, uint256 _CHAINID) SophonFarming(tokens_, _CHAINID) {}
 
     function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _startBlock, uint256 _boosterMultiplier) public override onlyOwner {
         super.initialize(wstEthAllocPoint_, weEthAllocPoint_, sDAIAllocPoint_, _pointsPerBlock, _startBlock, _boosterMultiplier);

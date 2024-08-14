@@ -19,6 +19,7 @@ web3.eth.set_gas_price_strategy(fixed_gas_price_strategy)
 
 # deploy SF. I don't wanna mess with testnet deployment
 deployer = accounts.load("sophon_sepolia")
+user1 = accounts.load("0xe749b7469A9911E451600CB31B5Ca180743183cE")
 
 args = [
         DAI.address,
@@ -28,10 +29,10 @@ args = [
         wstETH.address,
         eETH.address,
         SF.eETHLiquidityPool(),
-        weETH.address
+        weETH.address,
     ]
 
-SFImpl = SophonFarming.deploy(args, {'from': deployer})
+SFImpl = SophonFarming.deploy(args, SOPHON_CHAIN_ID, {'from': deployer})
 
 SFProxy = SophonFarmingProxy.deploy(SFImpl, {"from": deployer})
 
@@ -55,7 +56,7 @@ SF_L1.set(PredefinedPool.wstETH, 20000, chain.height, 0, {"from": deployer})
 
 
 # TEST MAke some users
-user1 = accounts.load("0xe749b7469A9911E451600CB31B5Ca180743183cE")
+
 
 DAI.mint(user1, 1e6*1e18, {"from": user1})
 DAI.approve(sDAI, 2**256-1, {"from": user1})
@@ -75,7 +76,7 @@ SF_L1.deposit(0, sDAI.balanceOf(user1), 0, {"from": user1})
 SF_L1.setEndBlock(chain.height+1, 1, {"from": deployer})
 
 # set bridge
-SF_L1.setBridge("0x2Ae09702F77a4940621572fBcDAe2382D44a2cbA", {"from": deployer})
+SF_L1.setBridge(BRIDGEHUB, {"from": deployer})
 
 # poolInfo = SF_L1.getPoolInfo()
 # for index, fruit in enumerate(poolInfo):
@@ -85,21 +86,19 @@ SF_L1.setBridge("0x2Ae09702F77a4940621572fBcDAe2382D44a2cbA", {"from": deployer}
 
 # testing only 1 pool bridge
 SF_L1.setL2Farm(0, SF_L2, {"from": deployer})
-SF_L1.bridgePool(0, 2000000, 800, {"from": deployer, "value": Wei("0.1 ether")}) # fyi 800 is hard coded constant.
+# chainId = 0 # filled by the contract
+mintValue = 100e18 # SOPH transaction cost
 
+SOPH.transfer(user1, 100e18, {"from": deployer})
+SOPH.approve(SF_L1, 2**256-1, {"from": user1})
+SF_L1.bridgePool(0, mintValue, SOPH, {"from": user1}) 
 
-# <ISophonFarming Contract '0x49e7a74efb1149824972fdd4E18D47Ac9B90A910'> SF_L1
-# >>> SF_L1 = interface.ISophonFarming("0x49e7a74efb1149824972fdd4E18D47Ac9B90A910")
+# <ISophonFarming Contract '0x36DA750Ad20566Ad5197C255DaFB69f129Cfd6F5'>
+SF_L1 = interface.ISophonFarming("0x36DA750Ad20566Ad5197C255DaFB69f129Cfd6F5")
+
 # >>> SF_L1.getPoolInfo()
-# (('0x64555DD79DA6Bd9E9293d630AbAE7C1f8FAC1Dd7', '0x17cA6CfB56fE7105ED1eE58ed572Fa902Dec8182', 939726078517424243000000, 0, 939726078517424243000000, 20000, 6467585, 8867832365023, 8333333333333333333, 'sDAI'), ('0xCdB9b24fe84448175b8Ab821E4c42d7Db176C732', '0x0000000000000000000000000000000000000000', 0, 0, 0, 20000, 6467580, 0, 0, 'wstETH'), ('0x1ac4090094F44cfb41417D8772500DB051D32b32', '0x0000000000000000000000000000000000000000', 0, 0, 0, 20000, 6467580, 0, 0, 'weETH'))
-# >
+# (('0x64555DD79DA6Bd9E9293d630AbAE7C1f8FAC1Dd7', '0x4c98cB92EF417DC278cAe17faee647ca43f53301', 1879452157034848486000000, 0, 1879452157034848486000000, 20000, 6493475, 4433916182511, 8333333333333333333, 'sDAI'), 
+#  ('0xCdB9b24fe84448175b8Ab821E4c42d7Db176C732', '0x0000000000000000000000000000000000000000', 0, 0, 0, 20000, 6493470, 0, 0, 'wstETH'), ('0x1ac4090094F44cfb41417D8772500DB051D32b32', '0x0000000000000000000000000000000000000000', 0, 0, 0, 20000, 6493470, 0, 0, 'weETH')
 
-# >>> SF_L1.pendingPoints(0, "0xe749b7469A9911E451600CB31B5Ca180743183cE")
-# 8333333333332959618
-
-# >>> SF_L1.userInfo(0, "0xe749b7469A9911E451600CB31B5Ca180743183cE")
-# (939726078517424243000000, 0, 939726078517424243000000, 0, 0)
-# >>> SF_L1.boosterMultiplier()
-# 3000000000000000000
-# >>> SF_L1.totalAllocPoint()
-# 60000
+# >>> SF_L1.userInfo(0, user1)
+# (1879452157034848486000000, 0, 1879452157034848486000000, 0, 0)

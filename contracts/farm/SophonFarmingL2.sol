@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IWeth.sol";
 import "./interfaces/IstETH.sol";
@@ -45,6 +46,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when setPointsPerBlock is called
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
 
+        // This event is triggered whenever a call to #claim succeeds.
+    event Claimed(address indexed account, uint256 index);
+
     error ZeroAddress();
     error PoolExists();
     error PoolDoesNotExist();
@@ -74,7 +78,82 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     constructor() {
     }
 
+    // Setter function for merkleRoot
+    function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
+        merkleRoot = _merkleRoot;
+    }
 
+    function getLeaf(
+        uint256 _index,
+        address _account,
+        uint256 _pid,
+        UserInfo memory _userInfo
+    ) public pure returns (bytes32) {
+        bytes32 leaf = keccak256(
+            abi.encodePacked(
+                _index,
+                _account,
+                _pid,
+                _userInfo.amount,
+                _userInfo.boostAmount,
+                _userInfo.depositAmount,
+                _userInfo.rewardSettled,
+                _userInfo.rewardDebt
+            )
+        );
+        return leaf;
+    }
+
+    function verifyProof(bytes32 _merkleRoot,
+            bytes32[] calldata _proof,
+            uint256 _index,
+            address _account,
+            UserInfo calldata _userInfo,
+            uint256 _pid) external view returns (bool) {
+        bytes32 leaf = keccak256(abi.encodePacked(_index, _account, _pid, _userInfo.amount, _userInfo.boostAmount, _userInfo.depositAmount, _userInfo.rewardSettled, _userInfo.rewardDebt));
+        return MerkleProof.verify(_proof, _merkleRoot, leaf);
+    }
+
+        // Verify a proof with a specific root (for testing or other purposes)
+    function verifyProofWithRoot(bytes32[] calldata proof, bytes32 root, bytes32 leaf) external pure returns (bool) {
+        return MerkleProof.verify(proof, root, leaf);
+    }
+
+    function claim(
+        uint256 _index,
+        address _account,
+        UserInfo calldata _userInfo,
+        uint256 _pid,
+        bytes32[] calldata _merkleProof
+    ) external {
+        require(!isClaimed(_index), "MerkleDistributor: Drop already claimed.");
+        require(_account == msg.sender, "MerkleDistributor: account != sender");
+
+        // Verify the merkle proof.
+        bytes32 leaf = keccak256(abi.encodePacked(_index, _account, _pid, _userInfo.amount, _userInfo.boostAmount, _userInfo.depositAmount, _userInfo.rewardSettled, _userInfo.rewardDebt));
+        require(MerkleProof.verify(_merkleProof, merkleRoot, leaf), "MerkleDistributor: Invalid proof.");
+
+        // Mark it claimed and send the token.
+        _setClaimed(_index);
+
+        userInfo[_pid][_account] = _userInfo;
+
+        emit Claimed(_account, _index);
+    }
+
+    function _setClaimed(uint256 index) private {
+        uint256 claimedWordIndex = index / 256;
+        uint256 claimedBitIndex = index % 256;
+        claimedBitMap[claimedWordIndex] = claimedBitMap[claimedWordIndex] | (1 << claimedBitIndex);
+    }
+
+    function isClaimed(uint256 index) public view returns (bool) {
+        uint256 claimedWordIndex = index / 256;
+        uint256 claimedBitIndex = index % 256;
+        uint256 claimedWord = claimedBitMap[claimedWordIndex];
+        uint256 mask = (1 << claimedBitIndex);
+        return claimedWord & mask == mask;
+    }
 
     function addPool(
         IERC20 _lpToken,

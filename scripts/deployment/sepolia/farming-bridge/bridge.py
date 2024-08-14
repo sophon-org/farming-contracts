@@ -5,7 +5,7 @@ user1 = accounts.load("0xe749b7469A9911E451600CB31B5Ca180743183cE")
 
 depositAmount = 100 * 10 **18
 chainId = 531050104
-mintValue = 0
+mintValue = 100e18 # SOPH
 l2Value = 0
 l2GasLimit = 2000000
 l2GasPerPubdataByteLimit = 800
@@ -32,4 +32,4 @@ request = (
 )
 
 
-BRIDGEHUB.requestL2TransactionTwoBridges(request, {"from": user1, "value": 0})
+BRIDGEHUB.requestL2TransactionTwoBridges(request, {"from": user1, "value": 0, "gas_price": Wei("50 gwei")})

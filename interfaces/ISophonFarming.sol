@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.25;
+pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "contracts/farm/interfaces/bridge/IBridgehub.sol";
 
 interface ISophonFarming {
     // Info of each pool.
@@ -108,7 +109,7 @@ interface ISophonFarming {
     function depositeEth(uint256 _amount, uint256 _boostAmount) external;
     function depositWeth(uint256 _amount, uint256 _boostAmount, PredefinedPool predefinedPool) external;
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external;
-    function bridgePool(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external;
+    function bridgePool(uint256 _pid, uint256 _mintValue, address sophToken) external;
     function revertFailedBridge(uint256 _pid) external;
     function increaseBoost(uint256 _pid, uint256 _boostAmount) external;
     function bridgeProceeds(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external;

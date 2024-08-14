@@ -85,13 +85,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     address public immutable eETH;
     address public immutable eETHLiquidityPool;
     address public immutable weETH;
+    uint256 public immutable CHAINID;
+
 
     /**
      * @notice Construct SophonFarming
      * @param tokens_ Immutable token addresses
      * @dev 0:dai, 1:sDAI, 2:weth, 3:stETH, 4:wstETH, 5:eETH, 6:eETHLiquidityPool, 7:weETH
      */
-    constructor(address[8] memory tokens_) {
+    constructor(address[8] memory tokens_, uint256 _CHAINID) {
         dai = tokens_[0];
         sDAI = tokens_[1];
         weth = tokens_[2];
@@ -100,6 +102,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         eETH = tokens_[5];
         eETHLiquidityPool = tokens_[6];
         weETH = tokens_[7];
+        CHAINID = _CHAINID;
     }
 
     /**
@@ -286,7 +289,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (_bridge == address(0)) {
             revert ZeroAddress();
         }
-        bridge = BridgeLike(_bridge);
+        bridge = IBridgehub(_bridge);
     }
 
     /**
@@ -811,10 +814,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /**
      * @notice Permissionless function to allow anyone to bridge during the correct period
      * @param _pid pid to bridge
-     * @param _l2TxGasLimit l2TxGasLimit for the bridge txn
-     * @param _l2TxGasPerPubdataByte l2TxGasPerPubdataByte for the bridge txn
+     * @param _mintValue _mintValue SOPH gas price
      */
-    function bridgePool(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external payable {
+    function bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken) external payable {
 
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
@@ -823,26 +825,32 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         updatePool(_pid);
         PoolInfo storage pool = poolInfo[_pid];
 
-        uint256 depositAmount = pool.depositAmount;
-        if (depositAmount == 0 || address(bridge) == address(0) || pool.l2Farm == address(0)) {
+        if (pool.depositAmount == 0 || address(bridge) == address(0) || pool.l2Farm == address(0)) {
             revert BridgeInvalid();
         }
+        uint256 depositAmount = IERC20(pool.lpToken).balanceOf(address(this));
+        L2TransactionRequestTwoBridgesOuter memory _request = L2TransactionRequestTwoBridgesOuter({
+            chainId: CHAINID,
+            mintValue: _mintValue,
+            l2Value: 0,
+            l2GasLimit: 2000000,
+            l2GasPerPubdataByteLimit: 800,
+            refundRecipient: address(this),
+            secondBridgeAddress: address(bridge.sharedBridge()),
+            secondBridgeValue: 0,
+            secondBridgeCalldata: abi.encode(pool.lpToken, depositAmount, pool.l2Farm)
+        });
+
+        if (pool.lpToken.allowance(address(this), _request.secondBridgeAddress) < depositAmount) {
+            pool.lpToken.safeIncreaseAllowance(_request.secondBridgeAddress, type(uint256).max);
+        }
+        IERC20(_sophToken).safeTransferFrom(msg.sender, address(this), _mintValue);
+        IERC20(_sophToken).safeIncreaseAllowance(_request.secondBridgeAddress, _mintValue);
+        
+        // Actual values are pending the launch of Sophon testnet
+        bridge.requestL2TransactionTwoBridges(_request);
 
         isBridged[_pid] = true;
-
-        IERC20 lpToken = pool.lpToken;
-        lpToken.approve(address(bridge), depositAmount);
-
-        // Actual values are pending the launch of Sophon testnet
-        bridge.deposit{value: msg.value}(
-            pool.l2Farm,            // _l2Receiver
-            address(lpToken),       // _l1Token
-            depositAmount,          // _amount
-            _l2TxGasLimit,          // _l2TxGasLimit
-            _l2TxGasPerPubdataByte, // _l2TxGasPerPubdataByte
-            owner()                 // _refundRecipient
-        );
-
         emit BridgePool(msg.sender, _pid, depositAmount);
     }
 
