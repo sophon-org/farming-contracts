@@ -4,7 +4,6 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Wrapper.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IWeth.sol";
 import "./interfaces/IstETH.sol";
@@ -1015,20 +1014,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         // TODO: add bridging logic
 
         emit BridgeProceeds(_pid, _proceeds);
-    }
-
-    // This function migrates AZUR token to stAZUR 1:1
-    /**
-     * @notice Allows an admin to migrate AZUR to stAZUR 1:1
-     * @param stAZUR address of the stakikng AZUR
-     */
-    function migrateAzur(address  stAZUR, uint256 pid) external onlyOwner {
-        PoolInfo storage pool = poolInfo[pid];
-        uint256 amount = IERC20(pool.lpToken).balanceOf(address(this));
-        pool.lpToken.safeIncreaseAllowance(stAZUR, amount);
-        ERC20Wrapper(stAZUR).depositFor(address(this), amount);
-        pool.lpToken = IERC20(stAZUR);
-        require(ERC20Wrapper(stAZUR).balanceOf(address(this)) == amount, "expecting 1:1 migration");
     }
 
     /**
