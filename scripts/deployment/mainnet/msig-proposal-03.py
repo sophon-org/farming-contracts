@@ -17,7 +17,12 @@ OWNER = "0x3b181838Ae9DB831C17237FAbD7c10801Dd49fcD"
 safe = BrownieSafe(OWNER)
 
 
-# TODO actual transaction to upgrade stAZUR
+# TODO WIP actual transaction to upgrade stAZUR
+
+deployer = accounts[0]
+SFImpl = SFAzurUpgrade.deploy({'from': deployer})
+SF.replaceImplementation(SFImpl, {'from': OWNER})
+SFImpl.becomeImplementation(SF, {'from': OWNER})
 
 
 safe_tx = safe.multisend_from_receipts()
