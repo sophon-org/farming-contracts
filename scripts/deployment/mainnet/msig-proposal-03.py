@@ -25,7 +25,7 @@ SFImpl = SFAzurUpgrade.deploy({'from': deployer})
 SF.replaceImplementation(SFImpl, {'from': OWNER})
 SFImpl.becomeImplementation(SF, {'from': OWNER})
 
-SF.migrateAzur()
+SF.migrateAzur(stAZUR
 
 safe_tx = safe.multisend_from_receipts()
 safe.preview(safe_tx, call_trace=True)
