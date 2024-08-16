@@ -33,7 +33,7 @@ contract SFAzurUpgrade is Upgradeable2Step, SophonFarmingState {
      * @notice Allows an admin to migrate AZUR to stAZUR 1:1
      * @param stAZUR address of the stakikng AZUR
      */
-    function migrateAzur(address  stAZUR, uint256 pid) external onlyOwner {
+    function migrateAzur(address stAZUR, uint256 pid) external onlyOwner {
         PoolInfo storage pool = poolInfo[pid];
         uint256 amount = IERC20(pool.lpToken).balanceOf(address(this));
         pool.lpToken.safeIncreaseAllowance(stAZUR, amount);
