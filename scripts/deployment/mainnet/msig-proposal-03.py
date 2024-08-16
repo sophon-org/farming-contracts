@@ -19,11 +19,13 @@ safe = BrownieSafe(OWNER)
 
 # TODO WIP actual transaction to upgrade stAZUR
 
+stAZUR = ZERO_ADDRESS # TODO
 deployer = accounts[0]
 SFImpl = SFAzurUpgrade.deploy({'from': deployer})
 SF.replaceImplementation(SFImpl, {'from': OWNER})
 SFImpl.becomeImplementation(SF, {'from': OWNER})
 
+SF.migrateAzur()
 
 safe_tx = safe.multisend_from_receipts()
 safe.preview(safe_tx, call_trace=True)
