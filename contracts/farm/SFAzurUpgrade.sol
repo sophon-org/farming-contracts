@@ -23,7 +23,7 @@ contract SFAzurUpgrade is Upgradeable2Step, SophonFarmingState {
     using SafeERC20 for IERC20;
 
     /// @notice Emitted when setPointsPerBlock is called
-    event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
+    event MigrationSuccess(uint256 amount);
 
     error MigrationFailed();
 
@@ -44,5 +44,7 @@ contract SFAzurUpgrade is Upgradeable2Step, SophonFarmingState {
             // expecting 1:1 migration
             revert MigrationFailed();
         }
+
+        emit MigrationSuccess(amount);
     }
 }

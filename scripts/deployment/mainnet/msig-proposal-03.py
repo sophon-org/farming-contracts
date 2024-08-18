@@ -19,13 +19,24 @@ safe = BrownieSafe(OWNER)
 
 # TODO WIP actual transaction to upgrade stAZUR
 
-stAZUR = "0x67f3228fD58f5A26D93a5dd0c6989b69c95618eB"
-deployer = accounts[0]
-SFImpl = SFAzurUpgrade.deploy({'from': deployer})
-SF.replaceImplementation(SFImpl, {'from': OWNER})
-SFImpl.becomeImplementation(SF, {'from': OWNER})
+stAZUR = interface.IERC20Metadata("0x67f3228fD58f5A26D93a5dd0c6989b69c95618eB")
+AZUR = interface.IERC20Metadata("0x9E6be44cC1236eEf7e1f197418592D363BedCd5A")
+AZUR_PID = 11
 
-SF.migrateAzur(stAZUR, {'from': OWNER})
+
+balanceBefore = AZUR.balanceOf(SF)
+deployer = accounts[0]
+oldImplementation = SF.implementation()
+SFImpl = SFAzurUpgrade.deploy({'from': OWNER})
+receipt1 = SF.replaceImplementation(SFImpl, {'from': OWNER})
+receipt2 = SFImpl.becomeImplementation(SF, {'from': OWNER})
+
+receipt3 = SF.migrateAzur(stAZUR, AZUR_PID, {'from': OWNER})
+
+receipt4 = SF.replaceImplementation(oldImplementation, {'from': OWNER})
+
+balanceAfter = stAZUR.balanceOf(SF)
+assert balanceBefore == balanceAfter
 
 safe_tx = safe.multisend_from_receipts()
 safe.preview(safe_tx, call_trace=True)
