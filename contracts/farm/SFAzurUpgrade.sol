@@ -35,7 +35,7 @@ contract SFAzurUpgrade is Upgradeable2Step, SophonFarmingState {
      */
     function migrateAzur(address stAZUR, uint256 pid) external onlyOwner {
         PoolInfo storage pool = poolInfo[pid];
-        uint256 amount = IERC20(pool.lpToken).balanceOf(address(this));
+        uint256 amount = pool.lpToken.balanceOf(address(this));
         pool.lpToken.safeIncreaseAllowance(stAZUR, amount);
         ERC20Wrapper(stAZUR).depositFor(address(this), amount);
         pool.lpToken = IERC20(stAZUR);
