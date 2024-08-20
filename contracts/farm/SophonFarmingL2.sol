@@ -84,14 +84,12 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     }
 
     function getLeaf(
-        uint256 _index,
         address _account,
         uint256 _pid,
         UserInfo memory _userInfo
     ) public pure returns (bytes32) {
         bytes32 leaf = keccak256(
             abi.encodePacked(
-                _index,
                 _account,
                 _pid,
                 _userInfo.amount,
@@ -106,12 +104,11 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
     function verifyProof(bytes32 _merkleRoot,
             bytes32[] calldata _proof,
-            uint256 _index,
             address _account,
             UserInfo calldata _userInfo,
-            uint256 _pid) external view returns (bool) {
-        bytes32 leaf = keccak256(abi.encodePacked(_index, _account, _pid, _userInfo.amount, _userInfo.boostAmount, _userInfo.depositAmount, _userInfo.rewardSettled, _userInfo.rewardDebt));
-        return MerkleProof.verify(_proof, _merkleRoot, leaf);
+            uint256 _pid) external view returns (bool, bytes32) {
+        bytes32 leaf = keccak256(abi.encodePacked(_account, _pid, _userInfo.amount, _userInfo.boostAmount, _userInfo.depositAmount, _userInfo.rewardSettled, _userInfo.rewardDebt));
+        return (MerkleProof.verify(_proof, _merkleRoot, leaf), leaf);
     }
 
         // Verify a proof with a specific root (for testing or other purposes)
