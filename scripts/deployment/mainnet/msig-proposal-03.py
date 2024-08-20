@@ -34,6 +34,7 @@ receipt2 = SFImpl.becomeImplementation(SF, {'from': OWNER})
 receipt3 = SF.migrateAzur(stAZUR, AZUR_PID, {'from': OWNER})
 
 receipt4 = SF.replaceImplementation(oldImplementation, {'from': OWNER})
+receipt5 = interface.ISophonFarming(oldImplementation).becomeImplementation(SF, {'from': OWNER})
 
 balanceAfter = stAZUR.balanceOf(SF)
 assert balanceBefore == balanceAfter
