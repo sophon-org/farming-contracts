@@ -17,8 +17,6 @@ OWNER = "0x3b181838Ae9DB831C17237FAbD7c10801Dd49fcD"
 safe = BrownieSafe(OWNER)
 
 
-# TODO WIP actual transaction to upgrade stAZUR
-
 stAZUR = interface.IERC20Metadata("0x67f3228fD58f5A26D93a5dd0c6989b69c95618eB")
 AZUR = interface.IERC20Metadata("0x9E6be44cC1236eEf7e1f197418592D363BedCd5A")
 AZUR_PID = 11
