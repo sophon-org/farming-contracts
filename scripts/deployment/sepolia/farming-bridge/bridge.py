@@ -33,3 +33,16 @@ request = (
 
 
 BRIDGEHUB.requestL2TransactionTwoBridges(request, {"from": user1, "value": 0, "gas_price": Wei("50 gwei")})
+
+
+from web3 import Web3
+asdf = 777
+asdfs = "0xe749b7469A9911E451600CB31B5Ca180743183cE"
+
+hashed = encode(
+        ["address", "uint256"],
+        [asdfs, asdf]
+    )
+
+Web3.solidity_keccak(["address", "uint256"],
+        [asdfs, asdf])
