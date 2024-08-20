@@ -25,7 +25,10 @@ AZUR_PID = 11
 balanceBefore = AZUR.balanceOf(SF)
 deployer = accounts[0]
 oldImplementation = SF.implementation()
-SFImpl = SFAzurUpgrade.deploy({'from': OWNER})
+
+#SFImpl = SFAzurUpgrade.deploy({'from': OWNER})
+SFImpl = Contract.from_abi("SFImpl", "0x2ce8ad8c545b7fb434d26961c7029d515940ea69", SFAzurUpgrade.abi)
+
 receipt1 = SF.replaceImplementation(SFImpl, {'from': OWNER})
 receipt2 = SFImpl.becomeImplementation(SF, {'from': OWNER})
 
