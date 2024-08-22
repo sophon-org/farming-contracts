@@ -15,11 +15,13 @@ contract LinearVestingSophon is ERC20, AccessControl {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     IERC20 public immutable sophtoken;
+    uint256 public vestingStartTime;
     mapping(address => VestingSchedule) public vestingSchedules;
 
     event TokensReleased(address indexed beneficiary, uint256 amount);
     event TokensRecovered(address indexed admin, uint256 amount);
     event VestingScheduleAdded(address indexed beneficiary, uint256 totalAmount, uint256 start, uint256 duration);
+    event VestingStartTimeUpdated(uint256 newVestingStartTime);
 
     // Custom errors
     error VestingScheduleAlreadyExists();
@@ -31,11 +33,18 @@ contract LinearVestingSophon is ERC20, AccessControl {
     error InsufficientVestedAmount();
     error InsufficientBalanceInContract();
     error TokenTransferFailed();
+    error VestingStartTimeCannotBeInThePast();
 
     constructor(address tokenAddress) ERC20("vesting Sophon Token", "vSOPH") {
         sophtoken = IERC20(tokenAddress);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
+    }
+
+    function setVestingStartTime(uint256 newVestingStartTime) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (newVestingStartTime < block.timestamp) revert VestingStartTimeCannotBeInThePast();
+        vestingStartTime = newVestingStartTime;
+        emit VestingStartTimeUpdated(newVestingStartTime);
     }
 
     function addVestingSchedule(
@@ -48,10 +57,13 @@ contract LinearVestingSophon is ERC20, AccessControl {
         if (totalAmount == 0) revert TotalAmountMustBeGreaterThanZero();
         if (duration == 0) revert DurationMustBeGreaterThanZero();
 
+        // Ensure start time is not before vestingStartTime
+        uint256 adjustedStart = start < vestingStartTime ? vestingStartTime : start;
+
         vestingSchedules[beneficiary] = VestingSchedule({
             totalAmount: totalAmount,
             released: 0,
-            start: start,
+            start: adjustedStart,
             duration: duration
         });
 
@@ -61,7 +73,7 @@ contract LinearVestingSophon is ERC20, AccessControl {
         // Ensure the contract receives SOPH tokens for vesting
         if (!sophtoken.transferFrom(msg.sender, address(this), totalAmount)) revert TokenTransferFailed();
 
-        emit VestingScheduleAdded(beneficiary, totalAmount, start, duration);
+        emit VestingScheduleAdded(beneficiary, totalAmount, adjustedStart, duration);
     }
 
     function release() external {
@@ -111,6 +123,14 @@ contract LinearVestingSophon is ERC20, AccessControl {
         toSchedule.released += amount;
 
         _transfer(from, to, amount);
+    }
+
+    function addAdmin(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        grantRole(ADMIN_ROLE, account);
+    }
+
+    function removeAdmin(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        revokeRole(ADMIN_ROLE, account);
     }
 
     function recoverTokens(uint256 amount) external onlyRole(ADMIN_ROLE) {
