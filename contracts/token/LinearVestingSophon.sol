@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract LinearVestingSophon is ERC20, AccessControl {
+contract LinearVestingSophon is Initializable, ERC20Upgradeable, AccessControlUpgradeable, UUPSUpgradeable {
     struct VestingSchedule {
         uint256 totalAmount;
         uint256 released;
@@ -14,7 +16,7 @@ contract LinearVestingSophon is ERC20, AccessControl {
 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    IERC20 public immutable sophtoken;
+    IERC20 public sophtoken;
     uint256 public vestingStartTime;
     mapping(address => VestingSchedule) public vestingSchedules;
 
@@ -35,7 +37,12 @@ contract LinearVestingSophon is ERC20, AccessControl {
     error TokenTransferFailed();
     error VestingStartTimeCannotBeInThePast();
 
-    constructor(address tokenAddress) ERC20("vesting Sophon Token", "vSOPH") {
+    // Initializer function
+    function initialize(address tokenAddress) public initializer {
+        __ERC20_init("vesting Sophon Token", "vSOPH");
+        __AccessControl_init();
+        __UUPSUpgradeable_init();
+
         sophtoken = IERC20(tokenAddress);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
@@ -125,13 +132,6 @@ contract LinearVestingSophon is ERC20, AccessControl {
         _transfer(from, to, amount);
     }
 
-    function addAdmin(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        grantRole(ADMIN_ROLE, account);
-    }
-
-    function removeAdmin(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        revokeRole(ADMIN_ROLE, account);
-    }
 
     function recoverTokens(uint256 amount) external onlyRole(ADMIN_ROLE) {
         uint256 contractBalance = sophtoken.balanceOf(address(this));
@@ -139,4 +139,7 @@ contract LinearVestingSophon is ERC20, AccessControl {
         if (!sophtoken.transfer(msg.sender, amount)) revert TokenTransferFailed();
         emit TokensRecovered(msg.sender, amount);
     }
+
+    // Function required by UUPSUpgradeable
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 }
