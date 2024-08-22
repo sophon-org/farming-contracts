@@ -17,8 +17,6 @@ OWNER = "0x3b181838Ae9DB831C17237FAbD7c10801Dd49fcD"
 safe = BrownieSafe(OWNER)
 
 
-# TODO WIP actual transaction to upgrade stAZUR
-
 stAZUR = interface.IERC20Metadata("0x67f3228fD58f5A26D93a5dd0c6989b69c95618eB")
 AZUR = interface.IERC20Metadata("0x9E6be44cC1236eEf7e1f197418592D363BedCd5A")
 AZUR_PID = 11
@@ -27,13 +25,17 @@ AZUR_PID = 11
 balanceBefore = AZUR.balanceOf(SF)
 deployer = accounts[0]
 oldImplementation = SF.implementation()
-SFImpl = SFAzurUpgrade.deploy({'from': OWNER})
+
+#SFImpl = SFAzurUpgrade.deploy({'from': OWNER})
+SFImpl = Contract.from_abi("SFImpl", "0x2ce8ad8c545b7fb434d26961c7029d515940ea69", SFAzurUpgrade.abi)
+
 receipt1 = SF.replaceImplementation(SFImpl, {'from': OWNER})
 receipt2 = SFImpl.becomeImplementation(SF, {'from': OWNER})
 
 receipt3 = SF.migrateAzur(stAZUR, AZUR_PID, {'from': OWNER})
 
 receipt4 = SF.replaceImplementation(oldImplementation, {'from': OWNER})
+receipt5 = interface.ISophonFarming(oldImplementation).becomeImplementation(SF, {'from': OWNER})
 
 balanceAfter = stAZUR.balanceOf(SF)
 assert balanceBefore == balanceAfter
@@ -48,5 +50,3 @@ if SEND_TO_MAINNET:
     signtature = safe.sign_with_frame(safe_tx)
     safe.post_transaction(safe_tx)
     safe.post_signature(safe_tx, signtature)
-
-
