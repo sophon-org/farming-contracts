@@ -116,7 +116,7 @@ interface ISophonFarming {
     function getOptimizedUserInfo(address[] memory _users) external view returns (uint256[4][][] memory);
     function getPendingPoints(address[] memory _users) external view returns (uint256[][] memory);
     function getBlockMultiplier(uint256 _from, uint256 _to) external view returns (uint256);
-    function isInWhitelist(address user) external view returns (bool);
+    function whitelist(address userAdmin, address user) external view returns (bool);
 
     function dai() external view returns (address);
     function sDAI() external view returns (address);
