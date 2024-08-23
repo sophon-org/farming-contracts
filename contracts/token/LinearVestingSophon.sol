@@ -15,6 +15,7 @@ contract LinearVestingSophon is Initializable, ERC20Upgradeable, AccessControlUp
     }
 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     IERC20 public sophtoken;
     uint256 public vestingStartTime;
@@ -48,7 +49,7 @@ contract LinearVestingSophon is Initializable, ERC20Upgradeable, AccessControlUp
         _grantRole(ADMIN_ROLE, msg.sender);
     }
 
-    function setVestingStartTime(uint256 newVestingStartTime) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setVestingStartTime(uint256 newVestingStartTime) external onlyRole(ADMIN_ROLE) {
         if (newVestingStartTime < block.timestamp) revert VestingStartTimeCannotBeInThePast();
         vestingStartTime = newVestingStartTime;
         emit VestingStartTimeUpdated(newVestingStartTime);
@@ -121,6 +122,7 @@ contract LinearVestingSophon is Initializable, ERC20Upgradeable, AccessControlUp
     }
 
     function transferTokens(address from, address to, uint256 amount) external onlyRole(ADMIN_ROLE) {
+        // TODO there is a bug here. start time might be different
         VestingSchedule storage fromSchedule = vestingSchedules[from];
         VestingSchedule storage toSchedule = vestingSchedules[to];
 
@@ -141,5 +143,5 @@ contract LinearVestingSophon is Initializable, ERC20Upgradeable, AccessControlUp
     }
 
     // Function required by UUPSUpgradeable
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(ADMIN_ROLE) {}
 }
