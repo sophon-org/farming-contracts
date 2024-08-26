@@ -68,6 +68,4 @@ contract SophonFarmingState {
     mapping(uint256 => bool) public isBridged;
 
     mapping(address userAdmin => mapping(address user => bool inWhitelist)) public whitelist;
-    bytes32 public merkleRoot;
-    mapping(uint256 => uint256) internal claimedBitMap;
 }
