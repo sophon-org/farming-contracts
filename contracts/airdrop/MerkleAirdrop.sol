@@ -50,6 +50,12 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         emit MerkleRootUpdated(_merkleRoot);
     }
 
+
+    function claim(address _user, address _customReceiver, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) external onlyRole(ADMIN_ROLE) {
+        _claim(_user, _customReceiver, _pid, _userInfo, _merkleProof);
+    }
+
+
     /**
      * @dev Allows users to claim their tokens if they are part of the Merkle tree.
      * @param _user The address of the user that is participating.
@@ -58,7 +64,11 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
      * @param _merkleProof The Merkle proof to verify the user's inclusion in the tree.
      */
     function claim(address _user, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) external {
-  
+        if (msg.sender != _user) revert NotAuthorized();
+        _claim(_user, _user, _pid, _userInfo, _merkleProof);
+    }
+
+    function _claim(address _user, address _customReceiver, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) internal {
         if (hasClaimed[_user]) revert AlreadyClaimed();
 
         // Verify the Merkle proof.
@@ -70,8 +80,8 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
 
         // Mark it claimed and transfer the tokens.
         hasClaimed[_user] = true;
-        vSOPH.addVestingSchedule(_user, block.timestamp, VESTING_DURATION, reward);
-        SF_L2.updateUserInfo(_user, _pid, _userInfo);
+        vSOPH.addVestingSchedule(_customReceiver, block.timestamp, VESTING_DURATION, reward);
+        SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo);
         emit Claimed(_user, reward);
     }
 
