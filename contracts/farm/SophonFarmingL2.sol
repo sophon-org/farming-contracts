@@ -71,11 +71,15 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     error BoostTooHigh(uint256 maxAllowed);
     error BoostIsZero();
     error BridgeInvalid();
+    error OnlyMerkle();
+
+    address public immutable MERKLE;
 
     /**
      * @notice Construct SophonFarming
      */
-    constructor() {
+    constructor(address _MERKLE) {
+        MERKLE = _MERKLE;
     }
 
 
@@ -91,7 +95,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         uint256 _totalRewards,
         string memory _description
     ) external onlyOwner {
-        // TODO any safety checks
+        // TODO any safety checks ?
         poolInfo.push(PoolInfo({
             lpToken: _lpToken,
             l2Farm: _l2Farm,
@@ -104,6 +108,12 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             totalRewards: _totalRewards,
             description: _description
         }));
+    }
+
+    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo) public onlyOwner {
+        if(msg.sender != MERKLE) revert OnlyMerkle();
+        // TODO any safety checks ?
+        userInfo[_pid][_user] = _userInfo;
     }
 
     /**

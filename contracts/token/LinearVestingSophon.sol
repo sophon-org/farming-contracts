@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract LinearVestingSophon is Initializable, ERC20Upgradeable, AccessControlUpgradeable, UUPSUpgradeable {
     struct VestingSchedule {
@@ -78,9 +79,6 @@ contract LinearVestingSophon is Initializable, ERC20Upgradeable, AccessControlUp
         // Mint vesting tokens to the beneficiary
         _mint(beneficiary, totalAmount);
 
-        // Ensure the contract receives SOPH tokens for vesting
-        if (!sophtoken.transferFrom(msg.sender, address(this), totalAmount)) revert TokenTransferFailed();
-
         emit VestingScheduleAdded(beneficiary, totalAmount, adjustedStart, duration);
     }
 
@@ -122,7 +120,7 @@ contract LinearVestingSophon is Initializable, ERC20Upgradeable, AccessControlUp
     }
 
     function transferTokens(address from, address to, uint256 amount) external onlyRole(ADMIN_ROLE) {
-        // TODO there is a bug here. start time might be different
+        // TODO there is a bug here. start time might be different between from and to
         VestingSchedule storage fromSchedule = vestingSchedules[from];
         VestingSchedule storage toSchedule = vestingSchedules[to];
 
@@ -135,11 +133,8 @@ contract LinearVestingSophon is Initializable, ERC20Upgradeable, AccessControlUp
     }
 
 
-    function recoverTokens(uint256 amount) external onlyRole(ADMIN_ROLE) {
-        uint256 contractBalance = sophtoken.balanceOf(address(this));
-        if (amount > contractBalance) revert InsufficientBalanceInContract();
-        if (!sophtoken.transfer(msg.sender, amount)) revert TokenTransferFailed();
-        emit TokensRecovered(msg.sender, amount);
+    function rescue(IERC20 token, address to) external onlyRole(ADMIN_ROLE) {
+        SafeERC20.safeTransfer(token, to, token.balanceOf(address(this)));
     }
 
     // Function required by UUPSUpgradeable
