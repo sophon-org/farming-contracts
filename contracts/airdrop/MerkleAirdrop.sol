@@ -16,6 +16,20 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     SophonFarmingL2 public SF_L2;
     bytes32 public merkleRoot;
     mapping(address => bool) public hasClaimed;
+    struct PoolInfo {
+        IERC20 lpToken; // Address of LP token contract.
+        address l2Farm; // Address of the farming contract on Sophon chain
+        uint256 amount; // total amount of LP tokens earning yield from deposits and boosts
+        uint256 boostAmount; // total boosted value purchased by users
+        uint256 depositAmount; // remaining deposits not applied to a boost purchases
+        uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
+        uint256 lastRewardBlock; // Last block number that points distribution occurs.
+        uint256 accPointsPerShare; // Accumulated points per share.
+        uint256 totalRewards; // Total rewards earned by the pool.
+        string description; // Description of pool.
+    }
+    // Info of each pool.
+    PoolInfo[] public poolInfo;
 
     event Claimed(address indexed account, uint256 amount);
     event MerkleRootUpdated(bytes32 newMerkleRoot);
@@ -51,6 +65,36 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     }
 
 
+    // Order is important
+    function addPool(
+        uint256 _pid,
+        IERC20 _lpToken,
+        address _l2Farm,
+        uint256 _amount,
+        uint256 _boostAmount,
+        uint256 _depositAmount,
+        uint256 _allocPoint,
+        uint256 _lastRewardBlock,
+        uint256 _accPointsPerShare,
+        uint256 _totalRewards,
+        string memory _description
+    ) public onlyRole(ADMIN_ROLE) {
+        // TODO any safety checks ?
+        poolInfo[_pid] = PoolInfo({
+            lpToken: _lpToken,
+            l2Farm: _l2Farm,
+            amount: _amount,
+            boostAmount: _boostAmount,
+            depositAmount: _depositAmount,
+            allocPoint: _allocPoint,
+            lastRewardBlock: _lastRewardBlock,
+            accPointsPerShare: _accPointsPerShare,
+            totalRewards: _totalRewards,
+            description: _description
+        });
+    }
+
+
     function claim(address _user, address _customReceiver, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) external onlyRole(ADMIN_ROLE) {
         _claim(_user, _customReceiver, _pid, _userInfo, _merkleProof);
     }
@@ -76,7 +120,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         if (!MerkleProof.verify(_merkleProof, merkleRoot, leaf)) revert InvalidMerkleProof();
 
         // Calculate the total reward based on points (assumed as total LP tokens, i.e., amount).
-        uint256 reward = _calculateReward(_userInfo.amount, _userInfo.boostAmount);
+        uint256 reward = _calculateReward(_pid, _user, _userInfo);
 
         // Mark it claimed and transfer the tokens.
         hasClaimed[_user] = true;
@@ -85,29 +129,22 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         emit Claimed(_user, reward);
     }
 
-    /**
-     * @dev Calculates the reward based on the user's points (LP tokens).
-     * @param amount The amount of LP tokens the user has.
-     * @param boostAmount The amount of boosted tokens.
-     * @return The amount of tokens the user can claim.
-     */
-    function _calculateReward(uint256 amount, uint256 boostAmount) internal pure returns (uint256) {
-        // Example: if 1 point (amount + boostAmount) = 10 tokens, return totalPoints * 10.
-        // Adjust the ratio as needed. Here, I'm using 10 as an arbitrary multiplier.
-        uint256 totalPoints = amount + boostAmount;
+
+    function _calculateReward(uint256 _pid, address _user, SophonFarmingState.UserInfo memory _userInfo) internal view returns (uint256) {
+        // TODO calculate reward based on points earned
+        uint256 totalPoints = _pendingPoints(_pid, _user, _userInfo);
         uint256 tokenRatio = 10; // Example: 1 point = 10 tokens
         return totalPoints * tokenRatio;
     }
 
-    // function _pendingPoints(uint256 _pid, address _user, UserInfo _userInfo) internal view returns (uint256) {
-    //     UserInfo userInfo = userInfo[_pid][_user];
-    //     PoolInfo poolInfo = poolInfo[_pid];
-    //     return user.amount *
-    //         accPointsPerShare /
-    //         1e18 +
-    //         user.rewardSettled -
-    //         user.rewardDebt;
-    // }
+    function _pendingPoints(uint256 _pid, address _user, SophonFarmingState.UserInfo memory _userInfo) internal view returns (uint256) {
+        PoolInfo memory poolInfo = poolInfo[_pid];
+        return _userInfo.amount *
+            poolInfo.accPointsPerShare /
+            1e18 +
+            _userInfo.rewardSettled -
+            _userInfo.rewardDebt;
+    }
 
     /**
      * @dev Allows the recovery of any ERC20 tokens sent to the contract by mistake.

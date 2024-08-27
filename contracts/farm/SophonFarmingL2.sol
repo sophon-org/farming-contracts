@@ -83,7 +83,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     }
 
 
+    // Order is important
     function addPool(
+        uint256 _pid,
         IERC20 _lpToken,
         address _l2Farm,
         uint256 _amount,
@@ -94,9 +96,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         uint256 _accPointsPerShare,
         uint256 _totalRewards,
         string memory _description
-    ) external onlyOwner {
+    ) public onlyOwner {
         // TODO any safety checks ?
-        poolInfo.push(PoolInfo({
+        poolInfo[_pid] = PoolInfo({
             lpToken: _lpToken,
             l2Farm: _l2Farm,
             amount: _amount,
@@ -107,7 +109,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             accPointsPerShare: _accPointsPerShare,
             totalRewards: _totalRewards,
             description: _description
-        }));
+        });
     }
 
     function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo) public onlyOwner {
