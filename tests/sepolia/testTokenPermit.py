@@ -12,7 +12,7 @@ VERSION = "1"
 
 @pytest.fixture(scope="module")
 def token(SophonToken):
-    return SophonToken.deploy({'from': accounts[0]})
+    return SophonToken.deploy(accounts[0], accounts[0], {'from': accounts[0]})
 
 def get_domain_separator(token):
     chain_id = chain.id  # Set your chain ID here

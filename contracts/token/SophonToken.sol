@@ -10,8 +10,8 @@ error TokenIsReceiver();
 
 contract SophonToken is ERC20Permit, Ownable2Step {
 
-    constructor() ERC20Permit(name()) ERC20(name(), symbol()) Ownable(msg.sender) {
-        _mint(msg.sender, totalSupply());
+    constructor(address initialOwner, address mintReceiver) ERC20Permit(name()) ERC20(name(), symbol()) Ownable(initialOwner) {
+        _mint(mintReceiver, totalSupply());
     }
 
     function name() public view override returns (string memory) {
