@@ -118,7 +118,7 @@ interface ISophonFarming {
     function getPendingPoints(address[] memory _users) external view returns (uint256[][] memory);
     function getBlockMultiplier(uint256 _from, uint256 _to) external view returns (uint256);
     function getBlockNumber() external view returns (uint256);
-    function isInWhitelist(address user) external view returns (bool);
+    function whitelist(address userAdmin, address user) external view returns (bool);
     function getMaxAdditionalBoost(address _user, uint256 _pid) external view returns (uint256);
 
     function dai() external view returns (address);

@@ -4,7 +4,7 @@ from brownie import accounts, reverts
 # Define a fixture to deploy the token contract
 @pytest.fixture(scope="module")
 def token(SophonToken):
-    return accounts[0].deploy(SophonToken)
+    return SophonToken.deploy(accounts[0], accounts[0], {'from': accounts[0]})
 
 def test_total_supply(token):
     assert token.totalSupply() == 10_000_000_000 * 10**18
