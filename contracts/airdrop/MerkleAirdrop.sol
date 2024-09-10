@@ -79,7 +79,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         uint256 _totalRewards,
         string memory _description
     ) public onlyRole(ADMIN_ROLE) {
-        // TODO any safety checks ?
+        require(amount == boostAmount + depositAmount, "balances don't match");
         poolInfo[_pid] = PoolInfo({
             lpToken: _lpToken,
             l2Farm: _l2Farm,
