@@ -118,6 +118,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         userInfo[_pid][_user] = _userInfo;
     }
 
+
+    // TODO add held proceeds
+
     /**
      * @notice Adds a new pool to the farm. Can only be called by the owner.
      * @param _allocPoint alloc point for new pool

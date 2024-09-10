@@ -6,9 +6,9 @@ const { Web3 }= require('web3');
 // Assume this data comes from your Solidity contract
 // TODO
 const userInfos = [
-    { account: '0x0000000000000000000000000000000000000001', pid: 0, amount: '1000', boostAmount: '100', depositAmount: '900', rewardSettled: '500', rewardDebt: '200' },
-    { account: '0x0000000000000000000000000000000000000002', pid: 0, amount: '2000', boostAmount: '200', depositAmount: '1800', rewardSettled: '1000', rewardDebt: '400' },
-    { account: '0xe749b7469A9911E451600CB31B5Ca180743183cE', pid: 0, amount: '1879452157034848486000000', boostAmount: '0', depositAmount: '1879452157034848486000000', rewardSettled: '0', rewardDebt: '0' },
+    { account: '0x0000000000000000000000000000000000000001', pid: '0', amount: '1000', boostAmount: '100', depositAmount: '900', rewardSettled: '500', rewardDebt: '200' },
+    { account: '0x0000000000000000000000000000000000000002', pid: '0', amount: '2000', boostAmount: '200', depositAmount: '1800', rewardSettled: '1000', rewardDebt: '400' },
+    { account: '0xe749b7469A9911E451600CB31B5Ca180743183cE', pid: '0', amount: '1879452157034848486000000', boostAmount: '0', depositAmount: '1879452157034848486000000', rewardSettled: '0', rewardDebt: '0' },
     // Add more user info as needed
 ];
 
@@ -16,11 +16,11 @@ function hashUserInfo(userInfo) {
     return Web3.utils.soliditySha3(
         { t: 'address', v: userInfo.account },
         { t: 'uint256', v: userInfo.pid },
-        { t: 'uint256', v: userInfo.amount.toString() },
-        { t: 'uint256', v: userInfo.boostAmount.toString() },
-        { t: 'uint256', v: userInfo.depositAmount.toString() },
-        { t: 'uint256', v: userInfo.rewardSettled.toString() },
-        { t: 'uint256', v: userInfo.rewardDebt.toString() }
+        { t: 'uint256', v: userInfo.amount },
+        { t: 'uint256', v: userInfo.boostAmount },
+        { t: 'uint256', v: userInfo.depositAmount },
+        { t: 'uint256', v: userInfo.rewardSettled },
+        { t: 'uint256', v: userInfo.rewardDebt }
     );
 }
 // Create leaves by hashing each user's information
@@ -71,9 +71,11 @@ console.log(merkleTree.toString())
 a = Web3.utils.soliditySha3(
     { t: 'address', v: userInfos[2].account },
     { t: 'uint256', v: userInfos[2].pid },
-    { t: 'uint256', v: '1879452157034848486000000' },
-    // { t: 'uint256', v: userInfos[2].boostAmount.toString() },
-    // { t: 'uint256', v: userInfos[2].depositAmount.toString() }
+    { t: 'uint256', v: userInfos[2].amount },
+    { t: 'uint256', v: userInfos[2].boostAmount },
+    { t: 'uint256', v: userInfos[2].depositAmount },
+    { t: 'uint256', v: userInfos[2].rewardSettled },
+    { t: 'uint256', v: userInfos[2].rewardDebt }
 )
 
 console.log("a", a)

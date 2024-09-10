@@ -60,6 +60,7 @@ with open(file_path, 'r', encoding='utf-8') as file:
             total_amount += amount
             total_boost_amount += boost_amount
             total_deposit_amount += deposit_amount
+            
     
     # sanity check 
     print(f"Total Amount Ratio for all users: {total_amount_ratio}")
@@ -73,6 +74,7 @@ with open(file_path, 'r', encoding='utf-8') as file:
     assert total_amount == Decimal(pools[BEAM_LP_PID]["amount"])
     assert total_boost_amount == Decimal(pools[BEAM_LP_PID]["boostAmount"])
     assert total_deposit_amount == Decimal(pools[BEAM_LP_PID]["depositAmount"])
+    assert total_amount == total_boost_amount + total_deposit_amount
     print("Checks passed")
     data = {
         "pools": pools,
@@ -92,4 +94,4 @@ with open(filename, 'w') as file:
     json.dump(data, file, indent=4)
 
 # Optionally, prDecimal a confirmation
-print(f"Data has been dumped print {filename}")
+print(f"Data has been dumped into {filename}")

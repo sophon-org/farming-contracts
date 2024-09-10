@@ -811,6 +811,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         emit Withdraw(msg.sender, _pid, _withdrawAmount);
     }
 
+    // TODO remove liquidity BEAM LP
+    
     /**
      * @notice Permissionless function to allow anyone to bridge during the correct period
      * @param _pid pid to bridge
