@@ -13,6 +13,7 @@ import "./interfaces/IeETHLiquidityPool.sol";
 import "./interfaces/IweETH.sol";
 import "../proxies/Upgradeable2Step.sol";
 import "./SophonFarmingState.sol";
+import 'contracts/interfaces/uniswap/IUniswapV2Router02.sol';
 
 /**
  * @title Sophon Farming Contract
@@ -41,9 +42,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     /// @notice Emitted when all pool funds are bridged to Sophon blockchain
     event BridgePool(address indexed user, uint256 indexed pid, uint256 amount);
-
-    /// @notice Emitted when the admin bridges booster proceeds
-    event BridgeProceeds(uint256 indexed pid, uint256 proceeds);
 
     /// @notice Emitted when the the revertFailedBridge function is called
     event RevertFailedBridge(uint256 indexed pid);
@@ -811,7 +809,50 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         emit Withdraw(msg.sender, _pid, _withdrawAmount);
     }
 
-    // TODO remove liquidity BEAM LP
+    /**
+    * @notice Removes liquidity from a Uniswap V2 pool for the specified token pair.
+    * @dev This function checks if farming has ended and ensures the withdrawal period is over before allowing liquidity removal.
+    *      It interacts with the Uniswap V2 Router to perform the liquidity removal.
+    * @param tokenA The address of token A in the liquidity pair.
+    * @param tokenB The address of token B in the liquidity pair.
+    * @param amountAMin The minimum amount of token A to be received during liquidity removal.
+    * @param amountBMin The minimum amount of token B to be received during liquidity removal.
+    * @notice The function will revert with `Unauthorized()` if farming has not ended, the withdrawal period has not ended, or the pool has already been bridged.
+    * @notice The liquidity is removed to the contract's address (`address(this)`), meaning that the tokens will be held by the contract.
+    */
+    function removeLiquidity(
+        address tokenA,
+        address tokenB,
+        uint256 amountAMin,
+        uint256 amountBMin
+    ) external {
+        uint pid = 4;
+        // Revert if farming has not ended, the withdrawal period is not over, or if the pool is already bridged.
+        if (!isFarmingEnded() || !isWithdrawPeriodEnded()) {
+            revert Unauthorized();
+        }
+
+        // Update the pool state before removing liquidity.
+        updatePool(pid);
+
+        // Retrieve the pool information for the specified _pid.
+        PoolInfo storage pool = poolInfo[pid];
+
+        // Initialize the Uniswap V2 Router.
+        IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+
+        // Remove liquidity from the pool using the router.
+        uniswapRouter.removeLiquidity(
+            tokenA,                             // Token A of the pair.
+            tokenB,                             // Token B of the pair.
+            pool.lpToken.balanceOf(address(this)), // Amount of liquidity to remove.
+            amountAMin,                         // Minimum amount of token A to receive.
+            amountBMin,                         // Minimum amount of token B to receive.
+            address(this),                      // The tokens will be sent to the contract's address.
+            block.timestamp                     // Deadline for the transaction (current block timestamp).
+        );
+    }
+
     
     /**
      * @notice Permissionless function to allow anyone to bridge during the correct period
@@ -1024,23 +1065,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         return IsDAI(sDAI).deposit(_amount, address(this));
     }
 
-    // This is pending the launch of Sophon testnet
-    /**
-     * @notice Allows an admin to bridge booster proceeds
-     * @param _pid pid to bridge proceeds from
-     * @param _l2TxGasLimit l2TxGasLimit for the bridge txn
-     * @param _l2TxGasPerPubdataByte l2TxGasPerPubdataByte for the bridge txn
-     */
-    function bridgeProceeds(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external payable onlyOwner {
-        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
-
-        uint256 _proceeds = heldProceeds[_pid];
-        heldProceeds[_pid] = 0;
-
-        // TODO: add bridging logic
-
-        emit BridgeProceeds(_pid, _proceeds);
-    }
 
     /**
      * @notice Returns the current block number

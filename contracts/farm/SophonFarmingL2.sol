@@ -95,9 +95,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         uint256 _lastRewardBlock,
         uint256 _accPointsPerShare,
         uint256 _totalRewards,
-        string memory _description
+        string memory _description,
+        uint256 _heldProceeds
     ) public onlyOwner {
-        // TODO any safety checks ?
+        require(_amount == _boostAmount + _depositAmount, "balances don't match");
         poolInfo[_pid] = PoolInfo({
             lpToken: _lpToken,
             l2Farm: _l2Farm,
@@ -110,16 +111,15 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             totalRewards: _totalRewards,
             description: _description
         });
+        heldProceeds[_pid] = _heldProceeds;
     }
 
-    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo) public onlyOwner {
+    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo) public {
         if(msg.sender != MERKLE) revert OnlyMerkle();
-        // TODO any safety checks ?
+        require(_userInfo.amount == _userInfo.boostAmount + _userInfo.depositAmount, "balances don't match");
         userInfo[_pid][_user] = _userInfo;
     }
 
-
-    // TODO add held proceeds
 
     /**
      * @notice Adds a new pool to the farm. Can only be called by the owner.
