@@ -84,7 +84,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     address public immutable eETHLiquidityPool;
     address public immutable weETH;
     uint256 public immutable CHAINID;
-
+    uint256 internal constant BEAM_WEHT_PID = 4;
+    address internal constant PENDLE_EXCEPTION = 0x065347C1Dd7A23Aa043e3844B4D0746ff7715246;
 
     /**
      * @notice Construct SophonFarming
@@ -872,6 +873,12 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert BridgeInvalid();
         }
         uint256 depositAmount = IERC20(pool.lpToken).balanceOf(address(this));
+
+        if (_pid == BEAM_WEHT_PID) {
+            UserInfo storage user = userInfo[BEAM_WEHT_PID][PENDLE_EXCEPTION];
+            depositAmount -= user.depositAmount - user.boostAmount / boosterMultiplier;
+        }
+
         L2TransactionRequestTwoBridgesOuter memory _request = L2TransactionRequestTwoBridgesOuter({
             chainId: CHAINID,
             mintValue: _mintValue,
@@ -920,12 +927,35 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Called by an admin if a bridge process to Sophon fails
      * @param _pid pid of the failed bridge to revert
      */
-    function revertFailedBridge(uint256 _pid) external onlyOwner {
-        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
+    function revertFailedBridge(
+        address _l1SharedBridge,
+        uint256 _pid,       
+        uint256 _chainId,
+        address _depositSender,
+        address _l1Token,
+        uint256 _amount,
+        bytes32 _l2TxHash,
+        uint256 _l2BatchNumber,
+        uint256 _l2MessageIndex,
+        uint16 _l2TxNumberInBatch,
+        bytes32[] calldata _merkleProof) external onlyOwner {
 
         if (address(poolInfo[_pid].lpToken) == address(0)) {
             revert PoolDoesNotExist();
         }
+        
+        IL1SharedBridge(_l1SharedBridge).claimFailedDeposit(
+            _chainId,
+            _depositSender,
+            _l1Token,
+            _amount,
+            _l2TxHash,
+            _l2BatchNumber,
+            _l2MessageIndex,
+            _l2TxNumberInBatch,
+            _merkleProof
+        );
+
         isBridged[_pid] = false;
         emit RevertFailedBridge(_pid);
     }

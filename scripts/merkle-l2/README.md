@@ -41,3 +41,19 @@ Execute the following files:
 
 ### Notes:
 All jobs store old balance values in `OLD_*` fields in the JSON files.
+
+
+
+
+### TODO:
+1. done - SF_L1 work on `revertFailedBridge`
+2. done - decided not to do it. SF_L1 zero out points for users
+3. vSOPH join multiple stream
+4. vSOPH transferTokens function 
+5. MerkleTree _calculateReward points vs vSOPH
+6. done - Pendle
+7. TESTING on testnet with everybody
+8. done - Use paymaster for deployment 
+9. done - Make an exception for Pendle
+10. batch Merkle.claim()
+11. ZERO out rewards on L2

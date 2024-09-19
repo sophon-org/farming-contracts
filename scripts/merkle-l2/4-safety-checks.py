@@ -14,7 +14,7 @@ BEAM_LP_WETH_AMNT = 1790561714199384555520
 
 # there are couple of rules to verify
 # user.amount = user.boostAmount + user.depositAmount
-# pool.amount = bool.boostAmount + pool.depositAmount
+# pool.amount = pool.boostAmount + pool.depositAmount
 # pool.heldAmount = pool.boostAmount / 5 - boosterMultiplier that wasn't changed from the begining
 
 

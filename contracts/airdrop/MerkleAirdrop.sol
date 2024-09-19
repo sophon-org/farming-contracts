@@ -6,13 +6,14 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "contracts/token/LinearVestingSophon.sol";
+import "contracts/token/LinearVestingWithLock.sol";
 import "contracts/farm/SophonFarmingL2.sol";
 
 contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     uint256 public constant VESTING_DURATION = 60 * 60 * 24 * 365; // 1 year
-    LinearVestingSophon public vSOPH;
+    uint256 public constant VESTING_LOCK_PERIOD = 60 * 60 * 24 * 365; // 1 year
+    LinearVestingWithLock public vSOPH;
     SophonFarmingL2 public SF_L2;
     bytes32 public merkleRoot;
     mapping(address => bool) public hasClaimed;
@@ -45,7 +46,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     }
 
     function initialize(address _vSOPH, address _SF_L2) public initializer {
-        vSOPH = LinearVestingSophon(_vSOPH);
+        vSOPH = LinearVestingWithLock(_vSOPH);
         SF_L2 = SophonFarmingL2(_SF_L2);
 
         __AccessControl_init();
@@ -124,7 +125,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
 
         // Mark it claimed and transfer the tokens.
         hasClaimed[_user] = true;
-        vSOPH.addVestingSchedule(_customReceiver, block.timestamp, VESTING_DURATION, reward);
+        vSOPH.addVestingSchedule(_customReceiver, block.timestamp, VESTING_DURATION, VESTING_LOCK_PERIOD, reward);
         SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo);
         emit Claimed(_user, reward);
     }
@@ -134,6 +135,8 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         // TODO calculate reward based on points earned
         uint256 totalPoints = _pendingPoints(_pid, _user, _userInfo);
         uint256 tokenRatio = 10; // Example: 1 point = 10 tokens
+        // TODO do it dynamically
+
         return totalPoints * tokenRatio;
     }
 
