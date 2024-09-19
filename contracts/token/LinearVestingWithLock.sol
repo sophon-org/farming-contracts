@@ -65,17 +65,36 @@ contract LinearVestingWithLock is Initializable, ERC20Upgradeable, AccessControl
         address beneficiary,
         uint256 start,
         uint256 duration,
-        uint256 lockPeriod, // New: Accept lock period
+        uint256 lockPeriod,
         uint256 totalAmount
     ) external onlyRole(ADMIN_ROLE) {
         VestingSchedule storage schedule = vestingSchedules[beneficiary];
 
         if (schedule.totalAmount > 0) {
-            // If a schedule exists, merge the new values
-            schedule.totalAmount += totalAmount;
-            schedule.duration = (schedule.duration * schedule.totalAmount) / (schedule.totalAmount - totalAmount + schedule.duration);
-            schedule.start = schedule.start < start ? schedule.start : start; // Set to the earlier start time
+            // If a schedule exists, merge the new values using weighted averages
+
+            uint256 totalAmountBefore = schedule.totalAmount;
+            uint256 newTotalAmount = totalAmountBefore + totalAmount;
+
+            // Weighted average for duration
+            schedule.duration = (
+                (schedule.duration * totalAmountBefore) + (duration * totalAmount)
+            ) / newTotalAmount;
+
+            // Weighted average for start time
+            schedule.start = (
+                (schedule.start * totalAmountBefore) + (start * totalAmount)
+            ) / newTotalAmount;
+
+            // Weighted average for lock period
+            schedule.lockPeriod = (
+                (schedule.lockPeriod * totalAmountBefore) + (lockPeriod * totalAmount)
+            ) / newTotalAmount;
+
+            // Update total amount
+            schedule.totalAmount = newTotalAmount;
         } else {
+            // Create a new schedule
             if (totalAmount == 0) revert TotalAmountMustBeGreaterThanZero();
             if (duration == 0) revert DurationMustBeGreaterThanZero();
 
@@ -92,6 +111,7 @@ contract LinearVestingWithLock is Initializable, ERC20Upgradeable, AccessControl
 
         emit VestingScheduleAdded(beneficiary, schedule.totalAmount, schedule.start, schedule.duration, schedule.lockPeriod);
     }
+
 
     function release(bool acceptPenalty) external {
         VestingSchedule storage schedule = vestingSchedules[msg.sender];
@@ -155,6 +175,54 @@ contract LinearVestingWithLock is Initializable, ERC20Upgradeable, AccessControl
         VestingSchedule storage schedule = vestingSchedules[beneficiary];
         return _vestedAmount(schedule) - schedule.released;
     }
+
+    function transferTokens(address from, address to, uint256 amount) external onlyRole(ADMIN_ROLE) {
+        VestingSchedule storage fromSchedule = vestingSchedules[from];
+        VestingSchedule storage toSchedule = vestingSchedules[to];
+
+        // Check that `from` has a vesting schedule
+        if (fromSchedule.totalAmount == 0) revert NoVestingSchedule();
+
+        // Check that `from` has enough unredeemed tokens to transfer
+        uint256 transferableAmount = fromSchedule.totalAmount - fromSchedule.released;
+        if (amount > transferableAmount) revert InsufficientVestedAmount();
+
+        // Deduct the amount from `from` account's schedule
+        fromSchedule.totalAmount -= amount;
+
+        // If the `to` account already has a schedule, merge the schedules
+        if (toSchedule.totalAmount > 0) {
+            uint256 totalAmount = toSchedule.totalAmount + amount;
+
+            // Calculate weighted averages
+            toSchedule.start = (
+                (toSchedule.start * toSchedule.totalAmount) + (fromSchedule.start * amount)
+            ) / totalAmount;
+
+            toSchedule.duration = (
+                (toSchedule.duration * toSchedule.totalAmount) + (fromSchedule.duration * amount)
+            ) / totalAmount;
+
+            toSchedule.lockPeriod = (
+                (toSchedule.lockPeriod * toSchedule.totalAmount) + (fromSchedule.lockPeriod * amount)
+            ) / totalAmount;
+
+            // Update the total amount
+            toSchedule.totalAmount = totalAmount;
+            // `released` remains unchanged
+        } else {
+            // Create a new schedule for `to`
+            toSchedule.totalAmount = amount;
+            toSchedule.released = 0;
+            toSchedule.start = fromSchedule.start;
+            toSchedule.duration = fromSchedule.duration;
+            toSchedule.lockPeriod = fromSchedule.lockPeriod;
+        }
+
+        // Transfer the `vSOPH` tokens
+        _transfer(from, to, amount);
+    }
+
 
     function rescue(IERC20 token, address to) external onlyRole(ADMIN_ROLE) {
         SafeERC20.safeTransfer(token, to, token.balanceOf(address(this)));

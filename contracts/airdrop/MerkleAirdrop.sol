@@ -16,7 +16,10 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     LinearVestingWithLock public vSOPH;
     SophonFarmingL2 public SF_L2;
     bytes32 public merkleRoot;
-    mapping(address => bool) public hasClaimed;
+
+    // Changed mapping to track claims per user per PID
+    mapping(address => mapping(uint256 => bool)) public hasClaimed;
+
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
         address l2Farm; // Address of the farming contract on Sophon chain
@@ -32,13 +35,13 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     // Info of each pool.
     PoolInfo[] public poolInfo;
 
-    event Claimed(address indexed account, uint256 amount);
+    event Claimed(address indexed account, uint256 pid, uint256 amount);
     event MerkleRootUpdated(bytes32 newMerkleRoot);
 
     error AlreadyClaimed();
     error InvalidMerkleProof();
     error NotAuthorized();
-
+    error InvalidInputLengths();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -64,7 +67,6 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         merkleRoot = _merkleRoot;
         emit MerkleRootUpdated(_merkleRoot);
     }
-
 
     // Order is important
     function addPool(
@@ -95,11 +97,9 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         });
     }
 
-
     function claim(address _user, address _customReceiver, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) external onlyRole(ADMIN_ROLE) {
         _claim(_user, _customReceiver, _pid, _userInfo, _merkleProof);
     }
-
 
     /**
      * @dev Allows users to claim their tokens if they are part of the Merkle tree.
@@ -113,8 +113,29 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         _claim(_user, _user, _pid, _userInfo, _merkleProof);
     }
 
+    /**
+    * @dev Allows users to claim multiple tokens if they are part of the Merkle tree.
+    * @param _user The address of the user that is participating.
+    * @param _pids An array of pool IDs that the user is participating in.
+    * @param _userInfos An array of `UserInfo` structs containing the user's info for each pool.
+    * @param _merkleProofs An array of Merkle proofs to verify the user's inclusion in the tree for each pool.
+    */
+    function claimMultiple(
+        address _user,
+        uint256[] calldata _pids,
+        SophonFarmingState.UserInfo[] calldata _userInfos,
+        bytes32[][] calldata _merkleProofs
+    ) external {
+        if (msg.sender != _user) revert NotAuthorized();
+        if (_pids.length != _userInfos.length || _userInfos.length != _merkleProofs.length) revert InvalidInputLengths();
+
+        for (uint256 i = 0; i < _pids.length; i++) {
+            _claim(_user, _user, _pids[i], _userInfos[i], _merkleProofs[i]);
+        }
+    }
+
     function _claim(address _user, address _customReceiver, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) internal {
-        if (hasClaimed[_user]) revert AlreadyClaimed();
+        if (hasClaimed[_user][_pid]) revert AlreadyClaimed();
 
         // Verify the Merkle proof.
         bytes32 leaf = keccak256(abi.encodePacked(_user, _pid, _userInfo.amount, _userInfo.boostAmount, _userInfo.depositAmount, _userInfo.rewardSettled, _userInfo.rewardDebt));
@@ -124,12 +145,11 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         uint256 reward = _calculateReward(_pid, _user, _userInfo);
 
         // Mark it claimed and transfer the tokens.
-        hasClaimed[_user] = true;
+        hasClaimed[_user][_pid] = true;
         vSOPH.addVestingSchedule(_customReceiver, block.timestamp, VESTING_DURATION, VESTING_LOCK_PERIOD, reward);
         SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo);
-        emit Claimed(_user, reward);
+        emit Claimed(_user, _pid, reward);
     }
-
 
     function _calculateReward(uint256 _pid, address _user, SophonFarmingState.UserInfo memory _userInfo) internal view returns (uint256) {
         // TODO calculate reward based on points earned
@@ -141,9 +161,9 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     }
 
     function _pendingPoints(uint256 _pid, address _user, SophonFarmingState.UserInfo memory _userInfo) internal view returns (uint256) {
-        PoolInfo memory poolInfo = poolInfo[_pid];
+        PoolInfo memory pool = poolInfo[_pid];
         return _userInfo.amount *
-            poolInfo.accPointsPerShare /
+            pool.accPointsPerShare /
             1e18 +
             _userInfo.rewardSettled -
             _userInfo.rewardDebt;
