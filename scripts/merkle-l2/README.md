@@ -55,5 +55,5 @@ All jobs store old balance values in `OLD_*` fields in the JSON files.
 7. TESTING on testnet with everybody
 8. done - Use paymaster for deployment 
 9.  done - Make an exception for Pendle
-10. batch Merkle.claim()
+10. done - batch Merkle.claim()
 11. ZERO out rewards on L2

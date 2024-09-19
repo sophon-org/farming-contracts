@@ -20,6 +20,9 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     // Changed mapping to track claims per user per PID
     mapping(address => mapping(uint256 => bool)) public hasClaimed;
 
+    uint256 public totalPointRewards;  // Total points accumulated by all users
+    uint256 public totalTokenRewards;  // Total tokens to be distributed
+
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
         address l2Farm; // Address of the farming contract on Sophon chain
@@ -68,6 +71,10 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         emit MerkleRootUpdated(_merkleRoot);
     }
 
+    function setTotalTokenRewards(uint256 _totalTokenRewards) external onlyRole(ADMIN_ROLE) {
+        totalTokenRewards = _totalTokenRewards;
+    }
+
     // Order is important
     function addPool(
         uint256 _pid,
@@ -95,6 +102,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
             totalRewards: _totalRewards,
             description: _description
         });
+        totalPointRewards = totalPointRewards + _totalRewards
     }
 
     function claim(address _user, address _customReceiver, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) external onlyRole(ADMIN_ROLE) {
@@ -151,13 +159,9 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         emit Claimed(_user, _pid, reward);
     }
 
-    function _calculateReward(uint256 _pid, address _user, SophonFarmingState.UserInfo memory _userInfo) internal view returns (uint256) {
-        // TODO calculate reward based on points earned
-        uint256 totalPoints = _pendingPoints(_pid, _user, _userInfo);
-        uint256 tokenRatio = 10; // Example: 1 point = 10 tokens
-        // TODO do it dynamically
-
-        return totalPoints * tokenRatio;
+    function _calculateReward(uint256 _pid, SophonFarmingState.UserInfo memory _userInfo) internal view returns (uint256) {
+        uint256 userPoints = _pendingPoints(_pid, _userInfo);
+        return (userPoints * totalTokenRewards) / totalPointRewards;
     }
 
     function _pendingPoints(uint256 _pid, address _user, SophonFarmingState.UserInfo memory _userInfo) internal view returns (uint256) {
