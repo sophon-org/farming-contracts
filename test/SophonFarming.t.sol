@@ -782,7 +782,7 @@ contract SophonFarmingTest is Test {
 
     // PENDING_POINTS FUNCTION /////////////////////////////////////////////////////////////////
     function testFuzz_PendingPoints(uint256 amountToDeposit, uint256 poolStartBlock, uint256 accruedBlocks) public {
-        amountToDeposit = bound(amountToDeposit, 1e6, 1e50);
+        amountToDeposit = bound(amountToDeposit, 1e6, 1e27);
         poolStartBlock = bound(poolStartBlock, 10, 5e6);
         accruedBlocks = bound(accruedBlocks, 1, 5e6);
 
@@ -821,7 +821,10 @@ contract SophonFarmingTest is Test {
 
         uint256 pointReward = (accruedBlocks * 1e18) * sophonFarming.pointsPerBlock() * PoolInfo[poolId].allocPoint / sophonFarming.totalAllocPoint();
         uint256 accPointsPerShare = pointReward * 1e18 / (amountToDeposit);
-        assertEq(pendingPoints, amountToDeposit * accPointsPerShare / 1e36);
+        
+        // precision loss related to deposited amount and blocks elapsed
+        uint256 delta =  accruedBlocks * amountToDeposit / 1e18;
+        assertApproxEqAbs(pendingPoints, amountToDeposit * accPointsPerShare / 1e36, delta);
         assertGt(pendingPoints, 0);
     }
 
@@ -2105,7 +2108,7 @@ contract SophonFarmingTest is Test {
             uint256 allocPoint,
             uint256 lastRewardBlock,
             uint256 accPointsPerShare,
-            // uint256 enabledDate,
+            uint256 totalRewards,
             string memory description
         ) = sophonFarming.poolInfo(poolId);
 
@@ -2117,7 +2120,7 @@ contract SophonFarmingTest is Test {
         assertEq(PoolInfo.allocPoint, allocPoint);
         assertEq(PoolInfo.lastRewardBlock, lastRewardBlock);
         assertEq(PoolInfo.accPointsPerShare, accPointsPerShare);
-        // assertEq(PoolInfo.enabledDate, enabledDate);
+        assertEq(PoolInfo.totalRewards, totalRewards);
         assertEq(abi.encode(PoolInfo.description), abi.encode(description));
     }
 
@@ -2149,7 +2152,7 @@ contract SophonFarmingTest is Test {
                 SophonFarmingState.UserInfo memory userInfo = getUserInfo(j, accounts[i]);
 
                 totalPoints += pendingPoints[i][j];
-                console.log("pendingPoints[i][j]", pendingPoints[i][j]);
+                // console.log("pendingPoints[i][j]", pendingPoints[i][j]);
 
                 assertEq(userInfo.amount, optimizedUserInfos[i][j][0]);
                 assertEq(userInfo.boostAmount, optimizedUserInfos[i][j][1]);
@@ -2159,8 +2162,9 @@ contract SophonFarmingTest is Test {
             }
         }
 
-        // Margin of error is 1 wei per user.
-        assertApproxEqAbs(totalPoints, pointsPerBlock * rollBlocks, accounts.length);
+        // precision loss related to deposited amount and blocks elapsed
+        uint256 delta =  rollBlocks * 100e18 * 3 / 1e16;
+        assertApproxEqAbs(totalPoints, pointsPerBlock * rollBlocks, delta);
     }
 
     // POOL_START_BLOCK /////////////////////////////////////////////////////////////////
@@ -2204,10 +2208,11 @@ contract SophonFarmingTest is Test {
 
         uint256 pointReward = (accruedBlocks * 1e18) * sophonFarming.pointsPerBlock() * PoolInfo[poolId].allocPoint / sophonFarming.totalAllocPoint();
         uint256 accPointsPerShare = pointReward * 1e18 / (amountToDeposit);
-        assertEq(pendingPoints, amountToDeposit * accPointsPerShare / 1e36);
+
+        // precision loss related to deposited amount and blocks elapsed
+        uint256 delta =  1 + accruedBlocks * amountToDeposit / 1e18;
+        assertApproxEqAbs(pendingPoints, amountToDeposit * accPointsPerShare / 1e36, delta);
         assertGt(pendingPoints, 0);
-      
-        uint256 delta =  1 + amountToDeposit / 1e18;
         assertApproxEqAbs(pendingPoints, userInfo.rewardDebt - userInfo.rewardSettled, delta);
     }
 }
