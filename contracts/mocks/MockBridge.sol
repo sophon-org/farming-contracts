@@ -1,27 +1,23 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import {BridgeLike} from "../farm/SophonFarmingState.sol";
+contract MockBridge {
 
-contract MockBridge is BridgeLike {
+    struct L2TransactionRequestTwoBridgesOuter {
+        uint256 chainId;
+        uint256 mintValue;
+        uint256 l2Value;
+        uint256 l2GasLimit;
+        uint256 l2GasPerPubdataByteLimit;
+        address refundRecipient;
+        address secondBridgeAddress;
+        uint256 secondBridgeValue;
+        bytes secondBridgeCalldata;
+    }
 
-    function deposit(
-        address _l2Receiver,
-        address _l1Token,
-        uint256 _amount,
-        uint256 _l2TxGasLimit,
-        uint256 _l2TxGasPerPubdataByte,
-        address _refundRecipient
-    ) external payable returns (bytes32 l2TxHash) {
-        // Future bridge implementation
-
-        _l2Receiver;
-        _l1Token;
-        _amount;
-        _l2TxGasLimit;
-        _l2TxGasPerPubdataByte;
-        _refundRecipient;
-
+    function requestL2TransactionTwoBridges(
+        L2TransactionRequestTwoBridgesOuter calldata _request
+    ) external payable returns (bytes32 canonicalTxHash) {
         return bytes32(0);
     }
 }

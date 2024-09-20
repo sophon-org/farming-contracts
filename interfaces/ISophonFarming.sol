@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.25;
+pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "contracts/farm/interfaces/bridge/IBridgehub.sol";
 
 interface ISophonFarming {
     // Info of each pool.
@@ -108,7 +109,7 @@ interface ISophonFarming {
     function depositeEth(uint256 _amount, uint256 _boostAmount) external;
     function depositWeth(uint256 _amount, uint256 _boostAmount, PredefinedPool predefinedPool) external;
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external;
-    function bridgePool(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external;
+    function bridgePool(uint256 _pid, uint256 _mintValue, address sophToken) external;
     function revertFailedBridge(uint256 _pid) external;
     function increaseBoost(uint256 _pid, uint256 _boostAmount) external;
     function bridgeProceeds(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external;
@@ -116,7 +117,9 @@ interface ISophonFarming {
     function getOptimizedUserInfo(address[] memory _users) external view returns (uint256[4][][] memory);
     function getPendingPoints(address[] memory _users) external view returns (uint256[][] memory);
     function getBlockMultiplier(uint256 _from, uint256 _to) external view returns (uint256);
+    function getBlockNumber() external view returns (uint256);
     function whitelist(address userAdmin, address user) external view returns (bool);
+    function getMaxAdditionalBoost(address _user, uint256 _pid) external view returns (uint256);
 
     function dai() external view returns (address);
     function sDAI() external view returns (address);
@@ -153,7 +156,6 @@ interface ISophonFarming {
     function pendingImplementation() external returns(address);
     function implementation() external view returns (address);
     function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external;
-    function migrateAzur(address  stAZUR, uint256 pid) external;
-
+    function setL2Farm(uint256 _pid, address _l2Farm) external;
     
 }
