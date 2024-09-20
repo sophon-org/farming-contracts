@@ -102,7 +102,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
             totalRewards: _totalRewards,
             description: _description
         });
-        totalPointRewards = totalPointRewards + _totalRewards
+        totalPointRewards = totalPointRewards + _totalRewards;
     }
 
     function claim(address _user, address _customReceiver, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) external onlyRole(ADMIN_ROLE) {
@@ -150,7 +150,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         if (!MerkleProof.verify(_merkleProof, merkleRoot, leaf)) revert InvalidMerkleProof();
 
         // Calculate the total reward based on points (assumed as total LP tokens, i.e., amount).
-        uint256 reward = _calculateReward(_pid, _user, _userInfo);
+        uint256 reward = _calculateReward(_pid, _userInfo);
 
         // Mark it claimed and transfer the tokens.
         hasClaimed[_user][_pid] = true;
@@ -164,7 +164,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         return (userPoints * totalTokenRewards) / totalPointRewards;
     }
 
-    function _pendingPoints(uint256 _pid, address _user, SophonFarmingState.UserInfo memory _userInfo) internal view returns (uint256) {
+    function _pendingPoints(uint256 _pid, SophonFarmingState.UserInfo memory _userInfo) internal view returns (uint256) {
         PoolInfo memory pool = poolInfo[_pid];
         return _userInfo.amount *
             pool.accPointsPerShare /
