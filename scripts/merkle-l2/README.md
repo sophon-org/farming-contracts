@@ -50,7 +50,7 @@ All jobs store old balance values in `OLD_*` fields in the JSON files.
 2. done - decided not to do it. SF_L1 zero out points for users
 3. done - vSOPH join multiple stream
 4. done - vSOPH transferTokens function 
-5. MerkleTree _calculateReward points vs vSOPH
+5. done - MerkleTree _calculateReward points vs vSOPH
 6. done - Pendle
 7. TESTING on testnet with everybody
 8. done - Use paymaster for deployment 
