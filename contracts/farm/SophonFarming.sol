@@ -921,8 +921,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         poolInfo[_pid].l2Farm = _l2Farm;
     }
 
-    // TODO: does this function need to call claimFailedDeposit on the bridge?
-    // This is pending the launch of Sophon testnet
+
     /**
      * @notice Called by an admin if a bridge process to Sophon fails
      * @param _pid pid of the failed bridge to revert

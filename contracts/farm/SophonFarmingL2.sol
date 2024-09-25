@@ -46,9 +46,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when setPointsPerBlock is called
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
 
-        // This event is triggered whenever a call to #claim succeeds.
-    event Claimed(address indexed account, uint256 index);
-
     error ZeroAddress();
     error PoolExists();
     error PoolDoesNotExist();
@@ -117,6 +114,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo) public {
         if(msg.sender != MERKLE) revert OnlyMerkle();
         require(_userInfo.amount == _userInfo.boostAmount + _userInfo.depositAmount, "balances don't match");
+
         userInfo[_pid][_user] = _userInfo;
     }
 

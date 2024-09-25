@@ -57,3 +57,6 @@ All jobs store old balance values in `OLD_*` fields in the JSON files.
 9.  done - Make an exception for Pendle
 10. done - batch Merkle.claim()
 11. ZERO out rewards on L2
+12. create test cases for LinearVestingWithLock
+13. create test cases for MerkleAirdrop
+    
