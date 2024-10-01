@@ -155,6 +155,8 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         // Mark it claimed and transfer the tokens.
         hasClaimed[_user][_pid] = true;
         vSOPH.addVestingSchedule(_customReceiver, block.timestamp, VESTING_DURATION, VESTING_LOCK_PERIOD, reward);
+        _userInfo.rewardDebt = _userInfo.amount * pool.accPointsPerShare / 1e18;
+        _userInfo.rewardSettled = 0;
         SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo);
         emit Claimed(_user, _pid, reward);
     }
