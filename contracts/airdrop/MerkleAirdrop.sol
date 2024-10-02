@@ -151,11 +151,11 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
 
         // Calculate the total reward based on points (assumed as total LP tokens, i.e., amount).
         uint256 reward = _calculateReward(_pid, _userInfo);
-
+        PoolInfo storage poolInfo = poolInfo[_pid];
         // Mark it claimed and transfer the tokens.
         hasClaimed[_user][_pid] = true;
         vSOPH.addVestingSchedule(_customReceiver, block.timestamp, VESTING_DURATION, VESTING_LOCK_PERIOD, reward);
-        _userInfo.rewardDebt = _userInfo.amount * pool.accPointsPerShare / 1e18;
+        _userInfo.rewardDebt = _userInfo.amount * poolInfo.accPointsPerShare / 1e18;
         _userInfo.rewardSettled = 0;
         SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo);
         emit Claimed(_user, _pid, reward);
