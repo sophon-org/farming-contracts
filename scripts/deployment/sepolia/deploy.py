@@ -40,7 +40,7 @@ sDAIAllocPoint = 0
 weEthAllocPoint = 0
 
 args = [
-    dai.address,
+    DAI.address,
     sDAI.address,
     weth.address,
     stETH.address,
