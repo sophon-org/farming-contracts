@@ -142,6 +142,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         }
     }
 
+    // TODO add index
     function _claim(address _user, address _customReceiver, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) internal {
         if (hasClaimed[_user][_pid]) revert AlreadyClaimed();
 
