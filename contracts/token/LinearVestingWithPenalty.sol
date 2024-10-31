@@ -7,6 +7,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessControlUpgradeable, UUPSUpgradeable {
+    using SafeERC20 for IERC20;
+
     struct VestingSchedule {
         uint256 totalAmount;
         uint256 released;
@@ -15,8 +17,8 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     IERC20 public sophtoken;
-    address public paymaster; // Address to receive penalties
-    uint256 public vestingStartDate; // Global start date for all vesting schedules
+    address public paymaster;
+    uint256 public vestingStartDate;
     mapping(address => VestingSchedule) public vestingSchedules;
 
     event TokensReleased(address indexed beneficiary, uint256 amount);
@@ -25,7 +27,6 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     event PaymasterUpdated(address newPaymaster);
     event PenaltyPaid(address indexed beneficiary, uint256 penaltyAmount);
 
-    // Custom errors
     error TotalAmountMustBeGreaterThanZero();
     error DurationMustBeGreaterThanZero();
     error NoVestingSchedule();
@@ -33,10 +34,10 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     error NoTokensToRelease();
     error InsufficientVestedAmount();
     error TokenTransferFailed();
-    error VestingStartDateAlreadySet(); // New error for vesting start date already set
+    error VestingStartDateAlreadySet();
     error VestingStartDateCannotBeInThePast();
+    error EtherNotAccepted(); // Custom error for ETH rejection
 
-    // Initializer function
     function initialize(address tokenAddress, address initialPaymaster) public initializer {
         __ERC20_init("vesting Sophon Token", "vSOPH");
         __AccessControl_init();
@@ -46,6 +47,15 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         paymaster = initialPaymaster;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
+    }
+
+    // Function to prevent receiving Ether with a custom error
+    receive() external payable {
+        revert EtherNotAccepted();
+    }
+
+    fallback() external payable {
+        revert EtherNotAccepted();
     }
 
     function setPaymaster(address newPaymaster) external onlyRole(ADMIN_ROLE) {
@@ -62,31 +72,18 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
     function addVestingSchedule(
         address beneficiary,
-        uint256 duration,
-        uint256 totalAmount
+        uint256 additionalAmount,
+        uint256 additionalDuration
     ) external onlyRole(ADMIN_ROLE) {
+        if (additionalAmount == 0) revert TotalAmountMustBeGreaterThanZero();
+        if (additionalDuration == 0) revert DurationMustBeGreaterThanZero();
+
         VestingSchedule storage schedule = vestingSchedules[beneficiary];
 
-        if (schedule.totalAmount > 0) {
-            uint256 totalAmountBefore = schedule.totalAmount;
-            uint256 newTotalAmount = totalAmountBefore + totalAmount;
+        schedule.totalAmount += additionalAmount;
+        schedule.duration += additionalDuration;
 
-            // Weighted average for duration
-            schedule.duration = (
-                (schedule.duration * totalAmountBefore) + (duration * totalAmount)
-            ) / newTotalAmount;
-
-            schedule.totalAmount = newTotalAmount;
-        } else {
-            if (totalAmount == 0) revert TotalAmountMustBeGreaterThanZero();
-            if (duration == 0) revert DurationMustBeGreaterThanZero();
-
-            schedule.totalAmount = totalAmount;
-            schedule.released = 0;
-            schedule.duration = duration;
-
-            _mint(beneficiary, totalAmount);
-        }
+        _mint(beneficiary, additionalAmount);
 
         emit VestingScheduleAdded(beneficiary, schedule.totalAmount, schedule.duration);
     }
@@ -124,7 +121,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
     function _vestedAmount(VestingSchedule storage schedule) internal view returns (uint256) {
         if (vestingStartDate == 0 || block.timestamp < vestingStartDate) {
-            return 0; // No vesting if the global start date is not defined or hasn’t passed
+            return 0;
         }
 
         uint256 currentTime = block.timestamp;
@@ -147,7 +144,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     }
 
     function rescue(IERC20 token, address to) external onlyRole(ADMIN_ROLE) {
-        SafeERC20.safeTransfer(token, to, token.balanceOf(address(this)));
+        token.safeTransfer(to, token.balanceOf(address(this)));
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(ADMIN_ROLE) {}
