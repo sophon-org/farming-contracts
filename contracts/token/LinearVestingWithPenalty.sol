@@ -146,34 +146,6 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         return _vestedAmount(schedule) - schedule.released;
     }
 
-    function transferTokens(address from, address to, uint256 amount) external onlyRole(ADMIN_ROLE) {
-        VestingSchedule storage fromSchedule = vestingSchedules[from];
-        VestingSchedule storage toSchedule = vestingSchedules[to];
-
-        if (fromSchedule.totalAmount == 0) revert NoVestingSchedule();
-
-        uint256 transferableAmount = fromSchedule.totalAmount - fromSchedule.released;
-        if (amount > transferableAmount) revert InsufficientVestedAmount();
-
-        fromSchedule.totalAmount -= amount;
-
-        if (toSchedule.totalAmount > 0) {
-            uint256 totalAmount = toSchedule.totalAmount + amount;
-
-            toSchedule.duration = (
-                (toSchedule.duration * toSchedule.totalAmount) + (fromSchedule.duration * amount)
-            ) / totalAmount;
-
-            toSchedule.totalAmount = totalAmount;
-        } else {
-            toSchedule.totalAmount = amount;
-            toSchedule.released = 0;
-            toSchedule.duration = fromSchedule.duration;
-        }
-
-        _transfer(from, to, amount);
-    }
-
     function rescue(IERC20 token, address to) external onlyRole(ADMIN_ROLE) {
         SafeERC20.safeTransfer(token, to, token.balanceOf(address(this)));
     }
