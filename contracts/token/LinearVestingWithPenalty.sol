@@ -167,7 +167,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
             totalAmount: amount,
             released: 0,
             duration: duration,
-            startDate: startDate
+            startDate: scheduleStartDate
         });
 
         vestingSchedules[beneficiary].push(schedule);
