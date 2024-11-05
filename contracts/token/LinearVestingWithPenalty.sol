@@ -26,16 +26,19 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     bytes32 public constant SCHEDULE_MANAGER_ROLE = keccak256("SCHEDULE_MANAGER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
-    IERC20 public sophtoken;         // The underlying token being vested
-    address public paymaster;        // Address receiving penalties
-    uint256 public vestingStartDate; // Global vesting start date
+    IERC20 public sophtoken;                 // The underlying token being vested
+    address public penaltyRecipient;         // Address receiving penalties
+    uint256 public vestingStartDate;         // Global vesting start date
+    uint256 public penaltyPercentage;        // Penalty percentage for early withdrawals (e.g., 50 for 50%)
+
     mapping(address => VestingSchedule[]) public vestingSchedules; // Vesting schedules per beneficiary
     mapping(address => uint256) public activeVestingSchedulesCount; // Active vesting schedules per beneficiary
 
     event TokensReleased(address indexed beneficiary, uint256 grossAmount, uint256 netAmount, uint256 penaltyAmount);
     event VestingScheduleAdded(address indexed beneficiary, uint256 totalAmount, uint256 duration, uint256 startDate);
     event VestingStartDateUpdated(uint256 newVestingStartDate);
-    event PaymasterUpdated(address newPaymaster);
+    event PenaltyRecipientUpdated(address newPenaltyRecipient);
+    event PenaltyPercentageUpdated(uint256 newPenaltyPercentage);
     event PenaltyPaid(address indexed beneficiary, uint256 penaltyAmount);
 
     error TotalAmountMustBeGreaterThanZero();
@@ -52,20 +55,27 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     error InvalidRecipientAddress();
 
     /**
-     * @dev Initializes the contract with the given token address and initial paymaster.
+     * @dev Initializes the contract with the given token address, initial penalty recipient, and penalty percentage.
      * @param tokenAddress The address of the token to be vested.
-     * @param initialPaymaster The address that will receive penalties.
+     * @param initialPenaltyRecipient The address that will receive penalties.
+     * @param initialPenaltyPercentage The initial penalty percentage (e.g., 50 for 50%).
      */
-    function initialize(address tokenAddress, address initialPaymaster) public initializer {
+    function initialize(
+        address tokenAddress,
+        address initialPenaltyRecipient,
+        uint256 initialPenaltyPercentage
+    ) public initializer {
         if (tokenAddress == address(0)) revert InvalidRecipientAddress();
-        if (initialPaymaster == address(0)) revert InvalidRecipientAddress();
+        if (initialPenaltyRecipient == address(0)) revert InvalidRecipientAddress();
+        require(initialPenaltyPercentage <= 100, "Penalty must be <= 100%");
 
         __ERC20_init("vesting Sophon Token", "vSOPH");
         __AccessControl_init();
         __UUPSUpgradeable_init();
 
         sophtoken = IERC20(tokenAddress);
-        paymaster = initialPaymaster;
+        penaltyRecipient = initialPenaltyRecipient;
+        penaltyPercentage = initialPenaltyPercentage;
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
@@ -74,13 +84,23 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     }
 
     /**
-     * @dev Sets the paymaster address.
-     * @param newPaymaster The new paymaster address.
+     * @dev Sets the penalty recipient address.
+     * @param newPenaltyRecipient The new penalty recipient address.
      */
-    function setPaymaster(address newPaymaster) external onlyRole(ADMIN_ROLE) {
-        if (newPaymaster == address(0)) revert InvalidRecipientAddress();
-        paymaster = newPaymaster;
-        emit PaymasterUpdated(newPaymaster);
+    function setPenaltyRecipient(address newPenaltyRecipient) external onlyRole(ADMIN_ROLE) {
+        if (newPenaltyRecipient == address(0)) revert InvalidRecipientAddress();
+        penaltyRecipient = newPenaltyRecipient;
+        emit PenaltyRecipientUpdated(newPenaltyRecipient);
+    }
+
+    /**
+     * @dev Sets the penalty percentage.
+     * @param newPenaltyPercentage The new penalty percentage (e.g., 50 for 50%).
+     */
+    function setPenaltyPercentage(uint256 newPenaltyPercentage) external onlyRole(ADMIN_ROLE) {
+        require(newPenaltyPercentage <= 100, "Penalty must be <= 100%");
+        penaltyPercentage = newPenaltyPercentage;
+        emit PenaltyPercentageUpdated(newPenaltyPercentage);
     }
 
     /**
@@ -167,73 +187,6 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     }
 
     /**
-     * @dev Releases vested tokens from specific schedules provided as an array.
-     * @param scheduleIndices The indices of the vesting schedules.
-     * @param acceptPenalty Whether to accept an early withdrawal penalty.
-     */
-    function releaseSpecificSchedules(uint256[] calldata scheduleIndices, bool acceptPenalty) external {
-        VestingSchedule[] storage schedules = vestingSchedules[msg.sender];
-        if (schedules.length == 0) revert NoVestingSchedule();
-
-        uint256 totalAmountToRelease = 0;
-
-        for (uint256 i = 0; i < scheduleIndices.length; i++) {
-            uint256 scheduleIndex = scheduleIndices[i];
-            if (scheduleIndex >= schedules.length) revert InvalidScheduleIndex();
-
-            VestingSchedule storage schedule = schedules[scheduleIndex];
-
-            if (vestingStartDate != 0 && block.timestamp >= vestingStartDate && schedule.startDate == 0) {
-                schedule.startDate = vestingStartDate;
-            }
-
-            if (!_hasVestingStarted(schedule)) revert VestingHasNotStartedYet();
-
-            uint256 releasable = _releasableAmount(schedule);
-
-            if (releasable > 0) {
-                _releaseFromSchedule(schedule, releasable, acceptPenalty);
-                totalAmountToRelease += releasable;
-            }
-        }
-
-        if (totalAmountToRelease == 0) revert NoTokensToRelease();
-    }
-
-    /**
-     * @dev Releases vested tokens from a range of schedules.
-     * @param startIndex The starting index.
-     * @param endIndex The ending index (exclusive).
-     * @param acceptPenalty Whether to accept an early withdrawal penalty.
-     */
-    function releaseSchedulesInRange(uint256 startIndex, uint256 endIndex, bool acceptPenalty) external {
-        VestingSchedule[] storage schedules = vestingSchedules[msg.sender];
-        if (schedules.length == 0) revert NoVestingSchedule();
-        if (startIndex >= endIndex || endIndex > schedules.length) revert InvalidRange();
-
-        uint256 totalAmountToRelease = 0;
-
-        for (uint256 i = startIndex; i < endIndex; i++) {
-            VestingSchedule storage schedule = schedules[i];
-
-            if (vestingStartDate != 0 && block.timestamp >= vestingStartDate && schedule.startDate == 0) {
-                schedule.startDate = vestingStartDate;
-            }
-
-            if (_hasVestingStarted(schedule)) {
-                uint256 releasable = _releasableAmount(schedule);
-
-                if (releasable > 0) {
-                    _releaseFromSchedule(schedule, releasable, acceptPenalty);
-                    totalAmountToRelease += releasable;
-                }
-            }
-        }
-
-        if (totalAmountToRelease == 0) revert NoTokensToRelease();
-    }
-
-    /**
      * @dev Internal function to release tokens from a vesting schedule.
      * @param schedule The vesting schedule.
      * @param amount The amount to release.
@@ -251,7 +204,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         bool isFullyVested = schedule.released >= schedule.totalAmount;
 
         if (acceptPenalty && !isFullyVested) {
-            penalty = (amount * 50) / 100;
+            penalty = (amount * penaltyPercentage) / 100;
             if (penalty > amount) revert TokenTransferFailed();
             amountToRelease = amount - penalty;
 
@@ -259,7 +212,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
             _burn(msg.sender, penalty);
 
-            if (!sophtoken.transfer(paymaster, penalty)) revert TokenTransferFailed();
+            if (!sophtoken.transfer(penaltyRecipient, penalty)) revert TokenTransferFailed();
             emit PenaltyPaid(msg.sender, penalty);
         }
 
