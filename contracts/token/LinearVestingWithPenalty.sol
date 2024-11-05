@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -26,10 +27,10 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     bytes32 public constant SCHEDULE_MANAGER_ROLE = keccak256("SCHEDULE_MANAGER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
-    IERC20 public sophtoken;                 // The underlying token being vested
-    address public penaltyRecipient;         // Address receiving penalties
-    uint256 public vestingStartDate;         // Global vesting start date
-    uint256 public penaltyPercentage;        // Penalty percentage for early withdrawals (e.g., 50 for 50%)
+    IERC20 public sophtoken;        // The underlying token being vested
+    address public penaltyRecipient;           // Address receiving penalties
+    uint256 public vestingStartDate;           // Global vesting start date
+    uint256 public penaltyPercentage;          // Penalty percentage for early withdrawals (e.g., 50 for 50%)
 
     mapping(address => VestingSchedule[]) public vestingSchedules; // Vesting schedules per beneficiary
     mapping(address => uint256) public activeVestingSchedulesCount; // Active vesting schedules per beneficiary
@@ -40,7 +41,9 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     event PenaltyRecipientUpdated(address newPenaltyRecipient);
     event PenaltyPercentageUpdated(uint256 newPenaltyPercentage);
     event PenaltyPaid(address indexed beneficiary, uint256 penaltyAmount);
+    event BeneficiaryTransferred(address indexed oldBeneficiary, address indexed newBeneficiary, uint256 transferredBalance, uint256 transferredSchedulesCount);
 
+    error CannotTransferToSelf();
     error TotalAmountMustBeGreaterThanZero();
     error DurationMustBeGreaterThanZero();
     error NoVestingSchedule();
@@ -53,6 +56,9 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     error InvalidScheduleIndex();
     error InvalidRange();
     error InvalidRecipientAddress();
+    error PenaltyMustBeLessThanOrEqualTo100Percent();
+    error AmountExceedsReleasableAmount();
+    error MismatchedArrayLengths();
 
     /**
      * @dev Initializes the contract with the given token address, initial penalty recipient, and penalty percentage.
@@ -65,9 +71,8 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         address initialPenaltyRecipient,
         uint256 initialPenaltyPercentage
     ) public initializer {
-        if (tokenAddress == address(0)) revert InvalidRecipientAddress();
-        if (initialPenaltyRecipient == address(0)) revert InvalidRecipientAddress();
-        require(initialPenaltyPercentage <= 100, "Penalty must be <= 100%");
+        if (tokenAddress == address(0) || initialPenaltyRecipient == address(0)) revert InvalidRecipientAddress();
+        if (initialPenaltyPercentage > 100) revert PenaltyMustBeLessThanOrEqualTo100Percent();
 
         __ERC20_init("vesting Sophon Token", "vSOPH");
         __AccessControl_init();
@@ -98,7 +103,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
      * @param newPenaltyPercentage The new penalty percentage (e.g., 50 for 50%).
      */
     function setPenaltyPercentage(uint256 newPenaltyPercentage) external onlyRole(ADMIN_ROLE) {
-        require(newPenaltyPercentage <= 100, "Penalty must be <= 100%");
+        if (newPenaltyPercentage > 100) revert PenaltyMustBeLessThanOrEqualTo100Percent();
         penaltyPercentage = newPenaltyPercentage;
         emit PenaltyPercentageUpdated(newPenaltyPercentage);
     }
@@ -179,7 +184,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
             beneficiaries.length != amounts.length ||
             beneficiaries.length != durations.length ||
             beneficiaries.length != startDates.length
-        ) revert InvalidRange();
+        ) revert MismatchedArrayLengths();
 
         for (uint256 i = 0; i < beneficiaries.length; i++) {
             _addVestingSchedule(beneficiaries[i], amounts[i], durations[i], startDates[i]);
@@ -261,7 +266,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
      */
     function _releaseFromSchedule(VestingSchedule storage schedule, uint256 amount, bool acceptPenalty) internal {
         uint256 releasable = _releasableAmount(schedule);
-        if (amount > releasable) revert NoTokensToRelease();
+        if (amount > releasable) revert AmountExceedsReleasableAmount();
 
         schedule.released += amount;
 
@@ -272,20 +277,19 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
         if (acceptPenalty && !isFullyVested) {
             penalty = (amount * penaltyPercentage) / 100;
-            if (penalty > amount) revert TokenTransferFailed();
             amountToRelease = amount - penalty;
 
             schedule.totalAmount -= penalty;
 
             _burn(msg.sender, penalty);
 
-            if (!sophtoken.transfer(penaltyRecipient, penalty)) revert TokenTransferFailed();
+            sophtoken.safeTransfer(penaltyRecipient, penalty);
             emit PenaltyPaid(msg.sender, penalty);
         }
 
         _burn(msg.sender, amountToRelease);
 
-        if (!sophtoken.transfer(msg.sender, amountToRelease)) revert TokenTransferFailed();
+        sophtoken.safeTransfer(msg.sender, amountToRelease);
         emit TokensReleased(msg.sender, amount, amountToRelease, penalty);
     }
 
@@ -392,6 +396,37 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
      */
     function getVestingSchedulesCount(address beneficiary) external view returns (uint256) {
         return vestingSchedules[beneficiary].length;
+    }
+
+    /**
+     * @dev Transfers a beneficiary's vesting schedules and token balance to another address.
+     * @param from The address of the current beneficiary.
+     * @param to The address of the new beneficiary.
+     */
+    function transferBeneficiary(address from, address to) external onlyRole(ADMIN_ROLE) {
+        if (from == address(0) || to == address(0)) revert InvalidRecipientAddress();
+        if (from == to) revert CannotTransferToSelf();
+
+        VestingSchedule[] storage fromSchedules = vestingSchedules[from];
+        uint256 schedulesCount = fromSchedules.length;
+        if (schedulesCount == 0) revert NoVestingSchedule();
+
+        VestingSchedule[] storage toSchedules = vestingSchedules[to];
+        for (uint256 i = 0; i < schedulesCount; i++) {
+            toSchedules.push(fromSchedules[i]);
+        }
+
+        delete vestingSchedules[from];
+
+        activeVestingSchedulesCount[to] += activeVestingSchedulesCount[from];
+        activeVestingSchedulesCount[from] = 0;
+
+        uint256 fromBalance = balanceOf(from);
+        if (fromBalance > 0) {
+            _transfer(from, to, fromBalance);
+        }
+
+        emit BeneficiaryTransferred(from, to, fromBalance, schedulesCount);
     }
 
     /**
