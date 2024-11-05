@@ -43,6 +43,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     event PenaltyPaid(address indexed beneficiary, uint256 penaltyAmount);
     event BeneficiaryTransferred(address indexed oldBeneficiary, address indexed newBeneficiary, uint256 transferredBalance, uint256 transferredSchedulesCount);
 
+    error StartDateCannotBeInThePast();
     error CannotTransferToSelf();
     error TotalAmountMustBeGreaterThanZero();
     error DurationMustBeGreaterThanZero();
@@ -151,17 +152,15 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         if (beneficiary == address(0)) revert InvalidRecipientAddress();
         if (amount == 0) revert TotalAmountMustBeGreaterThanZero();
         if (duration == 0) revert DurationMustBeGreaterThanZero();
+        if (startDate < block.timestamp) revert StartDateCannotBeInThePast();
         
+
         uint256 scheduleStartDate = 0;
-        if (vestingStartDate != 0) {
-            if (block.timestamp < vestingStartDate) {
-                // Vesting has not started yet, set schedule startDate to global vestingStartDate
-                scheduleStartDate = vestingStartDate;
-            } else {
-                // Vesting has started, set schedule startDate to current timestamp
-                scheduleStartDate = startDate;
-            }
+
+        if (vestingStartDate != 0 && scheduleStartDate <= vestingStartDate) {
+            scheduleStartDate = vestingStartDate;
         }
+
 
         VestingSchedule memory schedule = VestingSchedule({
             totalAmount: amount,
@@ -208,7 +207,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
      * @return releasedAmount The amount of tokens released.
      */
     function _processSchedule(VestingSchedule storage schedule, bool acceptPenalty) internal returns (uint256 releasedAmount) {
-        // this is critical part. if schedule.startDate > vestingStartDate or 
+        // this is critical part. set startDate if  schedule.startDate was zero
         if (vestingStartDate != 0 && block.timestamp >= vestingStartDate && schedule.startDate == 0) {
             schedule.startDate = vestingStartDate;
         }
@@ -313,11 +312,13 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
      * @return The vested amount.
      */
     function _vestedAmount(VestingSchedule storage schedule) internal view returns (uint256) {
-        if (block.timestamp < schedule.startDate || schedule.startDate == 0) {
+        uint256 effectiveStartDate = vestingStartDate > schedule.startDate ? vestingStartDate : schedule.startDate;
+
+        if (effectiveStartDate == 0 || block.timestamp < effectiveStartDate) {
             return 0;
         }
 
-        uint256 elapsedTime = block.timestamp - schedule.startDate;
+        uint256 elapsedTime = block.timestamp - effectiveStartDate;
         if (elapsedTime >= schedule.duration) {
             return schedule.totalAmount;
         } else {
