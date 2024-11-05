@@ -187,6 +187,73 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     }
 
     /**
+     * @dev Releases vested tokens from specific schedules provided as an array.
+     * @param scheduleIndices The indices of the vesting schedules.
+     * @param acceptPenalty Whether to accept an early withdrawal penalty.
+     */
+    function releaseSpecificSchedules(uint256[] calldata scheduleIndices, bool acceptPenalty) external {
+        VestingSchedule[] storage schedules = vestingSchedules[msg.sender];
+        if (schedules.length == 0) revert NoVestingSchedule();
+
+        uint256 totalAmountToRelease = 0;
+
+        for (uint256 i = 0; i < scheduleIndices.length; i++) {
+            uint256 scheduleIndex = scheduleIndices[i];
+            if (scheduleIndex >= schedules.length) revert InvalidScheduleIndex();
+
+            VestingSchedule storage schedule = schedules[scheduleIndex];
+
+            if (vestingStartDate != 0 && block.timestamp >= vestingStartDate && schedule.startDate == 0) {
+                schedule.startDate = vestingStartDate;
+            }
+
+            if (!_hasVestingStarted(schedule)) revert VestingHasNotStartedYet();
+
+            uint256 releasable = _releasableAmount(schedule);
+
+            if (releasable > 0) {
+                _releaseFromSchedule(schedule, releasable, acceptPenalty);
+                totalAmountToRelease += releasable;
+            }
+        }
+
+        if (totalAmountToRelease == 0) revert NoTokensToRelease();
+    }
+
+    /**
+     * @dev Releases vested tokens from a range of schedules.
+     * @param startIndex The starting index.
+     * @param endIndex The ending index (exclusive).
+     * @param acceptPenalty Whether to accept an early withdrawal penalty.
+     */
+    function releaseSchedulesInRange(uint256 startIndex, uint256 endIndex, bool acceptPenalty) external {
+        VestingSchedule[] storage schedules = vestingSchedules[msg.sender];
+        if (schedules.length == 0) revert NoVestingSchedule();
+        if (startIndex >= endIndex || endIndex > schedules.length) revert InvalidRange();
+
+        uint256 totalAmountToRelease = 0;
+
+        for (uint256 i = startIndex; i < endIndex; i++) {
+            VestingSchedule storage schedule = schedules[i];
+
+            if (vestingStartDate != 0 && block.timestamp >= vestingStartDate && schedule.startDate == 0) {
+                schedule.startDate = vestingStartDate;
+            }
+
+            if (_hasVestingStarted(schedule)) {
+                uint256 releasable = _releasableAmount(schedule);
+
+                if (releasable > 0) {
+                    _releaseFromSchedule(schedule, releasable, acceptPenalty);
+                    totalAmountToRelease += releasable;
+                }
+            }
+        }
+
+        if (totalAmountToRelease == 0) revert NoTokensToRelease();
+    }
+
+    /**
      * @dev Internal function to release tokens from a vesting schedule.
      * @param schedule The vesting schedule.
      * @param amount The amount to release.
