@@ -35,6 +35,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     mapping(address => VestingSchedule[]) public vestingSchedules; // Vesting schedules per beneficiary
     mapping(address => uint256) public activeVestingSchedulesCount; // Active vesting schedules per beneficiary
 
+    // Events
     event TokensReleased(address indexed beneficiary, uint256 grossAmount, uint256 netAmount, uint256 penaltyAmount);
     event VestingScheduleAdded(address indexed beneficiary, uint256 totalAmount, uint256 duration, uint256 startDate);
     event VestingStartDateUpdated(uint256 newVestingStartDate);
@@ -43,6 +44,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     event PenaltyPaid(address indexed beneficiary, uint256 penaltyAmount);
     event BeneficiaryTransferred(address indexed oldBeneficiary, address indexed newBeneficiary, uint256 transferredBalance, uint256 transferredSchedulesCount);
 
+    // Custom Errors
     error StartDateCannotBeInThePast();
     error CannotTransferToSelf();
     error TotalAmountMustBeGreaterThanZero();
@@ -122,10 +124,11 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
     /**
      * @dev Adds a vesting schedule for a beneficiary.
+     * If `startDate` is zero, the schedule will adopt `vestingStartDate` at claiming time.
      * @param beneficiary The address of the beneficiary.
      * @param amount The total amount to be vested.
      * @param duration The duration of the vesting schedule in seconds.
-     * @param startDate The start date of the vesting schedule.
+     * @param startDate The start date of the vesting schedule. If zero, will adopt `vestingStartDate` at claiming time.
      */
     function addVestingSchedule(
         address beneficiary,
@@ -141,7 +144,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
      * @param beneficiary The address of the beneficiary.
      * @param amount The total amount to be vested.
      * @param duration The duration of the vesting schedule in seconds.
-     * @param startDate The start date of the vesting schedule.
+     * @param startDate The start date of the vesting schedule. If zero, will adopt `vestingStartDate` at claiming time.
      */
     function _addVestingSchedule(
         address beneficiary,
@@ -174,7 +177,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
         _mint(beneficiary, amount);
 
-        emit VestingScheduleAdded(beneficiary, amount, duration, startDate);
+        emit VestingScheduleAdded(beneficiary, amount, duration, scheduleStartDate);
     }
 
     /**
