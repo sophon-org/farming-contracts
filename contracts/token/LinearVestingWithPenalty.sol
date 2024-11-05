@@ -151,6 +151,17 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         if (beneficiary == address(0)) revert InvalidRecipientAddress();
         if (amount == 0) revert TotalAmountMustBeGreaterThanZero();
         if (duration == 0) revert DurationMustBeGreaterThanZero();
+        
+        uint256 scheduleStartDate = 0;
+        if (vestingStartDate != 0) {
+            if (block.timestamp < vestingStartDate) {
+                // Vesting has not started yet, set schedule startDate to global vestingStartDate
+                scheduleStartDate = vestingStartDate;
+            } else {
+                // Vesting has started, set schedule startDate to current timestamp
+                scheduleStartDate = startDate;
+            }
+        }
 
         VestingSchedule memory schedule = VestingSchedule({
             totalAmount: amount,
@@ -190,6 +201,29 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
             _addVestingSchedule(beneficiaries[i], amounts[i], durations[i], startDates[i]);
         }
     }
+    /**
+     * @dev Internal function to process and release tokens from a vesting schedule.
+     * @param schedule The vesting schedule.
+     * @param acceptPenalty Whether to accept an early withdrawal penalty.
+     * @return releasedAmount The amount of tokens released.
+     */
+    function _processSchedule(VestingSchedule storage schedule, bool acceptPenalty) internal returns (uint256 releasedAmount) {
+        // this is critical part. if schedule.startDate > vestingStartDate or 
+        if (vestingStartDate != 0 && block.timestamp >= vestingStartDate && schedule.startDate == 0) {
+            schedule.startDate = vestingStartDate;
+        }
+
+        if (!_hasVestingStarted(schedule)) revert VestingHasNotStartedYet();
+
+        uint256 releasable = _releasableAmount(schedule);
+
+        if (releasable > 0) {
+            _releaseFromSchedule(schedule, releasable, acceptPenalty);
+            return releasable;
+        } else {
+            return 0;
+        }
+    }
 
     /**
      * @dev Releases vested tokens from specific schedules provided as an array.
@@ -208,18 +242,8 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
             VestingSchedule storage schedule = schedules[scheduleIndex];
 
-            if (vestingStartDate != 0 && block.timestamp >= vestingStartDate && schedule.startDate == 0) {
-                schedule.startDate = vestingStartDate;
-            }
-
-            if (!_hasVestingStarted(schedule)) revert VestingHasNotStartedYet();
-
-            uint256 releasable = _releasableAmount(schedule);
-
-            if (releasable > 0) {
-                _releaseFromSchedule(schedule, releasable, acceptPenalty);
-                totalAmountToRelease += releasable;
-            }
+            uint256 released = _processSchedule(schedule, acceptPenalty);
+            totalAmountToRelease += released;
         }
 
         if (totalAmountToRelease == 0) revert NoTokensToRelease();
@@ -241,18 +265,8 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         for (uint256 i = startIndex; i < endIndex; i++) {
             VestingSchedule storage schedule = schedules[i];
 
-            if (vestingStartDate != 0 && block.timestamp >= vestingStartDate && schedule.startDate == 0) {
-                schedule.startDate = vestingStartDate;
-            }
-
-            if (_hasVestingStarted(schedule)) {
-                uint256 releasable = _releasableAmount(schedule);
-
-                if (releasable > 0) {
-                    _releaseFromSchedule(schedule, releasable, acceptPenalty);
-                    totalAmountToRelease += releasable;
-                }
-            }
+            uint256 released = _processSchedule(schedule, acceptPenalty);
+            totalAmountToRelease += released;
         }
 
         if (totalAmountToRelease == 0) revert NoTokensToRelease();
