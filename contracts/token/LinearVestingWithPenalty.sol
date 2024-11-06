@@ -71,6 +71,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
      */
     function initialize(
         address tokenAddress,
+        address adminAddress,
         address initialPenaltyRecipient,
         uint256 initialPenaltyPercentage
     ) public initializer {
@@ -85,10 +86,10 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         penaltyRecipient = initialPenaltyRecipient;
         penaltyPercentage = initialPenaltyPercentage;
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(ADMIN_ROLE, msg.sender);
-        _grantRole(SCHEDULE_MANAGER_ROLE, msg.sender);
-        _grantRole(UPGRADER_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, adminAddress);
+        _grantRole(ADMIN_ROLE, adminAddress);
+        _grantRole(SCHEDULE_MANAGER_ROLE, adminAddress);
+        _grantRole(UPGRADER_ROLE, adminAddress);
     }
 
     /**
