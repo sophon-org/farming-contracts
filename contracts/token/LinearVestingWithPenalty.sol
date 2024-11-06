@@ -156,8 +156,6 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         if (beneficiary == address(0)) revert InvalidRecipientAddress();
         if (amount == 0) revert TotalAmountMustBeGreaterThanZero();
         if (duration == 0) revert DurationMustBeGreaterThanZero();
-        if (startDate < block.timestamp) revert StartDateCannotBeInThePast();
-        
 
         uint256 scheduleStartDate = 0;
 
