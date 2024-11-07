@@ -33,7 +33,6 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     uint256 public penaltyPercentage;          // Penalty percentage for early withdrawals (e.g., 50 for 50%)
 
     mapping(address => VestingSchedule[]) public vestingSchedules; // Vesting schedules per beneficiary
-    mapping(address => uint256) public activeVestingSchedulesCount; // Active vesting schedules per beneficiary
 
     // Events
     event TokensReleased(address indexed beneficiary, uint256 grossAmount, uint256 netAmount, uint256 penaltyAmount);
@@ -157,12 +156,10 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         if (amount == 0) revert TotalAmountMustBeGreaterThanZero();
         if (duration == 0) revert DurationMustBeGreaterThanZero();
 
-        uint256 scheduleStartDate = 0;
-
-        if (vestingStartDate != 0 && scheduleStartDate <= vestingStartDate) {
+        uint256 scheduleStartDate = startDate;
+        if (vestingStartDate != 0 && startDate <= vestingStartDate) {
             scheduleStartDate = vestingStartDate;
         }
-
 
         VestingSchedule memory schedule = VestingSchedule({
             totalAmount: amount,
@@ -172,10 +169,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         });
 
         vestingSchedules[beneficiary].push(schedule);
-        activeVestingSchedulesCount[beneficiary] += 1;
-
         _mint(beneficiary, amount);
-
         emit VestingScheduleAdded(beneficiary, amount, duration, scheduleStartDate);
     }
 
@@ -202,111 +196,6 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
             _addVestingSchedule(beneficiaries[i], amounts[i], durations[i], startDates[i]);
         }
     }
-    /**
-     * @dev Internal function to process and release tokens from a vesting schedule.
-     * @param schedule The vesting schedule.
-     * @param acceptPenalty Whether to accept an early withdrawal penalty.
-     * @return releasedAmount The amount of tokens released.
-     */
-    function _processSchedule(VestingSchedule storage schedule, bool acceptPenalty) internal returns (uint256 releasedAmount) {
-        // this is critical part. set startDate if  schedule.startDate was zero
-        if (vestingStartDate != 0 && block.timestamp >= vestingStartDate && schedule.startDate == 0) {
-            schedule.startDate = vestingStartDate;
-        }
-
-        if (!_hasVestingStarted(schedule)) revert VestingHasNotStartedYet();
-
-        uint256 releasable = _releasableAmount(schedule);
-
-        if (releasable > 0) {
-            _releaseFromSchedule(schedule, releasable, acceptPenalty);
-            return releasable;
-        } else {
-            return 0;
-        }
-    }
-
-    /**
-     * @dev Releases vested tokens from specific schedules provided as an array.
-     * @param scheduleIndices The indices of the vesting schedules.
-     * @param acceptPenalty Whether to accept an early withdrawal penalty.
-     */
-    function releaseSpecificSchedules(uint256[] calldata scheduleIndices, bool acceptPenalty) external {
-        VestingSchedule[] storage schedules = vestingSchedules[msg.sender];
-        if (schedules.length == 0) revert NoVestingSchedule();
-
-        uint256 totalAmountToRelease = 0;
-
-        for (uint256 i = 0; i < scheduleIndices.length; i++) {
-            uint256 scheduleIndex = scheduleIndices[i];
-            if (scheduleIndex >= schedules.length) revert InvalidScheduleIndex();
-
-            VestingSchedule storage schedule = schedules[scheduleIndex];
-
-            uint256 released = _processSchedule(schedule, acceptPenalty);
-            totalAmountToRelease += released;
-        }
-
-        if (totalAmountToRelease == 0) revert NoTokensToRelease();
-    }
-
-    /**
-     * @dev Releases vested tokens from a range of schedules.
-     * @param startIndex The starting index.
-     * @param endIndex The ending index (exclusive).
-     * @param acceptPenalty Whether to accept an early withdrawal penalty.
-     */
-    function releaseSchedulesInRange(uint256 startIndex, uint256 endIndex, bool acceptPenalty) external {
-        VestingSchedule[] storage schedules = vestingSchedules[msg.sender];
-        if (schedules.length == 0) revert NoVestingSchedule();
-        if (startIndex >= endIndex || endIndex > schedules.length) revert InvalidRange();
-
-        uint256 totalAmountToRelease = 0;
-
-        for (uint256 i = startIndex; i < endIndex; i++) {
-            VestingSchedule storage schedule = schedules[i];
-
-            uint256 released = _processSchedule(schedule, acceptPenalty);
-            totalAmountToRelease += released;
-        }
-
-        if (totalAmountToRelease == 0) revert NoTokensToRelease();
-    }
-
-    /**
-     * @dev Internal function to release tokens from a vesting schedule.
-     * @param schedule The vesting schedule.
-     * @param amount The amount to release.
-     * @param acceptPenalty Whether to accept an early withdrawal penalty.
-     */
-    function _releaseFromSchedule(VestingSchedule storage schedule, uint256 amount, bool acceptPenalty) internal {
-        uint256 releasable = _releasableAmount(schedule);
-        if (amount > releasable) revert AmountExceedsReleasableAmount();
-
-        schedule.released += amount;
-
-        uint256 penalty = 0;
-        uint256 amountToRelease = amount;
-
-        bool isFullyVested = schedule.released >= schedule.totalAmount;
-
-        if (acceptPenalty && !isFullyVested) {
-            penalty = (amount * penaltyPercentage) / 100;
-            amountToRelease = amount - penalty;
-
-            schedule.totalAmount -= penalty;
-
-            _burn(msg.sender, penalty);
-
-            sophtoken.safeTransfer(penaltyRecipient, penalty);
-            emit PenaltyPaid(msg.sender, penalty);
-        }
-
-        _burn(msg.sender, amountToRelease);
-
-        sophtoken.safeTransfer(msg.sender, amountToRelease);
-        emit TokensReleased(msg.sender, amount, amountToRelease, penalty);
-    }
 
     /**
      * @dev Calculates the vested amount for a vesting schedule.
@@ -314,10 +203,15 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
      * @return The vested amount.
      */
     function _vestedAmount(VestingSchedule storage schedule) internal view returns (uint256) {
-        uint256 effectiveStartDate = vestingStartDate > schedule.startDate ? vestingStartDate : schedule.startDate;
-
-        if (effectiveStartDate == 0 || block.timestamp < effectiveStartDate) {
+        
+        // vesting not started yet or in the future
+        if (vestingStartDate == 0 || block.timestamp < schedule.startDate) {
             return 0;
+        }
+
+        uint256 effectiveStartDate = schedule.startDate;
+        if (effectiveStartDate < vestingStartDate) {
+            effectiveStartDate = vestingStartDate;
         }
 
         uint256 elapsedTime = block.timestamp - effectiveStartDate;
@@ -335,15 +229,6 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
      */
     function _releasableAmount(VestingSchedule storage schedule) internal view returns (uint256) {
         return _vestedAmount(schedule) - schedule.released;
-    }
-
-    /**
-     * @dev Checks if vesting has started for a schedule.
-     * @param schedule The vesting schedule.
-     * @return True if vesting has started, false otherwise.
-     */
-    function _hasVestingStarted(VestingSchedule storage schedule) internal view returns (bool) {
-        return schedule.startDate != 0 && block.timestamp >= schedule.startDate;
     }
 
     /**
@@ -415,50 +300,140 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         return vestingSchedules[beneficiary].length;
     }
 
+
     /**
-     * @dev Transfers a beneficiary's vesting schedules and token balance to another address.
-     * @param from The address of the current beneficiary.
-     * @param to The address of the new beneficiary.
-     */
-    function transferBeneficiary(address from, address to) external onlyRole(ADMIN_ROLE) {
-        if (from == address(0) || to == address(0)) revert InvalidRecipientAddress();
-        if (from == to) revert CannotTransferToSelf();
+    * @dev Claims the full vested tokens for the caller from specific vesting schedules and burns the claimed vSOPH tokens.
+    * @param scheduleIndexes The indexes of the vesting schedules to claim from.
+    */
+    function claim(uint256[] calldata scheduleIndexes) external {
+        if (vestingStartDate > block.timestamp) revert VestingHasNotStartedYet();
+        uint256 totalReleasable = 0;
+        uint256 penaltyAmount = 0;
 
-        VestingSchedule[] storage fromSchedules = vestingSchedules[from];
-        uint256 schedulesCount = fromSchedules.length;
-        if (schedulesCount == 0) revert NoVestingSchedule();
+        for (uint256 i = 0; i < scheduleIndexes.length; i++) {
+            uint256 index = scheduleIndexes[i];
+            
+            // Ensure the schedule index is valid
+            if (index >= vestingSchedules[msg.sender].length) revert InvalidScheduleIndex();
 
-        VestingSchedule[] storage toSchedules = vestingSchedules[to];
-        for (uint256 i = 0; i < schedulesCount; i++) {
-            toSchedules.push(fromSchedules[i]);
+            VestingSchedule storage schedule = vestingSchedules[msg.sender][index];
+            uint256 releasable = _releasableAmount(schedule);
+
+            if (releasable > 0) {
+                // Claim the full vested amount for this schedule
+                schedule.released += releasable;
+                totalReleasable += releasable;
+            }
         }
 
-        delete vestingSchedules[from];
+        require(totalReleasable > 0, "No tokens available for release");
 
-        activeVestingSchedulesCount[to] += activeVestingSchedulesCount[from];
-        activeVestingSchedulesCount[from] = 0;
+        // Burn the equivalent amount of vSOPH tokens from the caller
+        _burn(msg.sender, totalReleasable);
 
-        uint256 fromBalance = balanceOf(from);
-        if (fromBalance > 0) {
-            _transfer(from, to, fromBalance);
+        // Transfer the releasable amount of the underlying token to the beneficiary
+        sophtoken.safeTransfer(msg.sender, totalReleasable);
+
+        emit TokensReleased(msg.sender, totalReleasable, totalReleasable, penaltyAmount);
+    }
+
+
+    /**
+    * @dev Returns the list of unclaimed vesting schedule indexes for the beneficiary within a specified range and their respective releasable amounts.
+    * @param beneficiary The address of the beneficiary to check unclaimed schedules for.
+    * @param start The starting index of the range (inclusive).
+    * @param end The ending index of the range (exclusive).
+    * @return indexes An array of indexes for schedules with unclaimed tokens within the specified range.
+    * @return amounts An array of unclaimed amounts corresponding to each index within the specified range.
+    */
+    function getUnclaimedSchedulesInRange(
+        address beneficiary,
+        uint256 start,
+        uint256 end
+    ) external view returns (uint256[] memory indexes, uint256[] memory amounts) {
+        uint256 scheduleCount = vestingSchedules[beneficiary].length;
+        require(start < end && end <= scheduleCount, "Invalid range");
+
+        // Create temporary arrays with a fixed maximum size (end - start)
+        uint256[] memory tempIndexes = new uint256[](end - start);
+        uint256[] memory tempAmounts = new uint256[](end - start);
+        uint256 unclaimedCount = 0;
+
+        // Single loop to collect unclaimed schedules within the range
+        for (uint256 i = start; i < end; i++) {
+            VestingSchedule storage schedule = vestingSchedules[beneficiary][i];
+            uint256 releasable = _releasableAmount(schedule);
+
+            if (releasable > 0) {
+                tempIndexes[unclaimedCount] = i;
+                tempAmounts[unclaimedCount] = releasable;
+                unclaimedCount++;
+            }
         }
 
-        emit BeneficiaryTransferred(from, to, fromBalance, schedulesCount);
+        // Create result arrays with exact size of unclaimed schedules
+        indexes = new uint256[](unclaimedCount);
+        amounts = new uint256[](unclaimedCount);
+
+        // Copy collected data to result arrays
+        for (uint256 j = 0; j < unclaimedCount; j++) {
+            indexes[j] = tempIndexes[j];
+            amounts[j] = tempAmounts[j];
+        }
+
+        return (indexes, amounts);
     }
 
-    /**
-     * @dev Rescue function to transfer stuck tokens.
-     * @param token The token to rescue.
-     * @param to The address to send the tokens to.
-     */
-    function rescue(IERC20 token, address to) external onlyRole(ADMIN_ROLE) {
-        if (to == address(0)) revert InvalidRecipientAddress();
-        token.safeTransfer(to, token.balanceOf(address(this)));
-    }
 
     /**
-     * @dev Authorizes upgrades to the contract.
-     * @param newImplementation The address of the new implementation.
-     */
+    * @dev Claims the entire releasable amount for specific vesting schedule indexes with an applied penalty.
+    * @param scheduleIndexes An array of indexes of the vesting schedules to claim from.
+    */
+    function claimSpecificSchedulesWithPenalty(uint256[] calldata scheduleIndexes) external {
+        if (vestingStartDate > block.timestamp) revert VestingHasNotStartedYet();
+
+        uint256 totalReleasable = 0;
+        uint256 totalPenaltyAmount = 0;
+
+        for (uint256 i = 0; i < scheduleIndexes.length; i++) {
+            uint256 index = scheduleIndexes[i];
+            
+            // Ensure the schedule index is valid
+            if (index >= vestingSchedules[msg.sender].length) revert InvalidScheduleIndex();
+
+            VestingSchedule storage schedule = vestingSchedules[msg.sender][index];
+            uint256 releasable = _releasableAmount(schedule);
+
+            if (releasable > 0) {
+                uint256 penaltyAmount = (releasable * penaltyPercentage) / 100;
+                uint256 netAmount = releasable - penaltyAmount;
+
+                totalReleasable += netAmount;
+                totalPenaltyAmount += penaltyAmount;
+
+                // Update the schedule to reflect the claimed amount
+                schedule.released += releasable;
+            }
+        }
+
+        require(totalReleasable > 0, "No tokens available for release");
+
+        // Transfer total penalty amount to the penalty recipient
+        if (totalPenaltyAmount > 0) {
+            sophtoken.safeTransfer(penaltyRecipient, totalPenaltyAmount);
+            emit PenaltyPaid(msg.sender, totalPenaltyAmount);
+        }
+
+        // Transfer the total net amount to the beneficiary
+        sophtoken.safeTransfer(msg.sender, totalReleasable);
+        emit TokensReleased(msg.sender, totalReleasable + totalPenaltyAmount, totalReleasable, totalPenaltyAmount);
+
+        // Burn the equivalent amount of vSOPH tokens from the caller
+        _burn(msg.sender, totalReleasable + totalPenaltyAmount);
+    }
+
+
+
+
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 }
