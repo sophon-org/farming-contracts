@@ -27,10 +27,10 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     bytes32 public constant SCHEDULE_MANAGER_ROLE = keccak256("SCHEDULE_MANAGER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
-    IERC20 public sophtoken;        // The underlying token being vested
-    address public penaltyRecipient;           // Address receiving penalties
-    uint256 public vestingStartDate;           // Global vesting start date
-    uint256 public penaltyPercentage;          // Penalty percentage for early withdrawals (e.g., 50 for 50%)
+    IERC20 public sophtoken;                       // The underlying token being vested
+    address public penaltyRecipient;               // Address receiving penalties
+    uint256 public vestingStartDate;               // Global vesting start date
+    uint256 public penaltyPercentage;              // Penalty percentage for early withdrawals (e.g., 50 for 50%)
 
     mapping(address => VestingSchedule[]) public vestingSchedules; // Vesting schedules per beneficiary
 
@@ -41,25 +41,17 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     event PenaltyRecipientUpdated(address newPenaltyRecipient);
     event PenaltyPercentageUpdated(uint256 newPenaltyPercentage);
     event PenaltyPaid(address indexed beneficiary, uint256 penaltyAmount);
-    event BeneficiaryTransferred(address indexed oldBeneficiary, address indexed newBeneficiary, uint256 transferredBalance, uint256 transferredSchedulesCount);
 
     // Custom Errors
-    error StartDateCannotBeInThePast();
-    error CannotTransferToSelf();
     error TotalAmountMustBeGreaterThanZero();
     error DurationMustBeGreaterThanZero();
-    error NoVestingSchedule();
     error VestingHasNotStartedYet();
-    error NoTokensToRelease();
-    error TokenTransferFailed();
     error VestingStartDateAlreadySet();
     error VestingStartDateCannotBeInThePast();
-    error EtherNotAccepted();
     error InvalidScheduleIndex();
     error InvalidRange();
     error InvalidRecipientAddress();
     error PenaltyMustBeLessThanOrEqualTo100Percent();
-    error AmountExceedsReleasableAmount();
     error MismatchedArrayLengths();
 
     /**
@@ -124,11 +116,10 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
     /**
      * @dev Adds a vesting schedule for a beneficiary.
-     * If `startDate` is zero, the schedule will adopt `vestingStartDate` at claiming time.
      * @param beneficiary The address of the beneficiary.
      * @param amount The total amount to be vested.
      * @param duration The duration of the vesting schedule in seconds.
-     * @param startDate The start date of the vesting schedule. If zero, will adopt `vestingStartDate` at claiming time.
+     * @param startDate The start date of the vesting schedule.
      */
     function addVestingSchedule(
         address beneficiary,
@@ -139,13 +130,6 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         _addVestingSchedule(beneficiary, amount, duration, startDate);
     }
 
-    /**
-     * @dev Internal function to add a vesting schedule.
-     * @param beneficiary The address of the beneficiary.
-     * @param amount The total amount to be vested.
-     * @param duration The duration of the vesting schedule in seconds.
-     * @param startDate The start date of the vesting schedule. If zero, will adopt `vestingStartDate` at claiming time.
-     */
     function _addVestingSchedule(
         address beneficiary,
         uint256 amount,
@@ -199,12 +183,8 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
     /**
      * @dev Calculates the vested amount for a vesting schedule.
-     * @param schedule The vesting schedule.
-     * @return The vested amount.
      */
     function _vestedAmount(VestingSchedule storage schedule) internal view returns (uint256) {
-        
-        // vesting not started yet or in the future
         if (vestingStartDate == 0 || block.timestamp < schedule.startDate) {
             return 0;
         }
@@ -308,19 +288,15 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     function claim(uint256[] calldata scheduleIndexes) external {
         if (vestingStartDate > block.timestamp) revert VestingHasNotStartedYet();
         uint256 totalReleasable = 0;
-        uint256 penaltyAmount = 0;
 
         for (uint256 i = 0; i < scheduleIndexes.length; i++) {
             uint256 index = scheduleIndexes[i];
-            
-            // Ensure the schedule index is valid
             if (index >= vestingSchedules[msg.sender].length) revert InvalidScheduleIndex();
 
             VestingSchedule storage schedule = vestingSchedules[msg.sender][index];
             uint256 releasable = _releasableAmount(schedule);
 
             if (releasable > 0) {
-                // Claim the full vested amount for this schedule
                 schedule.released += releasable;
                 totalReleasable += releasable;
             }
@@ -328,15 +304,10 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
         require(totalReleasable > 0, "No tokens available for release");
 
-        // Burn the equivalent amount of vSOPH tokens from the caller
         _burn(msg.sender, totalReleasable);
-
-        // Transfer the releasable amount of the underlying token to the beneficiary
         sophtoken.safeTransfer(msg.sender, totalReleasable);
-
-        emit TokensReleased(msg.sender, totalReleasable, totalReleasable, penaltyAmount);
+        emit TokensReleased(msg.sender, totalReleasable, totalReleasable, 0);
     }
-
 
     /**
     * @dev Returns the list of unclaimed vesting schedule indexes for the beneficiary within a specified range and their respective releasable amounts.
@@ -397,8 +368,6 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
         for (uint256 i = 0; i < scheduleIndexes.length; i++) {
             uint256 index = scheduleIndexes[i];
-            
-            // Ensure the schedule index is valid
             if (index >= vestingSchedules[msg.sender].length) revert InvalidScheduleIndex();
 
             VestingSchedule storage schedule = vestingSchedules[msg.sender][index];
@@ -410,30 +379,32 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
                 totalReleasable += netAmount;
                 totalPenaltyAmount += penaltyAmount;
-
-                // Update the schedule to reflect the claimed amount
                 schedule.released += releasable;
             }
         }
 
         require(totalReleasable > 0, "No tokens available for release");
 
-        // Transfer total penalty amount to the penalty recipient
         if (totalPenaltyAmount > 0) {
             sophtoken.safeTransfer(penaltyRecipient, totalPenaltyAmount);
             emit PenaltyPaid(msg.sender, totalPenaltyAmount);
         }
 
-        // Transfer the total net amount to the beneficiary
         sophtoken.safeTransfer(msg.sender, totalReleasable);
         emit TokensReleased(msg.sender, totalReleasable + totalPenaltyAmount, totalReleasable, totalPenaltyAmount);
-
-        // Burn the equivalent amount of vSOPH tokens from the caller
         _burn(msg.sender, totalReleasable + totalPenaltyAmount);
     }
 
 
-
+    /**
+     * @dev Rescue function to transfer stuck tokens.
+     * @param token The token to rescue.
+     * @param to The address to send the tokens to.
+     */
+    function rescue(IERC20 token, address to) external onlyRole(ADMIN_ROLE) {
+        if (to == address(0)) revert InvalidRecipientAddress();
+        token.safeTransfer(to, token.balanceOf(address(this)));
+    }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 }
