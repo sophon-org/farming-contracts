@@ -271,15 +271,6 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         return rangeSchedules;
     }
 
-    /**
-     * @dev Returns the number of vesting schedules for a beneficiary.
-     * @param beneficiary The address of the beneficiary.
-     * @return The number of vesting schedules.
-     */
-    function getVestingSchedulesCount(address beneficiary) external view returns (uint256) {
-        return vestingSchedules[beneficiary].length;
-    }
-
 
     /**
     * @dev Claims the full vested tokens for the caller from specific vesting schedules and burns the claimed vSOPH tokens.
