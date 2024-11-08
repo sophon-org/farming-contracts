@@ -35,7 +35,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     mapping(address => VestingSchedule[]) public vestingSchedules; // Vesting schedules per beneficiary
 
     // Events
-    event TokensReleased(address indexed beneficiary, uint256 grossAmount, uint256 netAmount, uint256 penaltyAmount);
+    event TokensReleased(address indexed beneficiary, uint256 netAmount, uint256 penaltyAmount);
     event VestingScheduleAdded(address indexed beneficiary, uint256 totalAmount, uint256 duration, uint256 startDate);
     event VestingStartDateUpdated(uint256 newVestingStartDate);
     event PenaltyRecipientUpdated(address newPenaltyRecipient);
@@ -297,7 +297,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
         _burn(msg.sender, totalReleasable);
         sophtoken.safeTransfer(msg.sender, totalReleasable);
-        emit TokensReleased(msg.sender, totalReleasable, totalReleasable, 0);
+        emit TokensReleased(msg.sender, totalReleasable, 0);
     }
 
     /**
@@ -354,7 +354,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     function claimSpecificSchedulesWithPenalty(uint256[] calldata scheduleIndexes) external {
         if (vestingStartDate > block.timestamp) revert VestingHasNotStartedYet();
 
-        uint256 totalReleasable = 0;
+        uint256 totalNetToUser = 0;
         uint256 totalPenaltyAmount = 0;
 
         for (uint256 i = 0; i < scheduleIndexes.length; i++) {
@@ -362,29 +362,43 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
             if (index >= vestingSchedules[msg.sender].length) revert InvalidScheduleIndex();
 
             VestingSchedule storage schedule = vestingSchedules[msg.sender][index];
+            
+            // Calculate the releasable (vested) amount that must be released without penalty
             uint256 releasable = _releasableAmount(schedule);
+            
+            // Calculate the unvested amount
+            uint256 unvestedAmount = schedule.totalAmount - schedule.released - releasable;
+            
+            // Calculate the penalty amount on the unvested portion
+            uint256 penaltyAmount = (unvestedAmount * penaltyPercentage) / 100;
+            
+            // Calculate the net amount for the user: full releasable + (unvested - penalty)
+            uint256 netAmountToUser = releasable + (unvestedAmount - penaltyAmount);
 
-            if (releasable > 0) {
-                uint256 penaltyAmount = (releasable * penaltyPercentage) / 100;
-                uint256 netAmount = releasable - penaltyAmount;
+            // Accumulate amounts for total transfer
+            totalNetToUser += netAmountToUser;
+            totalPenaltyAmount += penaltyAmount;
 
-                totalReleasable += netAmount;
-                totalPenaltyAmount += penaltyAmount;
-                schedule.released += releasable;
-            }
+            // Mark the entire schedule as claimed by setting released to totalAmount
+            schedule.released = schedule.totalAmount;
         }
 
-        require(totalReleasable > 0, "No tokens available for release");
+        require(totalNetToUser > 0, "No tokens available for release");
 
+        // Transfer the penalty amount to the penalty recipient, if any
         if (totalPenaltyAmount > 0) {
             sophtoken.safeTransfer(penaltyRecipient, totalPenaltyAmount);
             emit PenaltyPaid(msg.sender, totalPenaltyAmount);
         }
 
-        sophtoken.safeTransfer(msg.sender, totalReleasable);
-        emit TokensReleased(msg.sender, totalReleasable + totalPenaltyAmount, totalReleasable, totalPenaltyAmount);
-        _burn(msg.sender, totalReleasable + totalPenaltyAmount);
+        // Transfer the total net amount (releasable + post-penalty unvested) to the beneficiary
+        sophtoken.safeTransfer(msg.sender, totalNetToUser);
+        emit TokensReleased(msg.sender, totalNetToUser, totalPenaltyAmount);
+
+        // Burn the claimed vSOPH tokens equivalent to the total released amount plus penalties
+        _burn(msg.sender, totalNetToUser + totalPenaltyAmount);
     }
+
 
 
     /**
