@@ -406,5 +406,29 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         token.safeTransfer(to, token.balanceOf(address(this)));
     }
 
+    /**
+    * @dev Overrides the internal _update function to transfer vesting schedules
+    * and enforce admin-only access through the onlyAdmin modifier.
+    */
+    function _update(address from, address to, uint256 value) internal virtual override onlyRole(ADMIN_ROLE) {
+        _transferVestingSchedules(from, to); // Streamlined transfer of schedules
+
+        // Call the parent _update function to maintain balance updates and event emissions
+        super._update(from, to, value);
+    }
+
+    /**
+    * @dev Helper function to transfer all vesting schedules from one address to another.
+    * @param from The address to transfer schedules from.
+    * @param to The address to transfer schedules to.
+    */
+    function _transferVestingSchedules(address from, address to) internal {
+        VestingSchedule[] storage schedulesFrom = vestingSchedules[from];
+        for (uint256 i = 0; i < schedulesFrom.length; i++) {
+            vestingSchedules[to].push(schedulesFrom[i]);
+        }
+        delete vestingSchedules[from];
+    }
+
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 }
