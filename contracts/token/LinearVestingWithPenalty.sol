@@ -411,6 +411,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     * and enforce admin-only access through the onlyAdmin modifier.
     */
     function _update(address from, address to, uint256 value) internal virtual override onlyRole(ADMIN_ROLE) {
+        if (to == address(0)) revert InvalidRecipientAddress();
         _transferVestingSchedules(from, to); // Streamlined transfer of schedules
 
         // Call the parent _update function to maintain balance updates and event emissions
