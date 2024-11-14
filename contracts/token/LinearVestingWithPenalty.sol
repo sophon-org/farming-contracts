@@ -107,7 +107,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
      * @dev Sets the global vesting start date.
      * @param newVestingStartDate The new vesting start date.
      */
-    function setVestingStartDate(uint256 newVestingStartDate) external onlyRole(SCHEDULE_MANAGER_ROLE) {
+    function setVestingStartDate(uint256 newVestingStartDate) external onlyRole(ADMIN_ROLE) {
         if (vestingStartDate != 0) revert VestingStartDateAlreadySet();
         if (newVestingStartDate < block.timestamp) revert VestingStartDateCannotBeInThePast();
         vestingStartDate = newVestingStartDate;
@@ -141,6 +141,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         if (duration == 0) revert DurationMustBeGreaterThanZero();
 
         uint256 scheduleStartDate = startDate;
+
         if (vestingStartDate != 0 && startDate <= vestingStartDate) {
             scheduleStartDate = vestingStartDate;
         }
