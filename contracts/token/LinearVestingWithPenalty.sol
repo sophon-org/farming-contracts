@@ -36,7 +36,6 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
     // Events
     event TokensReleased(address indexed beneficiary, uint256 netAmount, uint256 penaltyAmount);
-    event TokensReleased(address indexed beneficiary, uint256 netAmount, uint256 penaltyAmount);
     event VestingScheduleAdded(address indexed beneficiary, uint256 totalAmount, uint256 duration, uint256 startDate);
     event VestingStartDateUpdated(uint256 newVestingStartDate);
     event PenaltyRecipientUpdated(address newPenaltyRecipient);
@@ -54,6 +53,8 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
     error InvalidRecipientAddress();
     error PenaltyMustBeLessThanOrEqualTo100Percent();
     error MismatchedArrayLengths();
+    error NoTokensToRelease();
+    error NoVestingSchedule();
 
     /**
      * @dev Initializes the contract with the given token address, initial penalty recipient, and penalty percentage.
@@ -197,6 +198,15 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         if (!_hasVestingStarted(schedule)) revert VestingHasNotStartedYet();
 
         return _releaseFromSchedule(schedule, acceptPenalty);
+    }
+
+    /**
+     * @dev Checks if vesting has started for a schedule.
+     * @param schedule The vesting schedule.
+     * @return True if vesting has started, false otherwise.
+     */
+    function _hasVestingStarted(VestingSchedule storage schedule) internal view returns (bool) {
+        return schedule.startDate != 0 && block.timestamp >= schedule.startDate;
     }
 
     /**
