@@ -860,7 +860,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid to bridge
      * @param _mintValue _mintValue SOPH gas price
      */
+    
     function bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken) external payable {
+
+        // USDC and stAETHIR exception
+        if (_pid == 7 || _pid == 8) {
+            revert Unauthorized();
+        }
 
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
@@ -902,6 +908,25 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         isBridged[_pid] = true;
         emit BridgePool(msg.sender, _pid, depositAmount);
+    }
+
+
+    // TODO bridgestAETHIR
+    function bridgestAETHIR(uint256 _mintValue, address _sophToken) external payable {
+        uint256 _pid = 8;
+        if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
+            revert Unauthorized();
+        }
+
+    }
+
+    // TODO bridgeUSDC
+    function bridgeUSDC(uint256 _mintValue, address _sophToken) external payable {
+        uint256 _pid = 7;
+        if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
+            revert Unauthorized();
+        }
+
     }
 
     /**

@@ -36,6 +36,7 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
 
     // Events
     event TokensReleased(address indexed beneficiary, uint256 netAmount, uint256 penaltyAmount);
+    event TokensReleased(address indexed beneficiary, uint256 netAmount, uint256 penaltyAmount);
     event VestingScheduleAdded(address indexed beneficiary, uint256 totalAmount, uint256 duration, uint256 startDate);
     event VestingStartDateUpdated(uint256 newVestingStartDate);
     event PenaltyRecipientUpdated(address newPenaltyRecipient);
@@ -180,6 +181,98 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         for (uint256 i = 0; i < beneficiaries.length; i++) {
             _addVestingSchedule(beneficiaries[i], amounts[i], durations[i], startDates[i]);
         }
+    }
+    /**
+     * @dev Internal function to process and release tokens from a vesting schedule.
+     * @param schedule The vesting schedule.
+     * @param acceptPenalty Whether to accept an early withdrawal penalty.
+     * @return releasedAmount The amount of tokens released.
+     */
+    function _processSchedule(VestingSchedule storage schedule, bool acceptPenalty) internal returns (uint256 releasedAmount) {
+        // this is critical part. set startDate if  schedule.startDate was zero
+        if (vestingStartDate != 0 && block.timestamp >= vestingStartDate && schedule.startDate == 0) {
+            schedule.startDate = vestingStartDate;
+        }
+
+        if (!_hasVestingStarted(schedule)) revert VestingHasNotStartedYet();
+
+        return _releaseFromSchedule(schedule, acceptPenalty);
+    }
+
+    /**
+     * @dev Releases vested tokens from specific schedules provided as an array.
+     * @param scheduleIndices The indices of the vesting schedules.
+     * @param acceptPenalty Whether to accept an early withdrawal penalty.
+     */
+    function releaseSpecificSchedules(uint256[] calldata scheduleIndices, bool acceptPenalty) external {
+        VestingSchedule[] storage schedules = vestingSchedules[msg.sender];
+        if (schedules.length == 0) revert NoVestingSchedule();
+
+        uint256 totalAmountToRelease = 0;
+
+        for (uint256 i = 0; i < scheduleIndices.length; i++) {
+            uint256 scheduleIndex = scheduleIndices[i];
+            if (scheduleIndex >= schedules.length) revert InvalidScheduleIndex();
+
+            VestingSchedule storage schedule = schedules[scheduleIndex];
+
+            uint256 released = _processSchedule(schedule, acceptPenalty);
+            totalAmountToRelease += released;
+        }
+
+        if (totalAmountToRelease == 0) revert NoTokensToRelease();
+    }
+
+    /**
+     * @dev Releases vested tokens from a range of schedules.
+     * @param startIndex The starting index.
+     * @param endIndex The ending index (exclusive).
+     * @param acceptPenalty Whether to accept an early withdrawal penalty.
+     */
+    function releaseSchedulesInRange(uint256 startIndex, uint256 endIndex, bool acceptPenalty) external {
+        VestingSchedule[] storage schedules = vestingSchedules[msg.sender];
+        if (schedules.length == 0) revert NoVestingSchedule();
+        if (startIndex >= endIndex || endIndex > schedules.length) revert InvalidRange();
+
+        uint256 totalAmountToRelease = 0;
+
+        for (uint256 i = startIndex; i < endIndex; i++) {
+            VestingSchedule storage schedule = schedules[i];
+
+            uint256 released = _processSchedule(schedule, acceptPenalty);
+            totalAmountToRelease += released;
+        }
+
+        if (totalAmountToRelease == 0) revert NoTokensToRelease();
+    }
+
+    /**
+     * @dev Internal function to release tokens from a vesting schedule.
+     * @param schedule The vesting schedule.
+     * @param acceptPenalty Whether to accept an early withdrawal penalty.
+     * @return releasedAmount Amount that was released
+     */
+    function _releaseFromSchedule(VestingSchedule storage schedule, bool acceptPenalty) internal returns(uint256 releasedAmount) {
+        uint256 amountToRelease = _releasableAmount(schedule);
+        uint256 penalty = 0;
+        schedule.released += amountToRelease;
+        uint256 unvestedAmount = schedule.totalAmount - schedule.released;
+        if (acceptPenalty && unvestedAmount > 0) {
+            penalty = (unvestedAmount * penaltyPercentage) / 100;
+            amountToRelease += unvestedAmount - penalty;
+
+            // at this point schedule.released should be 100%
+            schedule.released += unvestedAmount;
+
+            _burn(msg.sender, penalty);
+            sophtoken.safeTransfer(penaltyRecipient, penalty);
+            emit PenaltyPaid(msg.sender, penalty);
+        }
+
+        _burn(msg.sender, amountToRelease);
+        releasedAmount = amountToRelease;
+        sophtoken.safeTransfer(msg.sender, amountToRelease);
+        emit TokensReleased(msg.sender, amountToRelease, penalty);
     }
 
     /**
