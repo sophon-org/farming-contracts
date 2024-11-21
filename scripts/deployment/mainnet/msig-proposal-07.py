@@ -1,4 +1,5 @@
 from brownie_safe import BrownieSafe
+from gnosis.safe.enums import SafeOperationEnum
 from brownie import *
 
 exec(open("./scripts/env/eth.py").read())
@@ -14,11 +15,15 @@ OPNPoints = 50000
 # https://etherscan.io/block/countdown/21272866
 # Estimated Target Date
 # Tuesday, November 26, 2024 4:00:00 PM
-OPNEnableBlock = 21115250
+OPNEnableBlock = 21272866
 
 #newPointsPerBlock = SF.pointsPerBlock() + (OPNPoints) * 1e14
-newPointsPerBlock = 66e18
+newPointsPerBlock = 76e18
 
+## update emissions for stAVAIL farm
+SF.set(13, 100000, 0, 0, {"from": OWNER})
+
+## add OPN farm
 SF.add(OPNPoints, OPN, "OPN", OPNEnableBlock, newPointsPerBlock, {"from": OWNER})
 
 safe_tx = SAFE.multisend_from_receipts()
