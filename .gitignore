@@ -61,4 +61,3 @@ docs/
 .env
 lcov.info
 report/
-tmp/
