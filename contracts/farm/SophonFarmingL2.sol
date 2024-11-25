@@ -109,6 +109,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             description: _description
         });
         heldProceeds[_pid] = _heldProceeds;
+        require(IERC20(_lpToken).balanceOf(address(this)) >= _amount, "balances don't match");
     }
 
     function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo) public {

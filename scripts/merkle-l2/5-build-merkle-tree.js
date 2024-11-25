@@ -17,7 +17,7 @@ function hashUserInfo(userInfo) {
 }
 
 
-fs.readFile('./scripts/merkle-l2/output/3-update-user-info.json', 'utf8', (err, data) => {
+fs.readFile('./scripts/merkle-l2/output/1-userinfo-poolinfo.json', 'utf8', (err, data) => {
     if (err) {
         console.error('Error reading file:', err);
         return;
