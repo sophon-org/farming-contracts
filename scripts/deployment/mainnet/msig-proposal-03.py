@@ -50,5 +50,3 @@ if SEND_TO_MAINNET:
     signtature = safe.sign_with_frame(safe_tx)
     safe.post_transaction(safe_tx)
     safe.post_signature(safe_tx, signtature)
-
-
