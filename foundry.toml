@@ -9,6 +9,7 @@ remappings = [
     "@chainlink/=node_modules/@chainlink/contracts/src/v0.8/",
     "@eth-optimism/=node_modules/@eth-optimism/",
     "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+    "@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/",
     "erc721a/=node_modules/erc721a/contracts/",
     "forge-std/=lib/forge-std/src/",
 ]
