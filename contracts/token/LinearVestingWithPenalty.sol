@@ -495,12 +495,12 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
             emit PenaltyPaid(msg.sender, totalPenaltyAmount);
         }
 
+        // Burn the claimed vSOPH tokens equivalent to the total released amount plus penalties
+        _burn(msg.sender, totalNetToUser + totalPenaltyAmount);
+
         // Transfer the total net amount (releasable + post-penalty unvested) to the beneficiary
         sophtoken.safeTransfer(msg.sender, totalNetToUser);
         emit TokensReleased(msg.sender, totalNetToUser, totalPenaltyAmount);
-
-        // Burn the claimed vSOPH tokens equivalent to the total released amount plus penalties
-        _burn(msg.sender, totalNetToUser + totalPenaltyAmount);
     }
 
 
