@@ -38,7 +38,6 @@ contract LinearVestingWithPenaltyTest is Test {
         vSOPH.grantRole(vSOPH.SCHEDULE_MANAGER_ROLE(), scheduleManager);
         vSOPH.grantRole(vSOPH.UPGRADER_ROLE(), upgrader);
 
-        vSOPH.setVestingStartDate(1);
         deal(address(SOPH), address(vSOPH), SOPHON_SUPPLY);
 
         vm.stopPrank();
@@ -196,7 +195,7 @@ contract LinearVestingWithPenaltyTest is Test {
         for (uint256 i = 0; i < numberOfSchedules; i++) {
             uint256 rand = uint256(keccak256(abi.encodePacked(seed, i)));
             beneficiaries[i] = makeAddr(string(bytes(abi.encodePacked(rand))));
-            amounts[i] = bound(rand, 1, SOPHON_SUPPLY);
+            amounts[i] = bound(rand, 1, SOPHON_SUPPLY) * 3 / 100;
             totalAmount += amounts[i];
             durations[i] = bound(rand, 1, 3600 * 24 * 365); // Between 1 and 1 year
             startDates[i] = bound(rand, block.timestamp, 3600 * 24 * 90); // Between 1 and 90 days
@@ -250,16 +249,14 @@ contract LinearVestingWithPenaltyTest is Test {
     }
 
     // RELEASE SPECIFIC SCHEDULES FUNCTION
-    function testFuzz_ReleaseSpecificSchedules_OneDepositNoPenalty(uint256 rand, uint256 amount, uint256 duration, uint256 startDate) public {
-        rand = bound(rand, 1, 100);
-        amount = bound(amount, 2, SOPHON_SUPPLY / 3);
-        startDate = bound(startDate, block.timestamp, 3600 * 24 * 365); // Between 1 and 1 year
-        duration = bound(duration, 1, 3600 * 24 * 90); // Between 1 and 90 days
-
-        // vm.prank(admin);
-        // vSOPH.grantRole(vSOPH.SCHEDULE_MANAGER_ROLE(), scheduleManager);
-
-        // assertEq(vSOPH.hasRole(vSOPH.SCHEDULE_MANAGER_ROLE(), scheduleManager), true);
+    function testFuzz_ReleaseSpecificSchedules_OneDeposit_GTEDuration(uint256 rand, uint256 amount, uint256 duration, uint256 startDate, bool penalty) public {
+        vm.prank(admin);
+        vSOPH.setVestingStartDate(1);
+    
+        rand = bound(rand, 0, 100);
+        amount = bound(amount, 1, SOPHON_SUPPLY * 3 / 100);
+        startDate = bound(startDate, block.timestamp, 3600 * 24 * 365); // Between 1 sec and 1 year
+        duration = bound(duration, 1, 3600 * 24 * 90); // Between 1 sec and 90 days
 
         vm.prank(scheduleManager); // TODO reverts because _update function has only admin role required
         vSOPH.addVestingSchedule(user1, amount, duration, startDate);
@@ -267,8 +264,42 @@ contract LinearVestingWithPenaltyTest is Test {
         LinearVestingWithPenalty.VestingSchedule memory schedule;
         (schedule.totalAmount, schedule.released, schedule.duration, schedule.startDate) = vSOPH.vestingSchedules(user1, 0);
 
-        vm.warp(startDate + duration * 60 / 100);
+        // Elapsed duration: duration or until twice the duration
+        uint256 elapsedTime = (duration * (100 + rand)) / 100;
+        vm.warp(startDate + elapsedTime);
     
+        uint256[] memory scheduleIndices = new uint256[](1);
+
+        vm.prank(user1);
+        vSOPH.approve(address(vSOPH), type(uint256).max);
+
+        console.log(vSOPH.balanceOf(user1));
+            
+        vm.expectEmit(true, true, true, true);
+        emit LinearVestingWithPenalty.TokensReleased(user1, amount, 0);
+        
+        vm.prank(user1);
+        vSOPH.releaseSpecificSchedules(scheduleIndices, penalty);
+    }
+
+    function testFuzz_ReleaseSpecificSchedules_OneDeposit_LTDuration(uint256 rand, uint256 amount, uint256 duration, uint256 startDate, bool penalty) public {
+        vm.prank(admin);
+        vSOPH.setVestingStartDate(1);
+
+        rand = bound(rand, 0, 99);
+        amount = bound(amount, 1, SOPHON_SUPPLY * 3 / 100);
+        startDate = bound(startDate, block.timestamp, 3600 * 24 * 365); // Between 1 sec and 1 year
+        duration = bound(duration, 1, 3600 * 24 * 90); // Between 1 sec and 90 days
+
+        vm.prank(scheduleManager); // TODO reverts because _update function has only admin role required
+        vSOPH.addVestingSchedule(user1, amount, duration, startDate);
+
+        LinearVestingWithPenalty.VestingSchedule memory schedule;
+        (schedule.totalAmount, schedule.released, schedule.duration, schedule.startDate) = vSOPH.vestingSchedules(user1, 0);
+        
+        // Elapsed duration: a fraction of the duration (could be zero)
+        uint256 elapsedTime = duration * rand / 100;
+        vm.warp(startDate + elapsedTime);
 
         uint256[] memory scheduleIndices = new uint256[](1);
 
@@ -277,7 +308,68 @@ contract LinearVestingWithPenaltyTest is Test {
 
         console.log(vSOPH.balanceOf(user1));
 
+        // Proportional to the elapsed time
+        uint256 amountToRelease = amount * elapsedTime / duration;
+
+        // If there's no tokens to release, it should revert
+        if (amountToRelease == 0 && !penalty) {
+            console.log(amount, elapsedTime, duration);
+            console.log(amountToRelease);
+            vm.expectRevert(LinearVestingWithPenalty.NoTokensToRelease.selector);
+        } else {
+            
+            uint256 penaltyAmount;
+            if (penalty) {
+                // If there's penalty, take that into account
+                penaltyAmount = penalty ? (amount - amountToRelease) * PENALTY / 100 : 0;
+                amountToRelease = amount - penaltyAmount; // Net amount
+            }
+
+            vm.expectEmit(true, true, true, true);
+            emit LinearVestingWithPenalty.TokensReleased(user1, amountToRelease, penaltyAmount);
+        }
+
         vm.prank(user1);
-        vSOPH.releaseSpecificSchedules(scheduleIndices, false);
+        vSOPH.releaseSpecificSchedules(scheduleIndices, penalty);
+    }
+
+    function testFuzz_ReleaseSpecificSchedules_MultipleDeposits(/*uint256 seed*/) public {
+        uint256 numberOfSchedules = 52;
+        uint256 amount = SOPHON_SUPPLY * 3 / 1000;
+        uint256 duration = 3600 * 24 * 90; // 90 days
+        uint256 startDate = block.timestamp;
+
+        address[] memory beneficiaries = new address[](numberOfSchedules);
+        uint256[] memory amounts = new uint256[](numberOfSchedules);
+        uint256[] memory durations = new uint256[](numberOfSchedules);
+        uint256[] memory startDates = new uint256[](numberOfSchedules);
+        uint256[] memory scheduleIndices = new uint256[](numberOfSchedules);
+
+        for (uint256 i = 0; i < numberOfSchedules; i++) {
+            beneficiaries[i] = user1;
+            amounts[i] = amount;
+            durations[i] = duration;
+            startDates[i] = startDate + i * 3600 * 24 * 7; // 1 week apart
+            scheduleIndices[i] = i;
+        }
+
+        vm.prank(scheduleManager); // TODO reverts because _update function has only admin role required
+        vSOPH.addMultipleVestingSchedules(beneficiaries, amounts, durations, startDates);
+
+        uint256 elapsedTime = startDate;
+
+        // LinearVestingWithPenalty.VestingSchedule[] memory schedules = new LinearVestingWithPenalty.VestingSchedule[](numberOfSchedules);
+        // schedules = vSOPH.getVestingSchedules(user1);
+
+        // This should work without _transferVestingSchedules function
+        for (uint256 i = 0; i < numberOfSchedules; i++) {
+            uint256[] memory releaseSchedule = new uint256[](1);
+
+            releaseSchedule[0] = i;
+            elapsedTime += (i + 1) * 3600 * 24 * 7 + 1;
+            vm.warp(startDate + elapsedTime);
+            vm.prank(user1);
+            vSOPH.releaseSpecificSchedules(releaseSchedule, true);
+        }
     }
 }
