@@ -515,16 +515,43 @@ contract LinearVestingWithPenalty is Initializable, ERC20Upgradeable, AccessCont
         token.safeTransfer(to, token.balanceOf(address(this)));
     }
 
-    /**
-    * @dev Overrides the internal _update function to transfer vesting schedules
-    * and enforce admin-only access through the onlyAdmin modifier.
-    */
-    function _update(address from, address to, uint256 value) internal virtual override onlyRole(ADMIN_ROLE) {
-        if (to == address(0)) revert InvalidRecipientAddress();
-        _transferVestingSchedules(from, to); // Streamlined transfer of schedules
+    // /**
+    // * @dev Overrides the internal _update function to transfer vesting schedules
+    // * and enforce admin-only access through the onlyAdmin modifier.
+    // */
+    // function _update(address from, address to, uint256 value) internal virtual override onlyRole(ADMIN_ROLE) {
+    //     if (to == address(0)) revert InvalidRecipientAddress();
 
-        // Call the parent _update function to maintain balance updates and event emissions
-        super._update(from, to, value);
+    //     // except minting
+    //     if (from != address(0)) {
+    //         _transferVestingSchedules(from, to); // Streamlined transfer of schedules
+    //     }
+        
+
+    //     // Call the parent _update function to maintain balance updates and event emissions
+    //     super._update(from, to, value);
+    // }
+
+    function transfer(address to, uint256 value) public virtual override onlyRole(ADMIN_ROLE) returns (bool) {
+        super.transfer(to, value);
+    }
+
+    function transferFrom(address from, address to, uint256 value) public virtual override onlyRole(ADMIN_ROLE) returns (bool) {
+        super.transferFrom(from, to, value);
+    }
+
+    function adminTransfer(
+        address from,
+        address to
+    ) public onlyRole(ADMIN_ROLE) returns (bool) {
+        // Transfer the specified amount of tokens
+        uint256 amount = balanceOf(from);
+        _transfer(from, to, amount);
+
+        // Transfer all vesting schedules from 'from' to 'to'
+        _transferVestingSchedules(from, to);
+
+        return true;
     }
 
     /**
