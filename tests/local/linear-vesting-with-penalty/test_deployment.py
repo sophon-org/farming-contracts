@@ -480,7 +480,7 @@ def test_transfer_vesting_schedules(VESTING_CONTRACT, ADMIN, SOPHTOKEN, USER1, U
     VESTING_CONTRACT.addVestingSchedule(USER1.address, amount, duration, start_date, {"from": ADMIN})
 
     # Admin transfers beneficiary from USER1 to USER2
-    VESTING_CONTRACT.transferBeneficiary(USER1.address, USER2.address, {"from": ADMIN})
+    VESTING_CONTRACT.adminTransfer(USER1.address, USER2.address, {"from": ADMIN})
 
     # Verify vesting schedules are transferred to USER2
     schedules_user2 = VESTING_CONTRACT.getVestingSchedules(USER2.address)

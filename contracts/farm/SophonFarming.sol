@@ -818,11 +818,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     
     function bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken) external payable {
-
-        // USDC and stAETHIR exception
-        if (_pid == 7 || _pid == 8) {
+        // USDC exception
+        if (_pid == 7) {
             revert Unauthorized();
         }
+
+        _bridgePool(_pid, _mintValue, _sophToken, bridge);
+    }
+
+    function _bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken, IBridgehub _bridge) internal {
 
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
@@ -860,28 +864,22 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         IERC20(_sophToken).safeIncreaseAllowance(_request.secondBridgeAddress, _mintValue);
         
         // Actual values are pending the launch of Sophon testnet
-        bridge.requestL2TransactionTwoBridges(_request);
+        _bridge.requestL2TransactionTwoBridges(_request);
 
         isBridged[_pid] = true;
         emit BridgePool(msg.sender, _pid, depositAmount);
     }
 
 
-    // TODO bridgestAETHIR
-    function bridgestAETHIR(uint256 _mintValue, address _sophToken) external payable {
-        uint256 _pid = 8;
-        if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
-            revert Unauthorized();
-        }
-
-    }
-
-    // TODO bridgeUSDC
-    function bridgeUSDC(uint256 _mintValue, address _sophToken) external payable {
+    // bridge USDC
+    function bridgeUSDC(uint256 _mintValue, address _sophToken, IBridgehub _bridge) external onlyOwner {
         uint256 _pid = 7;
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
         }
+
+        // IBridgehub _bridge = IBridgehub(address(0));
+        _bridgePool(_pid, _mintValue, _sophToken, _bridge);
 
     }
 
