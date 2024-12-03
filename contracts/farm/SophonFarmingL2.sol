@@ -143,7 +143,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @notice Adds a new pool to the farm. Can only be called by the owner.
      * @param _lpToken lpToken address
      * @param _priceFeed lpToken price feed address
-     * @param _emissionsMultiplier multiplier for emissions fine tuning;
+     * @param _emissionsMultiplier multiplier for emissions fine tuning; use 0 or 1e18 for 1x
      * @param _description description of new pool
      * @param _poolStartBlock block at which points start to accrue for the pool
      * @param _newPointsPerBlock update global points per block; 0 means no update
