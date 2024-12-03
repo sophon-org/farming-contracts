@@ -68,4 +68,12 @@ contract SophonFarmingState {
     mapping(uint256 => bool) public isBridged;
 
     mapping(address userAdmin => mapping(address user => bool inWhitelist)) public whitelist;
+
+    struct PoolValue {
+        address feed;
+        uint256 lastValue;
+    }
+    PoolValue[] public poolValue;
+
+    uint256 public totalValue;
 }

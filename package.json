@@ -33,9 +33,9 @@
     "typechain": "8.3.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts-upgradeable": "^5.0.2",
-    "keccak256": "^1.0.6",
-    "merkletreejs": "^0.4.0",
-    "web3": "^4.12.1"
+    "@openzeppelin/contracts-upgradeable": "5.0.2",
+    "keccak256": "1.0.6",
+    "merkletreejs": "0.4.0",
+    "web3": "4.12.1"
   }
 }
