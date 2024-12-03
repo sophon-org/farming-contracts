@@ -432,9 +432,17 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @notice Update accounting of all pools
      */
     function massUpdatePools() public {
+        massUpdatePools(false);
+    }
+
+    /**
+     * @notice Update accounting of all pools
+     * @param _silent emit event if false
+     */
+    function massUpdatePools(bool _silent) public {
         uint256 length = poolInfo.length;
         for(uint256 pid = 0; pid < length; ++pid) {
-            updatePool(pid);
+            updatePool(pid, _silent);
         }
     }
 
@@ -443,6 +451,15 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid to update
      */
     function updatePool(uint256 _pid) public {
+        updatePool(_pid, false);
+    }
+
+    /**
+     * @notice Updating accounting of a single pool
+     * @param _pid pid to update
+     * @param _silent emit event if false
+     */
+    function updatePool(uint256 _pid, bool _silent) public {
         PoolInfo storage pool = poolInfo[_pid];
         if (getBlockNumber() <= pool.lastRewardBlock) {
             return;
@@ -459,7 +476,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         PoolValue storage pv = poolValue[_pid];
         address feed = pv.feed;
         if (feed == address(0)) {
-            revert PriceFeedNotSet();
+            //revert PriceFeedNotSet();
+            pool.lastRewardBlock = getBlockNumber();
+            return;
         }
 
         uint256 newPrice;
@@ -476,13 +495,17 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         /* END Dummy Feeds */
 
         if (newPrice == 0) {
-            revert InvalidPrice(_pid, newPrice);
+            //revert InvalidPrice(_pid, newPrice);
+            pool.lastRewardBlock = getBlockNumber();
+            return;
         }
 
         uint256 newValue = lpSupply * newPrice / 1e18;
         newValue = newValue * pv.emissionsMultiplier / 1e18;
         if (newValue == 0) {
-            revert InvalidValue(newValue);
+            //revert InvalidValue(newValue);
+            pool.lastRewardBlock = getBlockNumber();
+            return;
         }
 
         totalValue = totalValue - pv.lastValue + newValue;
@@ -504,7 +527,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         pool.lastRewardBlock = getBlockNumber();
 
-        emit PoolUpdated(_pid);
+        if (!_silent) {
+            emit PoolUpdated(_pid);
+        }
     }
 
     /**
@@ -542,7 +567,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
+        massUpdatePools(true);
 
         uint256 userAmount = user.amount;
 
@@ -603,7 +628,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
+        massUpdatePools(true);
 
         uint256 userAmount = user.amount;
 
@@ -666,7 +691,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
+        massUpdatePools(true);
 
         uint256 userDepositAmount = user.depositAmount;
 
@@ -725,7 +750,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             revert PoolDoesNotExist();
         }
 
-        updatePool(_pid);
+        massUpdatePools(true);
         uint256 accPointsPerShare = pool.accPointsPerShare;
 
         UserInfo storage userFrom = userInfo[_pid][_sender];
