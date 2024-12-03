@@ -143,12 +143,13 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @notice Adds a new pool to the farm. Can only be called by the owner.
      * @param _lpToken lpToken address
      * @param _priceFeed lpToken price feed address
+     * @param _emissionsMultiplier multiplier for emissions fine tuning;
      * @param _description description of new pool
      * @param _poolStartBlock block at which points start to accrue for the pool
      * @param _newPointsPerBlock update global points per block; 0 means no update
      * @return uint256 The pid of the newly created asset
      */
-    function add(address _lpToken, address _priceFeed, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
+    function add(address _lpToken, address _priceFeed, uint256 _emissionsMultiplier, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
         if (_lpToken == address(0)) {
             revert ZeroAddress();
         }
@@ -186,8 +187,15 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             })
         );
 
+        if (_emissionsMultiplier == 0) {
+            // set multiplier to 1x
+            _emissionsMultiplier = 1e18;
+        }
+
+        PoolValue storage pv = poolValue[pid];
+        pv.emissionsMultiplier = _emissionsMultiplier;
         if (_priceFeed != address(0)) {
-            poolValue[pid].feed = _priceFeed;
+            pv.feed = _priceFeed;
             emit SetPriceFeed(address(0), _priceFeed);
         }
 
@@ -199,10 +207,11 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     /**
      * @notice Updates the given pool's allocation point. Can only be called by the owner.
      * @param _pid The pid to update
+     * @param _emissionsMultiplier multiplier for emissions fine tuning; use 0 for no update OR 1e18 for 1x
      * @param _poolStartBlock block at which points start to accrue for the pool; 0 means no update
      * @param _newPointsPerBlock update global points per block; 0 means no update
      */
-    function set(uint256 _pid, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external onlyOwner {
+    function set(uint256 _pid, uint256 _emissionsMultiplier, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -217,6 +226,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         address lpToken = address(pool.lpToken);
         if (lpToken == address(0) || !poolExists[lpToken]) {
             revert PoolDoesNotExist();
+        }
+
+        if (_emissionsMultiplier != 0) {
+            poolValue[_pid].emissionsMultiplier = _emissionsMultiplier;
         }
 
         // pool starting block is updated if farming hasn't started and _poolStartBlock is non-zero
@@ -467,6 +480,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         }
 
         uint256 newValue = lpSupply * newPrice / 1e18;
+        newValue = newValue * pv.emissionsMultiplier / 1e18;
         if (newValue == 0) {
             revert InvalidValue(newValue);
         }

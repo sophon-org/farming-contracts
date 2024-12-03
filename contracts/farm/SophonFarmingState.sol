@@ -72,6 +72,7 @@ contract SophonFarmingState {
     struct PoolValue {
         address feed;
         uint256 lastValue;
+        uint256 emissionsMultiplier;
     }
     PoolValue[] public poolValue;
 
