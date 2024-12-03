@@ -1,4 +1,6 @@
 SF = interface.ISophonFarming("0xe80f651aCCb1574DD2D84021cf1d27862363E390")
+
+SF_L2 = "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9"
 # SFImpl = interface.ISophonFarming("")
 OWNER = "0xE0486B081dAcC8e6af7f204abF508Ecc044B48A6"
 

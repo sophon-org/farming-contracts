@@ -56,9 +56,6 @@ interface ISophonFarming {
     /// @notice Emitted when all pool funds are bridged to Sophon blockchain
     event BridgePool(address indexed user, uint256 indexed pid, uint256 amount);
 
-    /// @notice Emitted when the admin bridges booster proceeds
-    event BridgeProceeds(uint256 indexed pid, uint256 proceeds);
-
     /// @notice Emitted when the the revertFailedBridge function is called
     event RevertFailedBridge(uint256 indexed pid);
 
@@ -95,7 +92,6 @@ interface ISophonFarming {
     function isFarmingEnded() external view returns (bool);
     function isWithdrawPeriodEnded() external view returns (bool);
     function setBridge(address _bridge) external;
-    function setBridgeForPool(uint256 _pid, address _l2Farm) external;
     function setEndBlock(uint256 _endBlock, uint256 _withdrawalBlocks) external;
     function setPointsPerBlock(uint256 _pointsPerBlock) external;
     function setBoosterMultiplier(uint256 _boosterMultiplier) external;
@@ -112,7 +108,6 @@ interface ISophonFarming {
     function bridgePool(uint256 _pid, uint256 _mintValue, address sophToken) external;
     function revertFailedBridge(uint256 _pid) external;
     function increaseBoost(uint256 _pid, uint256 _boostAmount) external;
-    function bridgeProceeds(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external;
     function getPoolInfo() external view returns (PoolInfo[] memory);
     function getOptimizedUserInfo(address[] memory _users) external view returns (uint256[4][][] memory);
     function getPendingPoints(address[] memory _users) external view returns (uint256[][] memory);
