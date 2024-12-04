@@ -48,7 +48,15 @@ Part 1
       ```
       mintValue = 100e18 # SOPH transaction cost
       pool_length = SF.poolLength()
-      for pid in range(pool_length):
+      SOPH.approve(SF, 2**256-1, {'from': deployer, "gas_price": Wei("20 gwei")})
+      for pid in range(7, pool_length):
+         if pid == 4: # skipping BEAM_
+            print("Skipping PID 4")
+            continue  # Skip PID 4
+         if pid == 7: # custom bridge USDC
+            SF.bridgeUSDC(mintValue, SOPH, BRIDGEHUB, {'from': deployer, "gas_price": Wei("20 gwei")})
+            print(f"Bridged Pool ID: {pid} with Mint Value: {mintValue}")
+            continue
          SF.bridgePool(pid, mintValue, SOPH, {'from': deployer, "gas_price": Wei("20 gwei")})
          print(f"Bridged Pool ID: {pid} with Mint Value: {mintValue}")
 

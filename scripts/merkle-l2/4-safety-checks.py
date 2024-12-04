@@ -1,15 +1,6 @@
 import json
 from decimal import Decimal
-file_path = ('./scripts/merkle-l2/output/3-update-user-info.json')
-
-BEAM_LP_PID = 4
-BEAM_LP_RATIO_PER_USER = {}
-BEAM_PID = 3
-WST_ETH_PID = 1
-# TODO define below constants before running script
-# those values are the result of remove_liquidity
-BEAM_LP_BEAM_AMNT = 338772070642810842922352640
-BEAM_LP_WETH_AMNT = 1790561714199384555520
+file_path = ('./scripts/merkle-l2/output/1-userinfo-poolinfo.json')
 
 
 # there are couple of rules to verify

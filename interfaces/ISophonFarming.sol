@@ -106,6 +106,7 @@ interface ISophonFarming {
     function depositWeth(uint256 _amount, uint256 _boostAmount, PredefinedPool predefinedPool) external;
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external;
     function bridgePool(uint256 _pid, uint256 _mintValue, address sophToken) external;
+    function bridgeUSDC(uint256 _mintValue, address _sophToken, IBridgehub _bridge) external;
     function revertFailedBridge(uint256 _pid) external;
     function increaseBoost(uint256 _pid, uint256 _boostAmount) external;
     function getPoolInfo() external view returns (PoolInfo[] memory);
