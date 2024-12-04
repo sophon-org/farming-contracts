@@ -63,9 +63,20 @@ Part 1
       ```
 
 Part 2
-   TODO
+1) collect user info
+   ```
+   exec(open("./scripts/merkle-l2/1-collect-userinfo-poolinfo.py").read())
+   ```
+2) verify user info
+   ```
+   exec(open("./scripts/merkle-l2/4-safety-checks.py").read())
+   ```
+3) generate proof
+   ```
+   node ./scripts/merkle-l2/5-build-merkle-tree.js
+   ```
 
 Part 3
 1) Deploy MA = MerkleAirdop.sol
 2) call `SF_L2.setMerkleRoot`
-3) 
+3) call `SF_L2.addPool` for each pool !!! order is important
