@@ -160,6 +160,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             revert FarmingIsEnded();
         }
 
+        if (_priceFeed == address(0)) {
+            revert PriceFeedNotSet();
+        }
+
         if (_newPointsPerBlock != 0) {
             setPointsPerBlock(_newPointsPerBlock);
         } else {
@@ -194,10 +198,8 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolValue storage pv = poolValue[pid];
         pv.emissionsMultiplier = _emissionsMultiplier;
-        if (_priceFeed != address(0)) {
-            pv.feed = _priceFeed;
-            emit SetPriceFeed(address(0), _priceFeed);
-        }
+        pv.feed = _priceFeed;
+        emit SetPriceFeed(address(0), _priceFeed);
 
         emit Add(_lpToken, pid, 0);
 
