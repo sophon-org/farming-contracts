@@ -87,6 +87,7 @@ interface ISophonFarming {
 
     function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _initialPoolStartBlock, uint256 _boosterMultiplier) external;
     function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external returns (uint256);
+    function addPool( uint256 _pid, IERC20 _lpToken, address _l2Farm, uint256 _amount, uint256 _boostAmount, uint256 _depositAmount, uint256 _allocPoint, uint256 _lastRewardBlock, uint256 _accPointsPerShare, uint256 _totalRewards, string memory _description, uint256 _heldProceeds) external;
     function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external;
     function poolLength() external view returns (uint256);
     function isFarmingEnded() external view returns (bool);

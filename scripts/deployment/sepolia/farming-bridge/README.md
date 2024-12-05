@@ -78,5 +78,45 @@ Part 2
 
 Part 3
 1) Deploy MA = MerkleAirdop.sol
+   ```
+   exec(open("./scripts/env/sophon-testnet.py").read())
+   deployer = accounts.load("sophon_sepolia")
+   proxy = UUPSProxy.deploy(
+         MAImpl.address,
+         MAImpl.initialize.encode_input(SF_L2),
+         {'from': deployer}
+   )
+
+   ```
 2) call `SF_L2.setMerkleRoot`
+   ```
+   MA.setMerkleRoot(merkleRoot, {"from": deployer})
+   ```
 3) call `SF_L2.addPool` for each pool !!! order is important
+   ```
+      exec(open("./scripts/env/sophon-testnet.py").read())
+      deployer = accounts.load("sophon_sepolia")
+      import json
+      file_path = ('./scripts/merkle-l2/output/1-userinfo-poolinfo.json')
+      with open(file_path, 'r', encoding='utf-8') as file:
+         data = json.load(file)
+         pools = data.get('pools', [])
+         for pid, pool in enumerate(pools):
+            print(pool)
+            SF_L2.addPool(
+               pid,
+               pool["lpToken"],
+               pool["l2Farm"],
+               int(pool["amount"]),
+               int(pool["boostAmount"]),
+               int(pool["depositAmount"]),
+               int(pool["allocPoint"]),
+               int(pool["lastRewardBlock"]),
+               int(pool["accPointsPerShare"]),
+               int(pool["totalRewards"]),
+               pool["description"],
+               int(pool["heldProceeds"]),
+               {"from": deployer}
+            )
+
+   ```

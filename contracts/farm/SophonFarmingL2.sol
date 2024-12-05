@@ -96,7 +96,8 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         uint256 _heldProceeds
     ) public onlyOwner {
         require(_amount == _boostAmount + _depositAmount, "balances don't match");
-        poolInfo[_pid] = PoolInfo({
+
+        PoolInfo memory pool = PoolInfo({
             lpToken: _lpToken,
             l2Farm: _l2Farm,
             amount: _amount,
@@ -108,8 +109,17 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             totalRewards: _totalRewards,
             description: _description
         });
+
+        if (_pid < poolInfo.length) {
+            poolInfo[_pid] = pool;
+        } else if (_pid == poolInfo.length) {
+            poolInfo.push(pool);
+        } else {
+            revert("wrong pid");
+        }
         heldProceeds[_pid] = _heldProceeds;
-        require(IERC20(_lpToken).balanceOf(address(this)) >= _amount, "balances don't match");
+        // TODO 
+        // require(IERC20(_lpToken).balanceOf(address(this)) >= _amount, "balances don't match");
     }
 
     function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo) public {
