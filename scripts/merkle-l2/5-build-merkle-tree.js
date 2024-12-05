@@ -35,13 +35,20 @@ fs.readFile('./scripts/merkle-l2/output/1-userinfo-poolinfo.json', 'utf8', (err,
         
         claims = {}
         totalDepositAmount = {}
-        
+        console.log(leaves)
         leaves.forEach((leaf, index) => {
             proof = merkleTree.getProof(leaf).map(x => x.data.toString('hex'))
             
-            // console.log('proof:', proof);
+            console.log('proof:', proof);
+            console.log('users;', jsonData.users[index])
             userInfo = jsonData.users[index]
-            claims[userInfo.user] = {
+            // Initialize the user's claims array if it doesn't exist
+            if (!claims[userInfo.user]) {
+                claims[userInfo.user] = [];
+            }
+            
+            // Push the new claim into the user's claims array
+            claims[userInfo.user].push({
                 index: index,
                 user: userInfo.user,
                 pid: userInfo.pid,
@@ -51,7 +58,18 @@ fs.readFile('./scripts/merkle-l2/output/1-userinfo-poolinfo.json', 'utf8', (err,
                 rewardSettled: userInfo.userInfo.rewardSettled,
                 rewardDebt: userInfo.userInfo.rewardDebt,
                 proof: proof
-            }
+            });
+            // claims[userInfo.user] = {
+            //     index: index,
+            //     user: userInfo.user,
+            //     pid: userInfo.pid,
+            //     amount: userInfo.userInfo.amount,
+            //     boostAmount: userInfo.userInfo.boostAmount,
+            //     depositAmount: userInfo.userInfo.depositAmount,
+            //     rewardSettled: userInfo.userInfo.rewardSettled,
+            //     rewardDebt: userInfo.userInfo.rewardDebt,
+            //     proof: proof
+            // }
         });
         
         // console.log(totalDepositAmount);

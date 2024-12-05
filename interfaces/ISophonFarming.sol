@@ -126,6 +126,7 @@ interface ISophonFarming {
     function eETH() external view returns (address);
     function eETHLiquidityPool() external view returns (address);
     function weETH() external view returns (address);
+    function MERKLE() external view returns (address);
 
 
     function typeToId(PredefinedPool poolType) external view returns (uint256);

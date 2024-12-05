@@ -103,6 +103,7 @@ Part 3
          pools = data.get('pools', [])
          for pid, pool in enumerate(pools):
             print(pool)
+            # _lastRewardBlock should be the block from which farming is starting. it the same time approximately as SF_L1.endBlock
             SF_L2.addPool(
                pid,
                pool["lpToken"],
