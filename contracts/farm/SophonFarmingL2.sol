@@ -12,6 +12,7 @@ import "./interfaces/IwstETH.sol";
 import "./interfaces/IsDAI.sol";
 import "./interfaces/IeETHLiquidityPool.sol";
 import "./interfaces/IweETH.sol";
+import "./interfaces/IStork.sol";
 import "../proxies/Upgradeable2Step.sol";
 import "./SophonFarmingState.sol";
 
@@ -46,8 +47,8 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when setPointsPerBlock is called
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
 
-    /// @notice Emitted when the pool price feed is updated
-    event SetPriceFeed(address oldFeed, address newFeed);
+    /// @notice Emitted when the pool price feed data is updated
+    event SetPriceFeedData(bytes32 newHash, uint256 newStaleSeconds);
 
     error ZeroAddress();
     error PoolExists();
@@ -74,29 +75,24 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     error OnlyMerkle();
     error DuplicatePriceFeed();
     error PriceFeedNotSet();
+    error InvalidStaleSeconds();
     error InvalidPrice(uint256 pid, uint256 price);
     error InvalidValue(uint256 value);
 
     address public immutable MERKLE;
 
+    IStork public immutable stork;
+
     /**
      * @notice Construct SophonFarming
      */
-    constructor(address _MERKLE) {
+    constructor(address _MERKLE, address _stork) {
         MERKLE = _MERKLE;
-    }
 
-
-    function latestAnswer0() public view returns (uint256) {
-        return 1.0032e18;
-    }
-
-    function latestAnswer1() public view returns (uint256) {
-        return 3200e18;
-    }
-
-    function latestAnswer2() public view returns (uint256) {
-        return 0.00002046e18;
+        if (_stork == address(0)) {
+            revert ZeroAddress();
+        }
+        stork = IStork(_stork);
     }
 
     // Order is important
@@ -138,18 +134,18 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         userInfo[_pid][_user] = _userInfo;
     }
 
-
     /**
      * @notice Adds a new pool to the farm. Can only be called by the owner.
      * @param _lpToken lpToken address
-     * @param _priceFeed lpToken price feed address
+     * @param _priceFeedHash lpToken price feed hash
+     * @param _staleSeconds lpToken price stale seconds
      * @param _emissionsMultiplier multiplier for emissions fine tuning; use 0 or 1e18 for 1x
      * @param _description description of new pool
      * @param _poolStartBlock block at which points start to accrue for the pool
      * @param _newPointsPerBlock update global points per block; 0 means no update
      * @return uint256 The pid of the newly created asset
      */
-    function add(address _lpToken, address _priceFeed, uint256 _emissionsMultiplier, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
+    function add(address _lpToken, bytes32 _priceFeedHash, uint256 _staleSeconds, uint256 _emissionsMultiplier, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
         if (_lpToken == address(0)) {
             revert ZeroAddress();
         }
@@ -160,8 +156,11 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             revert FarmingIsEnded();
         }
 
-        if (_priceFeed == address(0)) {
+        if (_priceFeedHash == 0) {
             revert PriceFeedNotSet();
+        }
+        if (_staleSeconds == 0) {
+            revert InvalidStaleSeconds();
         }
 
         if (_newPointsPerBlock != 0) {
@@ -198,8 +197,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolValue storage pv = poolValue[pid];
         pv.emissionsMultiplier = _emissionsMultiplier;
-        pv.feed = _priceFeed;
-        emit SetPriceFeed(address(0), _priceFeed);
+        pv.feedHash = _priceFeedHash;
+        pv.staleSeconds = _staleSeconds;
+        emit SetPriceFeedData(_priceFeedHash, _staleSeconds);
 
         emit Add(_lpToken, pid, 0);
 
@@ -379,14 +379,20 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             user.rewardDebt;
     }
 
-    // zero pricefeed allowed; blocks updates to the pool
-    function setPriceFeed(uint256 _pid, address _newFeed) external onlyOwner {
-        address _oldFeed = poolValue[_pid].feed;
-        if (_newFeed == _oldFeed) {
+    // zero hash allowed; blocks updates to the pool
+    // zero stale seconds means no change
+    function setPriceFeedData(uint256 _pid, bytes32 _newHash, uint256 _newStaleSeconds) external onlyOwner {
+        PoolValue storage pv = poolValue[_pid];
+        if (_newHash == pv.feedHash) {
             revert DuplicatePriceFeed();
         }
-        poolValue[_pid].feed = _newFeed;
-        emit SetPriceFeed(_oldFeed, _newFeed);
+
+        pv.feedHash = _newHash;
+        if (_newStaleSeconds != 0) {
+            pv.staleSeconds = _newStaleSeconds;
+        }
+
+        emit SetPriceFeedData(_newHash, _newStaleSeconds);
     }
 
     /**
@@ -476,31 +482,41 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         /* START Update Pool Weighting Block */
         PoolValue storage pv = poolValue[_pid];
-        address feed = pv.feed;
-        if (feed == address(0)) {
+        bytes32 feedHash = pv.feedHash;
+        if (feedHash == 0) {
             //revert PriceFeedNotSet();
             pool.lastRewardBlock = getBlockNumber();
             return;
         }
 
-        uint256 newPrice;
+        /* Feed Hashes
+        ATHUSD: '0x57744b683b8f4f907ef849039fc12760510242140bd5733e2fc9dc7557653f3e',
+        AZURUSD: '0xcd4bc8c9ccfd4a5f6d4369d06be0094ea723b8275ac7156dabfd5c6454aee625',
+        BEAMUSD: '0x7a103d78776b2ff5b0221e26ca533850e59f16be7381ccc952ada02e73beeef7',
+        PEPEUSD: '0x7740d9942fd36998a87156e36a2aa45d138b7679933e21fb59e01a005092c04f',
+        SDAIUSD: '0xf31e0ed7d2f9d8fe977679f2b18841571a064b9b072cf7daa755a526fe9579ec',
+        USDCUSD: '0x7416a56f222e196d0487dce8a1a8003936862e7a15092a91898d69fa8bce290c',
+        USDTUSD: '0x6dcd0a8fb0460d4f0f98c524e06c10c63377cd098b589c0b90314bfb55751558',
+        WBTCUSD: '0x1ddeb20108df88bf27cc4a55fff8489a99c37ae2917ce13927c6cdadf4128503',
+        WEETHUSD: '0x2778ff4ef448d972c023c579b2bff9c55d48d0fde830dcdd72fff8189c01993e',
+        ZENTUSD: '0x01754fec1fe1377161a2abd3ba6b7ccbdc47d66f7a4c169532cdf8c16d082255'
+        */
+        IStork.TemporalNumericValue memory storkValue = stork.getTemporalNumericValueUnsafeV1(feedHash);
 
-        /* BEGIN Dummy Feeds */
-        // these are just mock prices until we get actual Stork feeds
-        if (_pid % 3 == 0) {
-            newPrice = latestAnswer0();
-        } else if (_pid % 3 == 1) {
-            newPrice = latestAnswer1();
-        } else {
-            newPrice = latestAnswer2();
-        }
-        /* END Dummy Feeds */
-
-        if (newPrice == 0) {
-            //revert InvalidPrice(_pid, newPrice);
+        /* TODO
+        if (block.timestamp - (storkValue.timestampNs / 1000000000) > pv.staleSeconds) {
+            // stale price
             pool.lastRewardBlock = getBlockNumber();
             return;
         }
+        */
+
+        if (storkValue.quantizedValue <= 0) {
+            // invalid price
+            pool.lastRewardBlock = getBlockNumber();
+            return;
+        }
+        uint256 newPrice = uint256(uint192(storkValue.quantizedValue));
 
         uint256 newValue = lpSupply * newPrice / 1e18;
         newValue = newValue * pv.emissionsMultiplier / 1e18;
