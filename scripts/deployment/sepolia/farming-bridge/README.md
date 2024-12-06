@@ -113,7 +113,7 @@ Part 3
                int(pool["boostAmount"]),
                int(pool["depositAmount"]),
                int(pool["allocPoint"]),
-               int(pool["lastRewardBlock"]),
+               lastRewardBlock, # this will start farming right immediately.
                int(pool["accPointsPerShare"]),
                int(pool["totalRewards"]),
                pool["description"],
@@ -134,4 +134,9 @@ Part 4 - how to start farming on l2 setting points per block
 
    ```
    SF_L2.setPointsPerBlock(852000000000000000000, {"from": deployer})
+   ```
+
+   ```
+   >>> SF.totalAllocPoint()
+   770000
    ```

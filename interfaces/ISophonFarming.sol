@@ -141,6 +141,7 @@ interface ISophonFarming {
     function endBlockForWithdrawals() external view returns (uint256);
     function bridge() external view returns (address);
     function isBridged(uint256 poolId) external view returns (bool);
+    function setTotalAllocPoint(uint256 _totalAllocPoint) external;
     function transferPoints(uint256 _pid, address _sender, address _receiver, uint256 _transferAmount) external;
     
     
