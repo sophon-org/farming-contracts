@@ -97,6 +97,7 @@ Part 3
       exec(open("./scripts/env/sophon-testnet.py").read())
       deployer = accounts.load("sophon_sepolia")
       import json
+      lastRewardBlock = chain.height
       file_path = ('./scripts/merkle-l2/output/1-userinfo-poolinfo.json')
       with open(file_path, 'r', encoding='utf-8') as file:
          data = json.load(file)
@@ -120,4 +121,17 @@ Part 3
                {"from": deployer}
             )
 
+   ```
+
+Part 4 - how to start farming on l2 setting points per block
+   old value - 12 sec block
+   ```
+   SF.pointsPerBlock()
+   71000000000000000000
+   ```
+
+   assuming 1 sec block have to multiply by 12 =  852000000000000000000
+
+   ```
+   SF_L2.setPointsPerBlock(852000000000000000000, {"from": deployer})
    ```

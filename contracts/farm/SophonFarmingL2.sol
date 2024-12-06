@@ -45,6 +45,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
     /// @notice Emitted when setPointsPerBlock is called
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
+    event SetTotalAllocPoint(uint256 newValue);
 
     error ZeroAddress();
     error PoolExists();
@@ -118,7 +119,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             revert("wrong pid");
         }
         heldProceeds[_pid] = _heldProceeds;
-        // TODO 
+        poolExists[address(_lpToken)] = true;
         // require(IERC20(_lpToken).balanceOf(address(this)) >= _amount, "balances don't match");
     }
 
@@ -291,6 +292,15 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         massUpdatePools();
         emit SetPointsPerBlock(pointsPerBlock, _pointsPerBlock);
         pointsPerBlock = _pointsPerBlock;
+    }
+
+    /**
+     * @notice Set total points
+     * @param _totalAllocPoint total total  alloc points
+     */
+    function setTotalAllocPoint(uint256 _totalAllocPoint) virtual public onlyOwner {
+        totalAllocPoint = _totalAllocPoint;
+        emit SetTotalAllocPoint(_totalAllocPoint);
     }
 
     /**
