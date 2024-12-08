@@ -1,8 +1,9 @@
 MAImpl = "0xAd2f55875c0768f8f9ba9c169f5A7d5D6790b7B3"
 MA = MerkleAirdrop.at("0x09E6E747f47c14CF29adf7a81EBBcF7e08293908")
-SFIMPL = SophonFarmingL2.at("0x5701Ebf0FC165a1d5287118663f6868c4Eb0108c")
-SFProxy = SophonFarmingProxy.at("0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9")
-SF_L2 = interface.ISophonFarming(SFProxy)
+SFProxy = SophonFarmingL2.at("0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9")
+SF_L2 = interface.ISophonFarming("0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9")
+# SF_L2 = SophonFarmingL2.at("0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9")
+STORK = interface.IStork("0x6a2ab154d7c5Ba9fdea6d8A0C79818A4463a63f9")
 
 
 AZURO = interface.IERC20Metadata("0x817CE2375d2D609A61125AD39FeF97AB64Fd6127")

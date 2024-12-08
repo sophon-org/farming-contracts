@@ -143,6 +143,12 @@ interface ISophonFarming {
     function isBridged(uint256 poolId) external view returns (bool);
     function setTotalAllocPoint(uint256 _totalAllocPoint) external;
     function transferPoints(uint256 _pid, address _sender, address _receiver, uint256 _transferAmount) external;
+    function poolValue(uint256 pid) external view returns (
+        bytes32 feedHash,
+        uint256 staleSeconds,
+        uint256 lastValue,
+        uint256 emissionsMultiplier
+    );
     
     
     function pendingOwner() external view returns (address);
@@ -156,5 +162,5 @@ interface ISophonFarming {
     function implementation() external view returns (address);
     function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external;
     function setL2Farm(uint256 _pid, address _l2Farm) external;
-    
+    function setPriceFeedData(uint256 _pid, bytes32 _newHash, uint256 _newStaleSeconds) external;
 }

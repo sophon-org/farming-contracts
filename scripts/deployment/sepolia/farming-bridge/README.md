@@ -140,3 +140,34 @@ Part 4 - how to start farming on l2 setting points per block
    >>> SF.totalAllocPoint()
    770000
    ```
+
+
+   Part 4- set price feeds
+
+      
+      0,    SDAIUSD: '0xf31e0ed7d2f9d8fe977679f2b18841571a064b9b072cf7daa755a526fe9579ec',
+      1,    
+      2,    WEETHUSD: '0x2778ff4ef448d972c023c579b2bff9c55d48d0fde830dcdd72fff8189c01993e',
+      3,    BEAMUSD: '0x7a103d78776b2ff5b0221e26ca533850e59f16be7381ccc952ada02e73beeef7',
+      4,    
+      5,    ZENTUSD: '0x01754fec1fe1377161a2abd3ba6b7ccbdc47d66f7a4c169532cdf8c16d082255'
+      6,    USDCUSD: '0x7416a56f222e196d0487dce8a1a8003936862e7a15092a91898d69fa8bce290c',
+      7,    ATHUSD: '0x57744b683b8f4f907ef849039fc12760510242140bd5733e2fc9dc7557653f3e',
+      8,    PEPEUSD: '0x7740d9942fd36998a87156e36a2aa45d138b7679933e21fb59e01a005092c04f',
+      9,    WBTCUSD: '0x1ddeb20108df88bf27cc4a55fff8489a99c37ae2917ce13927c6cdadf4128503',
+      10,   AZURUSD: '0xcd4bc8c9ccfd4a5f6d4369d06be0094ea723b8275ac7156dabfd5c6454aee625',
+      11,   USDTUSD: '0x6dcd0a8fb0460d4f0f98c524e06c10c63377cd098b589c0b90314bfb55751558',
+      12,   
+      13,   
+      14    
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
