@@ -75,7 +75,8 @@ contract SophonFarmingState {
         uint256 lastValue;
         uint256 emissionsMultiplier;
     }
-    PoolValue[] public poolValue;
+    
+    mapping(uint256 pid => PoolValue) public poolValue;
 
     uint256 public totalValue;
 }
