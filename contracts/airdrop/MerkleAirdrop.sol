@@ -20,6 +20,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
 
     event Claimed(address indexed account, uint256 pid);
     event MerkleRootUpdated(bytes32 newMerkleRoot);
+    event SFL2AddressUpdated(address indexed oldAddress, address indexed newAddress);
 
     error AlreadyClaimed();
     error InvalidMerkleProof();
@@ -48,6 +49,17 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     function setMerkleRoot(bytes32 _merkleRoot) external onlyRole(ADMIN_ROLE) {
         merkleRoot = _merkleRoot;
         emit MerkleRootUpdated(_merkleRoot);
+    }
+
+    /**
+     * @dev Sets or updates the SF_L2 contract address.
+     * @param _SF_L2 The address of the new SophonFarmingL2 contract.
+     */
+    function setSFL2(address _SF_L2) external onlyRole(ADMIN_ROLE) {
+        require(_SF_L2 != address(0), "Invalid address");
+        address oldAddress = address(SF_L2);
+        SF_L2 = SophonFarmingL2(_SF_L2);
+        emit SFL2AddressUpdated(oldAddress, _SF_L2);
     }
 
 

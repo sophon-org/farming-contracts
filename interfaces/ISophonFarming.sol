@@ -87,6 +87,7 @@ interface ISophonFarming {
 
     function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _initialPoolStartBlock, uint256 _boosterMultiplier) external;
     function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external returns (uint256);
+    function addPool( uint256 _pid, IERC20 _lpToken, address _l2Farm, uint256 _amount, uint256 _boostAmount, uint256 _depositAmount, uint256 _allocPoint, uint256 _lastRewardBlock, uint256 _accPointsPerShare, uint256 _totalRewards, string memory _description, uint256 _heldProceeds) external;
     function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external;
     function poolLength() external view returns (uint256);
     function isFarmingEnded() external view returns (bool);
@@ -106,6 +107,7 @@ interface ISophonFarming {
     function depositWeth(uint256 _amount, uint256 _boostAmount, PredefinedPool predefinedPool) external;
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external;
     function bridgePool(uint256 _pid, uint256 _mintValue, address sophToken) external;
+    function bridgeUSDC(uint256 _mintValue, address _sophToken, IBridgehub _bridge) external;
     function revertFailedBridge(uint256 _pid) external;
     function increaseBoost(uint256 _pid, uint256 _boostAmount) external;
     function getPoolInfo() external view returns (PoolInfo[] memory);
@@ -124,6 +126,7 @@ interface ISophonFarming {
     function eETH() external view returns (address);
     function eETHLiquidityPool() external view returns (address);
     function weETH() external view returns (address);
+    function MERKLE() external view returns (address);
 
 
     function typeToId(PredefinedPool poolType) external view returns (uint256);
@@ -138,6 +141,7 @@ interface ISophonFarming {
     function endBlockForWithdrawals() external view returns (uint256);
     function bridge() external view returns (address);
     function isBridged(uint256 poolId) external view returns (bool);
+    function setTotalAllocPoint(uint256 _totalAllocPoint) external;
     function transferPoints(uint256 _pid, address _sender, address _receiver, uint256 _transferAmount) external;
     
     

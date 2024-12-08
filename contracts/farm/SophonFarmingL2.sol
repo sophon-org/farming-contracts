@@ -46,6 +46,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
     /// @notice Emitted when setPointsPerBlock is called
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
+    event SetTotalAllocPoint(uint256 newValue);
 
     /// @notice Emitted when the pool price feed data is updated
     event SetPriceFeedData(bytes32 newHash, uint256 newStaleSeconds);
@@ -111,7 +112,8 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         uint256 _heldProceeds
     ) public onlyOwner {
         require(_amount == _boostAmount + _depositAmount, "balances don't match");
-        poolInfo[_pid] = PoolInfo({
+
+        PoolInfo memory pool = PoolInfo({
             lpToken: _lpToken,
             l2Farm: _l2Farm,
             amount: _amount,
@@ -123,8 +125,17 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             totalRewards: _totalRewards,
             description: _description
         });
+
+        if (_pid < poolInfo.length) {
+            poolInfo[_pid] = pool;
+        } else if (_pid == poolInfo.length) {
+            poolInfo.push(pool);
+        } else {
+            revert("wrong pid");
+        }
         heldProceeds[_pid] = _heldProceeds;
-        require(IERC20(_lpToken).balanceOf(address(this)) >= _amount, "balances don't match");
+        poolExists[address(_lpToken)] = true;
+        // require(IERC20(_lpToken).balanceOf(address(this)) >= _amount, "balances don't match");
     }
 
     function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo) public {
@@ -315,6 +326,15 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         massUpdatePools();
         emit SetPointsPerBlock(pointsPerBlock, _pointsPerBlock);
         pointsPerBlock = _pointsPerBlock;
+    }
+
+    /**
+     * @notice Set total points
+     * @param _totalAllocPoint total total  alloc points
+     */
+    function setTotalAllocPoint(uint256 _totalAllocPoint) virtual public onlyOwner {
+        totalAllocPoint = _totalAllocPoint;
+        emit SetTotalAllocPoint(_totalAllocPoint);
     }
 
     /**
