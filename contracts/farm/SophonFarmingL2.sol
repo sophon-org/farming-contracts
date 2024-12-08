@@ -12,6 +12,7 @@ import "./interfaces/IwstETH.sol";
 import "./interfaces/IsDAI.sol";
 import "./interfaces/IeETHLiquidityPool.sol";
 import "./interfaces/IweETH.sol";
+import "./interfaces/IStork.sol";
 import "../proxies/Upgradeable2Step.sol";
 import "./SophonFarmingState.sol";
 
@@ -47,6 +48,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
     event SetTotalAllocPoint(uint256 newValue);
 
+    /// @notice Emitted when the pool price feed data is updated
+    event SetPriceFeedData(bytes32 newHash, uint256 newStaleSeconds);
+
     error ZeroAddress();
     error PoolExists();
     error PoolDoesNotExist();
@@ -70,16 +74,27 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     error BoostIsZero();
     error BridgeInvalid();
     error OnlyMerkle();
+    error DuplicatePriceFeed();
+    error PriceFeedNotSet();
+    error InvalidStaleSeconds();
+    error InvalidPrice(uint256 pid, uint256 price);
+    error InvalidValue(uint256 value);
 
     address public immutable MERKLE;
+
+    IStork public immutable stork;
 
     /**
      * @notice Construct SophonFarming
      */
-    constructor(address _MERKLE) {
+    constructor(address _MERKLE, address _stork) {
         MERKLE = _MERKLE;
-    }
 
+        if (_stork == address(0)) {
+            revert ZeroAddress();
+        }
+        stork = IStork(_stork);
+    }
 
     // Order is important
     function addPool(
@@ -130,17 +145,18 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         userInfo[_pid][_user] = _userInfo;
     }
 
-
     /**
      * @notice Adds a new pool to the farm. Can only be called by the owner.
-     * @param _allocPoint alloc point for new pool
      * @param _lpToken lpToken address
+     * @param _priceFeedHash lpToken price feed hash
+     * @param _staleSeconds lpToken price stale seconds
+     * @param _emissionsMultiplier multiplier for emissions fine tuning; use 0 or 1e18 for 1x
      * @param _description description of new pool
      * @param _poolStartBlock block at which points start to accrue for the pool
      * @param _newPointsPerBlock update global points per block; 0 means no update
      * @return uint256 The pid of the newly created asset
      */
-    function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
+    function add(address _lpToken, bytes32 _priceFeedHash, uint256 _staleSeconds, uint256 _emissionsMultiplier, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
         if (_lpToken == address(0)) {
             revert ZeroAddress();
         }
@@ -151,6 +167,13 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             revert FarmingIsEnded();
         }
 
+        if (_priceFeedHash == 0) {
+            revert PriceFeedNotSet();
+        }
+        if (_staleSeconds == 0) {
+            revert InvalidStaleSeconds();
+        }
+
         if (_newPointsPerBlock != 0) {
             setPointsPerBlock(_newPointsPerBlock);
         } else {
@@ -159,7 +182,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         uint256 lastRewardBlock =
             getBlockNumber() > _poolStartBlock ? getBlockNumber() : _poolStartBlock;
-        totalAllocPoint = totalAllocPoint + _allocPoint;
         poolExists[_lpToken] = true;
 
         uint256 pid = poolInfo.length;
@@ -171,7 +193,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
                 amount: 0,
                 boostAmount: 0,
                 depositAmount: 0,
-                allocPoint: _allocPoint,
+                allocPoint: 0,
                 lastRewardBlock: lastRewardBlock,
                 accPointsPerShare: 0,
                 totalRewards: 0,
@@ -179,7 +201,18 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             })
         );
 
-        emit Add(_lpToken, pid, _allocPoint);
+        if (_emissionsMultiplier == 0) {
+            // set multiplier to 1x
+            _emissionsMultiplier = 1e18;
+        }
+
+        PoolValue storage pv = poolValue[pid];
+        pv.emissionsMultiplier = _emissionsMultiplier;
+        pv.feedHash = _priceFeedHash;
+        pv.staleSeconds = _staleSeconds;
+        emit SetPriceFeedData(_priceFeedHash, _staleSeconds);
+
+        emit Add(_lpToken, pid, 0);
 
         return pid;
     }
@@ -187,11 +220,11 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     /**
      * @notice Updates the given pool's allocation point. Can only be called by the owner.
      * @param _pid The pid to update
-     * @param _allocPoint The new alloc point to set for the pool
+     * @param _emissionsMultiplier multiplier for emissions fine tuning; use 0 for no update OR 1e18 for 1x
      * @param _poolStartBlock block at which points start to accrue for the pool; 0 means no update
      * @param _newPointsPerBlock update global points per block; 0 means no update
      */
-    function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external onlyOwner {
+    function set(uint256 _pid, uint256 _emissionsMultiplier, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -207,8 +240,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         if (lpToken == address(0) || !poolExists[lpToken]) {
             revert PoolDoesNotExist();
         }
-        totalAllocPoint = totalAllocPoint - pool.allocPoint + _allocPoint;
-        pool.allocPoint = _allocPoint;
+
+        if (_emissionsMultiplier != 0) {
+            poolValue[_pid].emissionsMultiplier = _emissionsMultiplier;
+        }
 
         // pool starting block is updated if farming hasn't started and _poolStartBlock is non-zero
         if (_poolStartBlock != 0 && getBlockNumber() < pool.lastRewardBlock) {
@@ -216,7 +251,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
                 getBlockNumber() > _poolStartBlock ? getBlockNumber() : _poolStartBlock;
         }
 
-        emit Set(lpToken, _pid, _allocPoint);
+        emit Set(lpToken, _pid, 0);
     }
 
     /**
@@ -252,7 +287,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             return false;
         }
     }
-
 
     /**
      * @notice Set the end block of the farm
@@ -365,6 +399,22 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             user.rewardDebt;
     }
 
+    // zero hash allowed; blocks updates to the pool
+    // zero stale seconds means no change
+    function setPriceFeedData(uint256 _pid, bytes32 _newHash, uint256 _newStaleSeconds) external onlyOwner {
+        PoolValue storage pv = poolValue[_pid];
+        if (_newHash == pv.feedHash) {
+            revert DuplicatePriceFeed();
+        }
+
+        pv.feedHash = _newHash;
+        if (_newStaleSeconds != 0) {
+            pv.staleSeconds = _newStaleSeconds;
+        }
+
+        emit SetPriceFeedData(_newHash, _newStaleSeconds);
+    }
+
     /**
      * @notice Returns accPointsPerShare and totalRewards to date for the pool
      * @param _pid pid of the pool
@@ -378,14 +428,15 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         totalRewards = pool.totalRewards;
 
         uint256 lpSupply = pool.amount;
-        if (getBlockNumber() > pool.lastRewardBlock && lpSupply != 0) {
+        uint256 _totalValue = totalValue;
+        if (getBlockNumber() > pool.lastRewardBlock && lpSupply != 0 && _totalValue != 0) {
             uint256 blockMultiplier = _getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
 
             uint256 pointReward =
                 blockMultiplier *
                 pointsPerBlock *
-                pool.allocPoint /
-                totalAllocPoint;
+                poolValue[_pid].lastValue /
+                _totalValue;
 
             totalRewards = totalRewards + pointReward / 1e18;
 
@@ -409,9 +460,17 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @notice Update accounting of all pools
      */
     function massUpdatePools() public {
+        massUpdatePools(false);
+    }
+
+    /**
+     * @notice Update accounting of all pools
+     * @param _silent emit event if false
+     */
+    function massUpdatePools(bool _silent) public {
         uint256 length = poolInfo.length;
         for(uint256 pid = 0; pid < length; ++pid) {
-            updatePool(pid);
+            updatePool(pid, _silent);
         }
     }
 
@@ -420,6 +479,15 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid to update
      */
     function updatePool(uint256 _pid) public {
+        updatePool(_pid, false);
+    }
+
+    /**
+     * @notice Updating accounting of a single pool
+     * @param _pid pid to update
+     * @param _silent emit event if false
+     */
+    function updatePool(uint256 _pid, bool _silent) public {
         PoolInfo storage pool = poolInfo[_pid];
         if (getBlockNumber() <= pool.lastRewardBlock) {
             return;
@@ -431,12 +499,63 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             pool.lastRewardBlock = getBlockNumber();
             return;
         }
+
+        /* START Update Pool Weighting Block */
+        PoolValue storage pv = poolValue[_pid];
+        bytes32 feedHash = pv.feedHash;
+        if (feedHash == 0) {
+            //revert PriceFeedNotSet();
+            pool.lastRewardBlock = getBlockNumber();
+            return;
+        }
+
+        /* Feed Hashes
+        ATHUSD: '0x57744b683b8f4f907ef849039fc12760510242140bd5733e2fc9dc7557653f3e',
+        AZURUSD: '0xcd4bc8c9ccfd4a5f6d4369d06be0094ea723b8275ac7156dabfd5c6454aee625',
+        BEAMUSD: '0x7a103d78776b2ff5b0221e26ca533850e59f16be7381ccc952ada02e73beeef7',
+        PEPEUSD: '0x7740d9942fd36998a87156e36a2aa45d138b7679933e21fb59e01a005092c04f',
+        SDAIUSD: '0xf31e0ed7d2f9d8fe977679f2b18841571a064b9b072cf7daa755a526fe9579ec',
+        USDCUSD: '0x7416a56f222e196d0487dce8a1a8003936862e7a15092a91898d69fa8bce290c',
+        USDTUSD: '0x6dcd0a8fb0460d4f0f98c524e06c10c63377cd098b589c0b90314bfb55751558',
+        WBTCUSD: '0x1ddeb20108df88bf27cc4a55fff8489a99c37ae2917ce13927c6cdadf4128503',
+        WEETHUSD: '0x2778ff4ef448d972c023c579b2bff9c55d48d0fde830dcdd72fff8189c01993e',
+        ZENTUSD: '0x01754fec1fe1377161a2abd3ba6b7ccbdc47d66f7a4c169532cdf8c16d082255'
+        */
+        IStork.TemporalNumericValue memory storkValue = stork.getTemporalNumericValueUnsafeV1(feedHash);
+
+        /* TODO
+        if (block.timestamp - (storkValue.timestampNs / 1000000000) > pv.staleSeconds) {
+            // stale price
+            pool.lastRewardBlock = getBlockNumber();
+            return;
+        }
+        */
+
+        if (storkValue.quantizedValue <= 0) {
+            // invalid price
+            pool.lastRewardBlock = getBlockNumber();
+            return;
+        }
+        uint256 newPrice = uint256(uint192(storkValue.quantizedValue));
+
+        uint256 newValue = lpSupply * newPrice / 1e18;
+        newValue = newValue * pv.emissionsMultiplier / 1e18;
+        if (newValue == 0) {
+            //revert InvalidValue(newValue);
+            pool.lastRewardBlock = getBlockNumber();
+            return;
+        }
+
+        totalValue = totalValue - pv.lastValue + newValue;
+        pv.lastValue = newValue;
+        /* END Update Pool Weighting Block */
+
         uint256 blockMultiplier = _getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
         uint256 pointReward =
             blockMultiplier *
             _pointsPerBlock *
-            _allocPoint /
-            totalAllocPoint;
+            newValue /
+            totalValue;
 
         pool.totalRewards = pool.totalRewards + pointReward / 1e18;
 
@@ -446,7 +565,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         pool.lastRewardBlock = getBlockNumber();
 
-        emit PoolUpdated(_pid);
+        if (!_silent) {
+            emit PoolUpdated(_pid);
+        }
     }
 
     /**
@@ -484,7 +605,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
+        massUpdatePools(true);
 
         uint256 userAmount = user.amount;
 
@@ -545,7 +666,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
+        massUpdatePools(true);
 
         uint256 userAmount = user.amount;
 
@@ -608,7 +729,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
+        massUpdatePools(true);
 
         uint256 userDepositAmount = user.depositAmount;
 
@@ -644,7 +765,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         emit Withdraw(msg.sender, _pid, _withdrawAmount);
     }
 
-
     /**
      * @notice Called by an whitelisted admin to transfer points to another user
      * @param _pid pid of the pool to transfer points from
@@ -668,7 +788,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             revert PoolDoesNotExist();
         }
 
-        updatePool(_pid);
+        massUpdatePools(true);
         uint256 accPointsPerShare = pool.accPointsPerShare;
 
         UserInfo storage userFrom = userInfo[_pid][_sender];
