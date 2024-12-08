@@ -171,7 +171,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
             pool.accPointsPerShare /
             1e18;
 
-        SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo);
+        SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo, pool.accPointsPerShare);
         emit Claimed(_user, _pid);
     }
 

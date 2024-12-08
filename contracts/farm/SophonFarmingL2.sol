@@ -138,13 +138,27 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         // require(IERC20(_lpToken).balanceOf(address(this)) >= _amount, "balances don't match");
     }
 
-    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo) public {
+    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo, uint256 accPointsPerShare) public {
         if(msg.sender != MERKLE) revert OnlyMerkle();
         require(_userInfo.amount == _userInfo.boostAmount + _userInfo.depositAmount, "balances don't match");
 
         // TODO handle the situation when user already deposited before claiming
-        
-        userInfo[_pid][_user] = _userInfo;
+        UserInfo storage user = userInfo[_pid][_user];
+        uint256 newUserAmount = user.amount + _userInfo.amount;
+
+        user.rewardSettled =
+            _userInfo.amount *
+            accPointsPerShare /
+            1e18 +
+            user.rewardSettled -
+            user.rewardDebt;
+
+        user.rewardDebt = newUserAmount *
+            accPointsPerShare /
+            1e18;
+
+        user.amount = newUserAmount;
+
     }
 
     /**
