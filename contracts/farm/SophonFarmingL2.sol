@@ -206,6 +206,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             _emissionsMultiplier = 1e18;
         }
 
+        if (poolValue.length <= pid) {
+            poolValue.push();
+        }
+
         PoolValue storage pv = poolValue[pid];
         pv.emissionsMultiplier = _emissionsMultiplier;
         pv.feedHash = _priceFeedHash;
@@ -402,6 +406,11 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     // zero hash allowed; blocks updates to the pool
     // zero stale seconds means no change
     function setPriceFeedData(uint256 _pid, bytes32 _newHash, uint256 _newStaleSeconds) external onlyOwner {
+        // Ensure poolValue[_pid] exists. If not, push a new element.
+        if (poolValue.length <= _pid) {
+            poolValue.push();
+        }
+
         PoolValue storage pv = poolValue[_pid];
         if (_newHash == pv.feedHash) {
             revert DuplicatePriceFeed();
