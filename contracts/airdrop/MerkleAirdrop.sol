@@ -17,6 +17,22 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     // Changed mapping to track claims per user per PID
     mapping(address => mapping(uint256 => bool)) public hasClaimed;
 
+        // Info of each pool.
+    struct PoolInfo {
+        IERC20 lpToken; // Address of LP token contract.
+        address l2Farm; // Address of the farming contract on Sophon chain
+        uint256 amount; // total amount of LP tokens earning yield from deposits and boosts
+        uint256 boostAmount; // total boosted value purchased by users
+        uint256 depositAmount; // remaining deposits not applied to a boost purchases
+        uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
+        uint256 lastRewardBlock; // Last block number that points distribution occurs.
+        uint256 accPointsPerShare; // Accumulated points per share.
+        uint256 totalRewards; // Total rewards earned by the pool.
+        string description; // Description of pool.
+    }
+
+    PoolInfo[] public poolInfo;
+
 
     event Claimed(address indexed account, uint256 pid);
     event MerkleRootUpdated(bytes32 newMerkleRoot);
@@ -30,6 +46,50 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
+    }
+
+
+    // Order is important
+    function addPool(
+        uint256 _pid,
+        IERC20 _lpToken,
+        address _l2Farm,
+        uint256 _amount,
+        uint256 _boostAmount,
+        uint256 _depositAmount,
+        uint256 _allocPoint,
+        uint256 _lastRewardBlock,
+        uint256 _accPointsPerShare,
+        uint256 _totalRewards,
+        string memory _description,
+        uint256 _heldProceeds
+    ) public onlyRole(ADMIN_ROLE) {
+        require(_amount == _boostAmount + _depositAmount, "balances don't match");
+
+        PoolInfo memory pool = PoolInfo({
+            lpToken: _lpToken,
+            l2Farm: _l2Farm,
+            amount: _amount,
+            boostAmount: _boostAmount,
+            depositAmount: _depositAmount,
+            allocPoint: 0,
+            lastRewardBlock: _lastRewardBlock,
+            accPointsPerShare: 0,
+            totalRewards: _totalRewards,
+            description: _description
+        });
+
+        if (_pid < poolInfo.length) {
+            poolInfo[_pid] = pool;
+        } else if (_pid == poolInfo.length) {
+            poolInfo.push(pool);
+        } else {
+            revert("wrong pid");
+        }
+    }
+
+    function unclaim(address user, uint256 id) public onlyRole(ADMIN_ROLE) {
+        hasClaimed[user][id] = false; // Unset the boolean
     }
 
     function initialize(address _SF_L2) public initializer {
@@ -110,9 +170,10 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
 
         // Mark it claimed and transfer the tokens.
         hasClaimed[_user][_pid] = true;
+        
+        PoolInfo memory pool = poolInfo[_pid];
 
-        _userInfo.rewardSettled = 0;
-        SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo);
+        SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo, pool.accPointsPerShare);
         emit Claimed(_user, _pid);
     }
 
