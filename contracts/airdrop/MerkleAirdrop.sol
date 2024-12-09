@@ -173,12 +173,6 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         
         PoolInfo memory pool = poolInfo[_pid];
 
-        // below will reset pending points
-        _userInfo.rewardDebt = 0;
-        _userInfo.rewardDebt = _userInfo.amount *
-            pool.accPointsPerShare /
-            1e18;
-
         SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo, pool.accPointsPerShare);
         emit Claimed(_user, _pid);
     }
