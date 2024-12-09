@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IWeth.sol";
 import "./interfaces/IstETH.sol";
@@ -11,15 +12,15 @@ import "./interfaces/IwstETH.sol";
 import "./interfaces/IsDAI.sol";
 import "./interfaces/IeETHLiquidityPool.sol";
 import "./interfaces/IweETH.sol";
+import "./interfaces/IStork.sol";
 import "../proxies/Upgradeable2Step.sol";
 import "./SophonFarmingState.sol";
-import 'contracts/interfaces/uniswap/IUniswapV2Router02.sol';
 
 /**
  * @title Sophon Farming Contract
  * @author Sophon
  */
-contract SophonFarming is Upgradeable2Step, SophonFarmingState {
+contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     using SafeERC20 for IERC20;
 
     /// @notice Emitted when a new pool is added
@@ -40,17 +41,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when a user increases the boost of an existing deposit
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
 
-    /// @notice Emitted when all pool funds are bridged to Sophon blockchain
-    event BridgePool(address indexed user, uint256 indexed pid, uint256 amount);
-
-    /// @notice Emitted when the the revertFailedBridge function is called
-    event RevertFailedBridge(uint256 indexed pid);
-
     /// @notice Emitted when the the updatePool function is called
     event PoolUpdated(uint256 indexed pid);
 
     /// @notice Emitted when setPointsPerBlock is called
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
+    event SetTotalAllocPoint(uint256 newValue);
+
+    /// @notice Emitted when the pool price feed data is updated
+    event SetPriceFeedData(bytes32 newHash, uint256 newStaleSeconds);
 
     error ZeroAddress();
     error PoolExists();
@@ -74,101 +73,104 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     error BoostTooHigh(uint256 maxAllowed);
     error BoostIsZero();
     error BridgeInvalid();
+    error OnlyMerkle();
+    error DuplicatePriceFeed();
+    error PriceFeedNotSet();
+    error InvalidStaleSeconds();
+    error InvalidPrice(uint256 pid, uint256 price);
+    error InvalidValue(uint256 value);
 
-    address public immutable dai;
-    address public immutable sDAI;
-    address public immutable weth;
-    address public immutable stETH;
-    address public immutable wstETH;
-    address public immutable eETH;
-    address public immutable eETHLiquidityPool;
-    address public immutable weETH;
-    uint256 public immutable CHAINID;
-    uint256 internal constant BEAM_WEHT_PID = 4;
-    address internal constant PENDLE_EXCEPTION = 0x065347C1Dd7A23Aa043e3844B4D0746ff7715246;
+    address public immutable MERKLE;
+
+    IStork public immutable stork;
 
     /**
      * @notice Construct SophonFarming
-     * @param tokens_ Immutable token addresses
-     * @dev 0:dai, 1:sDAI, 2:weth, 3:stETH, 4:wstETH, 5:eETH, 6:eETHLiquidityPool, 7:weETH
      */
-    constructor(address[8] memory tokens_, uint256 _CHAINID) {
-        dai = tokens_[0];
-        sDAI = tokens_[1];
-        weth = tokens_[2];
-        stETH = tokens_[3];
-        wstETH = tokens_[4];
-        eETH = tokens_[5];
-        eETHLiquidityPool = tokens_[6];
-        weETH = tokens_[7];
-        CHAINID = _CHAINID;
+    constructor(address _MERKLE, address _stork) {
+        MERKLE = _MERKLE;
+
+        if (_stork == address(0)) {
+            revert ZeroAddress();
+        }
+        stork = IStork(_stork);
     }
 
-    /**
-     * @notice Allows direct deposits of ETH for deposit to the wstETH pool
-     */
-    receive() external payable {
-        if (msg.sender == weth) {
-            return;
-        }
+    // Order is important
+    function addPool(
+        uint256 _pid,
+        IERC20 _lpToken,
+        address _l2Farm,
+        uint256 _amount,
+        uint256 _boostAmount,
+        uint256 _depositAmount,
+        uint256 _allocPoint,
+        uint256 _lastRewardBlock,
+        uint256 _accPointsPerShare,
+        uint256 _totalRewards,
+        string memory _description,
+        uint256 _heldProceeds
+    ) public onlyOwner {
+        require(_amount == _boostAmount + _depositAmount, "balances don't match");
 
-        depositEth(0, PredefinedPool.wstETH);
+        PoolInfo memory pool = PoolInfo({
+            lpToken: _lpToken,
+            l2Farm: _l2Farm,
+            amount: _amount,
+            boostAmount: _boostAmount,
+            depositAmount: _depositAmount,
+            allocPoint: 0,
+            lastRewardBlock: _lastRewardBlock,
+            accPointsPerShare: 0,
+            totalRewards: _totalRewards,
+            description: _description
+        });
+
+        if (_pid < poolInfo.length) {
+            poolInfo[_pid] = pool;
+        } else if (_pid == poolInfo.length) {
+            poolInfo.push(pool);
+        } else {
+            revert("wrong pid");
+        }
+        heldProceeds[_pid] = _heldProceeds;
+        poolExists[address(_lpToken)] = true;
+        // require(IERC20(_lpToken).balanceOf(address(this)) >= _amount, "balances don't match");
     }
 
-    /**
-     * @notice Initialize the farm
-     * @param wstEthAllocPoint_ wstEth alloc points
-     * @param weEthAllocPoint_ weEth alloc points
-     * @param sDAIAllocPoint_ sdai alloc points
-     * @param _pointsPerBlock points per block
-     * @param _initialPoolStartBlock start block
-     * @param _boosterMultiplier booster multiplier
-     */
-    function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _initialPoolStartBlock, uint256 _boosterMultiplier) public virtual onlyOwner {
-        if (_initialized) {
-            revert AlreadyInitialized();
-        }
+    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo, uint256 accPointsPerShare) public {
+        if(msg.sender != MERKLE) revert OnlyMerkle();
+        require(_userInfo.amount == _userInfo.boostAmount + _userInfo.depositAmount, "balances don't match");
 
-        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
-            revert InvalidPointsPerBlock();
-        }
-        pointsPerBlock = _pointsPerBlock;
+        // // TODO handle the situation when user already deposited before claiming
+        // UserInfo storage user = userInfo[_pid][_user];
+        // uint256 newUserAmount = user.amount + _userInfo.amount;
 
-        if (_boosterMultiplier < 1e18 || _boosterMultiplier > 10e18) {
-            revert InvalidBooster();
-        }
-        boosterMultiplier = _boosterMultiplier;
+        // user.rewardSettled =
+        //     _userInfo.amount *
+        //     accPointsPerShare /
+        //     1e18 +
+        //     user.rewardSettled -
+        //     user.rewardDebt;
 
-        poolExists[dai] = true;
-        poolExists[weth] = true;
-        poolExists[stETH] = true;
-        poolExists[eETH] = true;
 
-        _initialized = true;
+        // user.amount = newUserAmount;
 
-        // sDAI
-        typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", _initialPoolStartBlock, 0);
-        IERC20(dai).approve(sDAI, 2**256-1);
-
-        // wstETH
-        typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, wstETH, "wstETH", _initialPoolStartBlock, 0);
-        IERC20(stETH).approve(wstETH, 2**256-1);
-
-        // weETH
-        typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, weETH, "weETH", _initialPoolStartBlock, 0);
-        IERC20(eETH).approve(weETH, 2**256-1);
+        userInfo[_pid][_user] = _userInfo;
     }
 
     /**
      * @notice Adds a new pool to the farm. Can only be called by the owner.
-     * @param _allocPoint alloc point for new pool
      * @param _lpToken lpToken address
+     * @param _priceFeedHash lpToken price feed hash
+     * @param _staleSeconds lpToken price stale seconds
+     * @param _emissionsMultiplier multiplier for emissions fine tuning; use 0 or 1e18 for 1x
      * @param _description description of new pool
      * @param _poolStartBlock block at which points start to accrue for the pool
      * @param _newPointsPerBlock update global points per block; 0 means no update
      * @return uint256 The pid of the newly created asset
      */
-    function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
+    function add(address _lpToken, bytes32 _priceFeedHash, uint256 _staleSeconds, uint256 _emissionsMultiplier, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
         if (_lpToken == address(0)) {
             revert ZeroAddress();
         }
@@ -179,6 +181,13 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert FarmingIsEnded();
         }
 
+        if (_priceFeedHash == 0) {
+            revert PriceFeedNotSet();
+        }
+        if (_staleSeconds == 0) {
+            revert InvalidStaleSeconds();
+        }
+
         if (_newPointsPerBlock != 0) {
             setPointsPerBlock(_newPointsPerBlock);
         } else {
@@ -187,7 +196,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         uint256 lastRewardBlock =
             getBlockNumber() > _poolStartBlock ? getBlockNumber() : _poolStartBlock;
-        totalAllocPoint = totalAllocPoint + _allocPoint;
         poolExists[_lpToken] = true;
 
         uint256 pid = poolInfo.length;
@@ -199,7 +207,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
                 amount: 0,
                 boostAmount: 0,
                 depositAmount: 0,
-                allocPoint: _allocPoint,
+                allocPoint: 0,
                 lastRewardBlock: lastRewardBlock,
                 accPointsPerShare: 0,
                 totalRewards: 0,
@@ -207,7 +215,18 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             })
         );
 
-        emit Add(_lpToken, pid, _allocPoint);
+        if (_emissionsMultiplier == 0) {
+            // set multiplier to 1x
+            _emissionsMultiplier = 1e18;
+        }
+
+        PoolValue storage pv = poolValue[pid];
+        pv.emissionsMultiplier = _emissionsMultiplier;
+        pv.feedHash = _priceFeedHash;
+        pv.staleSeconds = _staleSeconds;
+        emit SetPriceFeedData(_priceFeedHash, _staleSeconds);
+
+        emit Add(_lpToken, pid, 0);
 
         return pid;
     }
@@ -215,11 +234,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     /**
      * @notice Updates the given pool's allocation point. Can only be called by the owner.
      * @param _pid The pid to update
-     * @param _allocPoint The new alloc point to set for the pool
+     * @param _emissionsMultiplier multiplier for emissions fine tuning; use 0 for no update OR 1e18 for 1x
      * @param _poolStartBlock block at which points start to accrue for the pool; 0 means no update
      * @param _newPointsPerBlock update global points per block; 0 means no update
      */
-    function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external onlyOwner {
+    function set(uint256 _pid, uint256 _emissionsMultiplier, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
@@ -235,8 +254,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (lpToken == address(0) || !poolExists[lpToken]) {
             revert PoolDoesNotExist();
         }
-        totalAllocPoint = totalAllocPoint - pool.allocPoint + _allocPoint;
-        pool.allocPoint = _allocPoint;
+
+        if (_emissionsMultiplier != 0) {
+            poolValue[_pid].emissionsMultiplier = _emissionsMultiplier;
+        }
 
         // pool starting block is updated if farming hasn't started and _poolStartBlock is non-zero
         if (_poolStartBlock != 0 && getBlockNumber() < pool.lastRewardBlock) {
@@ -244,7 +265,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
                 getBlockNumber() > _poolStartBlock ? getBlockNumber() : _poolStartBlock;
         }
 
-        emit Set(lpToken, _pid, _allocPoint);
+        emit Set(lpToken, _pid, 0);
     }
 
     /**
@@ -279,31 +300,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         } else {
             return false;
         }
-    }
-
-    /**
-     * @notice Updates the bridge contract
-     */
-    function setBridge(address _bridge) external onlyOwner {
-        if (_bridge == address(0)) {
-            revert ZeroAddress();
-        }
-        bridge = IBridgehub(_bridge);
-    }
-
-    /**
-     * @notice Updates the L2 Farm for the pool
-     * @param _pid the pid
-     * @param _l2Farm the l2Farm address
-     */
-    function setL2FarmForPool(uint256 _pid, address _l2Farm) external onlyOwner {
-        if (_l2Farm == address(0)) {
-            revert ZeroAddress();
-        }
-        if (address(poolInfo[_pid].lpToken) == address(0)) {
-            revert PoolDoesNotExist();
-        }
-        poolInfo[_pid].l2Farm = _l2Farm;
     }
 
     /**
@@ -344,6 +340,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         massUpdatePools();
         emit SetPointsPerBlock(pointsPerBlock, _pointsPerBlock);
         pointsPerBlock = _pointsPerBlock;
+    }
+
+    /**
+     * @notice Set total points
+     * @param _totalAllocPoint total total  alloc points
+     */
+    function setTotalAllocPoint(uint256 _totalAllocPoint) virtual public onlyOwner {
+        totalAllocPoint = _totalAllocPoint;
+        emit SetTotalAllocPoint(_totalAllocPoint);
     }
 
     /**
@@ -408,6 +413,22 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             user.rewardDebt;
     }
 
+    // zero hash allowed; blocks updates to the pool
+    // zero stale seconds means no change
+    function setPriceFeedData(uint256 _pid, bytes32 _newHash, uint256 _newStaleSeconds) external onlyOwner {
+        PoolValue storage pv = poolValue[_pid];
+        if (_newHash == pv.feedHash) {
+            revert DuplicatePriceFeed();
+        }
+
+        pv.feedHash = _newHash;
+        if (_newStaleSeconds != 0) {
+            pv.staleSeconds = _newStaleSeconds;
+        }
+
+        emit SetPriceFeedData(_newHash, _newStaleSeconds);
+    }
+
     /**
      * @notice Returns accPointsPerShare and totalRewards to date for the pool
      * @param _pid pid of the pool
@@ -421,14 +442,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         totalRewards = pool.totalRewards;
 
         uint256 lpSupply = pool.amount;
-        if (getBlockNumber() > pool.lastRewardBlock && lpSupply != 0) {
+        uint256 _totalValue = totalValue;
+        if (getBlockNumber() > pool.lastRewardBlock && lpSupply != 0 && _totalValue != 0) {
             uint256 blockMultiplier = _getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
 
             uint256 pointReward =
                 blockMultiplier *
                 pointsPerBlock *
-                pool.allocPoint /
-                totalAllocPoint;
+                poolValue[_pid].lastValue /
+                _totalValue;
 
             totalRewards = totalRewards + pointReward / 1e18;
 
@@ -452,9 +474,17 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Update accounting of all pools
      */
     function massUpdatePools() public {
+        massUpdatePools(false);
+    }
+
+    /**
+     * @notice Update accounting of all pools
+     * @param _silent emit event if false
+     */
+    function massUpdatePools(bool _silent) public {
         uint256 length = poolInfo.length;
         for(uint256 pid = 0; pid < length; ++pid) {
-            updatePool(pid);
+            updatePool(pid, _silent);
         }
     }
 
@@ -463,6 +493,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _pid pid to update
      */
     function updatePool(uint256 _pid) public {
+        updatePool(_pid, false);
+    }
+
+    /**
+     * @notice Updating accounting of a single pool
+     * @param _pid pid to update
+     * @param _silent emit event if false
+     */
+    function updatePool(uint256 _pid, bool _silent) public {
         PoolInfo storage pool = poolInfo[_pid];
         if (getBlockNumber() <= pool.lastRewardBlock) {
             return;
@@ -474,12 +513,63 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             pool.lastRewardBlock = getBlockNumber();
             return;
         }
+
+        /* START Update Pool Weighting Block */
+        PoolValue storage pv = poolValue[_pid];
+        bytes32 feedHash = pv.feedHash;
+        if (feedHash == 0) {
+            //revert PriceFeedNotSet();
+            pool.lastRewardBlock = getBlockNumber();
+            return;
+        }
+
+        /* Feed Hashes
+        ATHUSD: '0x57744b683b8f4f907ef849039fc12760510242140bd5733e2fc9dc7557653f3e',
+        AZURUSD: '0xcd4bc8c9ccfd4a5f6d4369d06be0094ea723b8275ac7156dabfd5c6454aee625',
+        BEAMUSD: '0x7a103d78776b2ff5b0221e26ca533850e59f16be7381ccc952ada02e73beeef7',
+        PEPEUSD: '0x7740d9942fd36998a87156e36a2aa45d138b7679933e21fb59e01a005092c04f',
+        SDAIUSD: '0xf31e0ed7d2f9d8fe977679f2b18841571a064b9b072cf7daa755a526fe9579ec',
+        USDCUSD: '0x7416a56f222e196d0487dce8a1a8003936862e7a15092a91898d69fa8bce290c',
+        USDTUSD: '0x6dcd0a8fb0460d4f0f98c524e06c10c63377cd098b589c0b90314bfb55751558',
+        WBTCUSD: '0x1ddeb20108df88bf27cc4a55fff8489a99c37ae2917ce13927c6cdadf4128503',
+        WEETHUSD: '0x2778ff4ef448d972c023c579b2bff9c55d48d0fde830dcdd72fff8189c01993e',
+        ZENTUSD: '0x01754fec1fe1377161a2abd3ba6b7ccbdc47d66f7a4c169532cdf8c16d082255'
+        */
+        IStork.TemporalNumericValue memory storkValue = stork.getTemporalNumericValueUnsafeV1(feedHash);
+
+        /* TODO
+        if (block.timestamp - (storkValue.timestampNs / 1000000000) > pv.staleSeconds) {
+            // stale price
+            pool.lastRewardBlock = getBlockNumber();
+            return;
+        }
+        */
+
+        if (storkValue.quantizedValue <= 0) {
+            // invalid price
+            pool.lastRewardBlock = getBlockNumber();
+            return;
+        }
+        uint256 newPrice = uint256(uint192(storkValue.quantizedValue));
+
+        uint256 newValue = lpSupply * newPrice / 1e18;
+        newValue = newValue * pv.emissionsMultiplier / 1e18;
+        if (newValue == 0) {
+            //revert InvalidValue(newValue);
+            pool.lastRewardBlock = getBlockNumber();
+            return;
+        }
+
+        totalValue = totalValue - pv.lastValue + newValue;
+        pv.lastValue = newValue;
+        /* END Update Pool Weighting Block */
+
         uint256 blockMultiplier = _getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
         uint256 pointReward =
             blockMultiplier *
             _pointsPerBlock *
-            _allocPoint /
-            totalAllocPoint;
+            newValue /
+            totalValue;
 
         pool.totalRewards = pool.totalRewards + pointReward / 1e18;
 
@@ -489,7 +579,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         pool.lastRewardBlock = getBlockNumber();
 
-        emit PoolUpdated(_pid);
+        if (!_silent) {
+            emit PoolUpdated(_pid);
+        }
     }
 
     /**
@@ -506,129 +598,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         );
 
         _deposit(_pid, _amount, _boostAmount);
-    }
-
-    /**
-     * @notice Deposit DAI to SophonFarming
-     * @param _amount amount of the deposit
-     * @param _boostAmount amount to boost
-     */
-    function depositDai(uint256 _amount, uint256 _boostAmount) external {
-        IERC20(dai).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _amount
-        );
-
-        _depositPredefinedAsset(_amount, _amount, _boostAmount, PredefinedPool.sDAI);
-    }
-
-    /**
-     * @notice Deposit stETH to SophonFarming
-     * @param _amount amount of the deposit
-     * @param _boostAmount amount to boost
-     */
-    function depositStEth(uint256 _amount, uint256 _boostAmount) external {
-        uint256 beforeBalance = IERC20(stETH).balanceOf(address(this));
-        IERC20(stETH).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _amount
-        );
-        uint256 _finalAmount = IERC20(stETH).balanceOf(address(this)) - beforeBalance;
-
-        _depositPredefinedAsset(_finalAmount, _amount, _boostAmount, PredefinedPool.wstETH);
-    }
-
-    /**
-     * @notice Deposit eETH to SophonFarming
-     * @param _amount amount of the deposit
-     * @param _boostAmount amount to boost
-     */
-    function depositeEth(uint256 _amount, uint256 _boostAmount) external {
-        uint256 beforeBalance = IERC20(eETH).balanceOf(address(this));
-        IERC20(eETH).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _amount
-        );
-        uint256 _finalAmount = IERC20(eETH).balanceOf(address(this)) - beforeBalance;
-
-        _depositPredefinedAsset(_finalAmount, _amount, _boostAmount, PredefinedPool.weETH);
-    }
-
-    /**
-     * @notice Deposit ETH to SophonFarming when specifying a pool
-     * @param _boostAmount amount to boost
-     * @param _predefinedPool specific pool type to deposit to
-     */
-    function depositEth(uint256 _boostAmount, PredefinedPool _predefinedPool) public payable {
-        if (msg.value == 0) {
-            revert NoEthSent();
-        }
-
-        uint256 _finalAmount = msg.value;
-        if (_predefinedPool == PredefinedPool.wstETH) {
-            _finalAmount = _ethTOstEth(_finalAmount);
-        } else if (_predefinedPool == PredefinedPool.weETH) {
-            _finalAmount = _ethTOeEth(_finalAmount);
-        } else {
-            revert InvalidDeposit();
-        }
-
-        _depositPredefinedAsset(_finalAmount, msg.value, _boostAmount, _predefinedPool);
-    }
-
-    /**
-     * @notice Deposit WETH to SophonFarming when specifying a pool
-     * @param _amount amount of the deposit
-     * @param _boostAmount amount to boost
-     * @param _predefinedPool specific pool type to deposit to
-     */
-    function depositWeth(uint256 _amount, uint256 _boostAmount, PredefinedPool _predefinedPool) external {
-        IERC20(weth).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _amount
-        );
-
-        uint256 _finalAmount = _wethTOEth(_amount);
-        if (_predefinedPool == PredefinedPool.wstETH) {
-            _finalAmount = _ethTOstEth(_finalAmount);
-        } else if (_predefinedPool == PredefinedPool.weETH) {
-            _finalAmount = _ethTOeEth(_finalAmount);
-        } else {
-            revert InvalidDeposit();
-        }
-
-        _depositPredefinedAsset(_finalAmount, _amount, _boostAmount, _predefinedPool);
-    }
-
-    /**
-     * @notice Deposit a predefined asset to SophonFarming
-     * @param _amount amount of the deposit
-     * @param _initalAmount amount of the deposit prior to conversions
-     * @param _boostAmount amount to boost
-     * @param _predefinedPool specific pool type to deposit to
-     */
-    function _depositPredefinedAsset(uint256 _amount, uint256 _initalAmount, uint256 _boostAmount, PredefinedPool _predefinedPool) internal {
-
-        uint256 _finalAmount;
-
-        if (_predefinedPool == PredefinedPool.sDAI) {
-            _finalAmount = _daiTOsDai(_amount);
-        } else if (_predefinedPool == PredefinedPool.wstETH) {
-            _finalAmount = _stEthTOwstEth(_amount);
-        } else if (_predefinedPool == PredefinedPool.weETH) {
-            _finalAmount = _eethTOweEth(_amount);
-        } else {
-            revert InvalidDeposit();
-        }
-
-        // adjust boostAmount for the new asset
-        _boostAmount = _boostAmount * _finalAmount / _initalAmount;
-
-        _deposit(typeToId[_predefinedPool], _finalAmount, _boostAmount);
     }
 
     /**
@@ -650,7 +619,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
+        massUpdatePools(true);
 
         uint256 userAmount = user.amount;
 
@@ -711,7 +680,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
+        massUpdatePools(true);
 
         uint256 userAmount = user.amount;
 
@@ -774,7 +743,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
+        massUpdatePools(true);
 
         uint256 userDepositAmount = user.depositAmount;
 
@@ -810,134 +779,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         emit Withdraw(msg.sender, _pid, _withdrawAmount);
     }
 
-    
-    /**
-     * @notice Permissionless function to allow anyone to bridge during the correct period
-     * @param _pid pid to bridge
-     * @param _mintValue _mintValue SOPH gas price
-     */
-    
-    function bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken) external payable {
-        // USDC exception
-        if (_pid == 7) {
-            revert Unauthorized();
-        }
-
-        _bridgePool(_pid, _mintValue, _sophToken, bridge);
-    }
-
-    function _bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken, IBridgehub _bridge) internal {
-
-        if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
-            revert Unauthorized();
-        }
-
-        updatePool(_pid);
-        PoolInfo storage pool = poolInfo[_pid];
-
-        if (pool.depositAmount == 0 || address(bridge) == address(0) || pool.l2Farm == address(0)) {
-            revert BridgeInvalid();
-        }
-        uint256 depositAmount = IERC20(pool.lpToken).balanceOf(address(this));
-
-        if (_pid == BEAM_WEHT_PID) {
-            UserInfo storage user = userInfo[BEAM_WEHT_PID][PENDLE_EXCEPTION];
-            depositAmount -= user.depositAmount - user.boostAmount / boosterMultiplier;
-        }
-
-        L2TransactionRequestTwoBridgesOuter memory _request = L2TransactionRequestTwoBridgesOuter({
-            chainId: CHAINID,
-            mintValue: _mintValue,
-            l2Value: 0,
-            l2GasLimit: 2000000,
-            l2GasPerPubdataByteLimit: 800,
-            refundRecipient: address(this),
-            secondBridgeAddress: address(bridge.sharedBridge()),
-            secondBridgeValue: 0,
-            secondBridgeCalldata: abi.encode(pool.lpToken, depositAmount, pool.l2Farm)
-        });
-
-        if (pool.lpToken.allowance(address(this), _request.secondBridgeAddress) < depositAmount) {
-            pool.lpToken.safeIncreaseAllowance(_request.secondBridgeAddress, type(uint256).max);
-        }
-        IERC20(_sophToken).safeTransferFrom(msg.sender, address(this), _mintValue);
-        IERC20(_sophToken).safeIncreaseAllowance(_request.secondBridgeAddress, _mintValue);
-        
-        // Actual values are pending the launch of Sophon testnet
-        _bridge.requestL2TransactionTwoBridges(_request);
-
-        isBridged[_pid] = true;
-        emit BridgePool(msg.sender, _pid, depositAmount);
-    }
-
-
-    // bridge USDC
-    function bridgeUSDC(uint256 _mintValue, address _sophToken, IBridgehub _bridge) external onlyOwner {
-        uint256 _pid = 7;
-        if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
-            revert Unauthorized();
-        }
-
-        // IBridgehub _bridge = IBridgehub(address(0));
-        _bridgePool(_pid, _mintValue, _sophToken, _bridge);
-
-    }
-
-    /**
-     * @notice Set L2Farming contract for particular pool
-     * @param _pid pid to bridge
-     * @param _l2Farm address of the contract for farming on L2 side
-     */
-    function setL2Farm(uint256 _pid, address _l2Farm) external onlyOwner {
-        if (_pid >= poolInfo.length) {
-            revert PoolExists();
-        }
-
-        if (_l2Farm == address(0)) {
-            revert ZeroAddress();
-        }
-
-        poolInfo[_pid].l2Farm = _l2Farm;
-    }
-
-
-    /**
-     * @notice Called by an admin if a bridge process to Sophon fails
-     * @param _pid pid of the failed bridge to revert
-     */
-    function revertFailedBridge(
-        address _l1SharedBridge,
-        uint256 _pid,       
-        uint256 _chainId,
-        address _depositSender,
-        address _l1Token,
-        uint256 _amount,
-        bytes32 _l2TxHash,
-        uint256 _l2BatchNumber,
-        uint256 _l2MessageIndex,
-        uint16 _l2TxNumberInBatch,
-        bytes32[] calldata _merkleProof) external onlyOwner {
-
-        if (address(poolInfo[_pid].lpToken) == address(0)) {
-            revert PoolDoesNotExist();
-        }
-        
-        IL1SharedBridge(_l1SharedBridge).claimFailedDeposit(
-            _chainId,
-            _depositSender,
-            _l1Token,
-            _amount,
-            _l2TxHash,
-            _l2BatchNumber,
-            _l2MessageIndex,
-            _l2TxNumberInBatch,
-            _merkleProof
-        );
-
-        isBridged[_pid] = false;
-        emit RevertFailedBridge(_pid);
-    }
-
     /**
      * @notice Called by an whitelisted admin to transfer points to another user
      * @param _pid pid of the pool to transfer points from
@@ -961,7 +802,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert PoolDoesNotExist();
         }
 
-        updatePool(_pid);
+        massUpdatePools(true);
         uint256 accPointsPerShare = pool.accPointsPerShare;
 
         UserInfo storage userFrom = userInfo[_pid][_sender];
@@ -1002,75 +843,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             1e18;
 
         emit TransferPoints(_sender, _receiver, _pid, _transferAmount);
-    }
-
-    /**
-     * @notice Converts WETH to ETH
-     * @dev WETH withdrawl
-     * @param _amount in amount
-     * @return uint256 out amount
-     */
-    function _wethTOEth(uint256 _amount) internal returns (uint256) {
-        // unwrap weth to eth
-        IWeth(weth).withdraw(_amount);
-        return _amount;
-    }
-
-    /**
-     * @notice Converts ETH to stETH
-     * @dev Lido
-     * @param _amount in amount
-     * @return uint256 out amount
-     */
-    function _ethTOstEth(uint256 _amount) internal returns (uint256) {
-        return IstETH(stETH).getPooledEthByShares(
-            IstETH(stETH).submit{value: _amount}(owner())
-        );
-    }
-
-    /**
-     * @notice Converts stETH to wstETH
-     * @dev Lido
-     * @param _amount in amount
-     * @return uint256 out amount
-     */
-    function _stEthTOwstEth(uint256 _amount) internal returns (uint256) {
-        // wrap returns exact amount of wstETH
-        return IwstETH(wstETH).wrap(_amount);
-    }
-
-    /**
-     * @notice Converts ETH to eETH
-     * @dev ether.fi
-     * @param _amount in amount
-     * @return uint256 out amount
-     */
-    function _ethTOeEth(uint256 _amount) internal returns (uint256) {
-        return IeETHLiquidityPool(eETHLiquidityPool).amountForShare(
-            IeETHLiquidityPool(eETHLiquidityPool).deposit{value: _amount}(owner())
-        );
-    }
-
-    /**
-     * @notice Converts eETH to weETH
-     * @dev ether.fi
-     * @param _amount in amount
-     * @return uint256 out amount
-     */
-    function _eethTOweEth(uint256 _amount) internal returns (uint256) {
-        // wrap returns exact amount of weETH
-        return IweETH(weETH).wrap(_amount);
-    }
-
-    /**
-     * @notice Converts DAI to sDAI
-     * @dev MakerDao
-     * @param _amount in amount
-     * @return uint256 out amount
-     */
-    function _daiTOsDai(uint256 _amount) internal returns (uint256) {
-        // deposit DAI to sDAI
-        return IsDAI(sDAI).deposit(_amount, address(this));
     }
 
 

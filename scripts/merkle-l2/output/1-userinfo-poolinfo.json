@@ -1,0 +1,623 @@
+{
+    "pools": [
+        {
+            "lpToken": "0x64555DD79DA6Bd9E9293d630AbAE7C1f8FAC1Dd7",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "8597663122439544499830485",
+            "boostAmount": "7908538882439544450699475",
+            "depositAmount": "689124240000000049131010",
+            "allocPoint": "60000",
+            "lastRewardBlock": "7202537",
+            "accPointsPerShare": "601838964009371895",
+            "totalRewards": "5200193781352975382826128",
+            "description": "sDAI",
+            "heldProceeds": "1581707776487908890139895",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0xCdB9b24fe84448175b8Ab821E4c42d7Db176C732",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "89804182776972416",
+            "boostAmount": "3638222933146850",
+            "depositAmount": "86165959843825566",
+            "allocPoint": "100000",
+            "lastRewardBlock": "7202538",
+            "accPointsPerShare": "96509865883559728224291806",
+            "totalRewards": "8666989635588292304710213",
+            "description": "wstETH",
+            "heldProceeds": "727644586629370",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0x1ac4090094F44cfb41417D8772500DB051D32b32",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "15141855821527",
+            "boostAmount": "8173160812755",
+            "depositAmount": "6968695008772",
+            "allocPoint": "50000",
+            "lastRewardBlock": "7202539",
+            "accPointsPerShare": "286193110598323559553710471370",
+            "totalRewards": "4333494817794146152355106",
+            "description": "weETH",
+            "heldProceeds": "1634632162551",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0x2E8F9867d1b3e5e94Cd86D3924419767A243e15C",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "87303767199999999988000",
+            "boostAmount": "22781583999999999985000",
+            "depositAmount": "64522183200000000003000",
+            "allocPoint": "20000",
+            "lastRewardBlock": "7202540",
+            "accPointsPerShare": "21576031554704508887",
+            "totalRewards": "1733397927117658460942040",
+            "description": "BEAM description",
+            "heldProceeds": "4556316799999999997000",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0xEF55EFCdc02950708c2799a7fb0c870634C24027",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "0",
+            "boostAmount": "0",
+            "depositAmount": "0",
+            "allocPoint": "80000",
+            "lastRewardBlock": "7148311",
+            "accPointsPerShare": "0",
+            "totalRewards": "0",
+            "description": "BEAM_LP description",
+            "heldProceeds": "0",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0xb4681a78200235A4131b9C5F07F7c48ff2D98dF7",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "0",
+            "boostAmount": "0",
+            "depositAmount": "0",
+            "allocPoint": "60000",
+            "lastRewardBlock": "7148311",
+            "accPointsPerShare": "0",
+            "totalRewards": "0",
+            "description": "ZENT description",
+            "heldProceeds": "0",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0xac85CDA0C91D5571E79DEaC9eCEf6Fa90978Bb5b",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "60000000000",
+            "boostAmount": "0",
+            "depositAmount": "60000000000",
+            "allocPoint": "60000",
+            "lastRewardBlock": "7204283",
+            "accPointsPerShare": "95802331223175419839159962074795",
+            "totalRewards": "5172902199263423144020155",
+            "description": "USDC",
+            "heldProceeds": "0",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0x4Fbe22Eb88e39C5cD4fe8BCe7feA30230af67092",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "245980400000000000000000",
+            "boostAmount": "119988000000000000000000",
+            "depositAmount": "125992400000000000000000",
+            "allocPoint": "50000",
+            "lastRewardBlock": "7204391",
+            "accPointsPerShare": "17524740703901235000",
+            "totalRewards": "4310742728241907346384957",
+            "description": "stAethir",
+            "heldProceeds": "23997600000000000000000",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0x77EC6dda20357354E4536B406cdB4f3c3d7266C4",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "4250026667500000000000000",
+            "boostAmount": "2498996667500000000000000",
+            "depositAmount": "1751030000000000000000000",
+            "allocPoint": "40000",
+            "lastRewardBlock": "7204341",
+            "accPointsPerShare": "811534134436321571",
+            "totalRewards": "3448590540802481100988562",
+            "description": "PEPE",
+            "heldProceeds": "499799333500000000000000",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0x10067FAD26f367D2120B0634b56c8712dA3885c0",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "2000022000000000000000000",
+            "boostAmount": "0",
+            "depositAmount": "2000022000000000000000000",
+            "allocPoint": "40000",
+            "lastRewardBlock": "7204343",
+            "accPointsPerShare": "2476561668334708664",
+            "totalRewards": "3051442301996510951734829",
+            "description": "wBTC",
+            "heldProceeds": "0",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0x8F81bDF97C1Db2b0FBf337E8c1a515A779F5ecFE",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "30155998000000000000000",
+            "boostAmount": "0",
+            "depositAmount": "30155998000000000000000",
+            "allocPoint": "50000",
+            "lastRewardBlock": "7204346",
+            "accPointsPerShare": "126723214801190759911",
+            "totalRewards": "3814298325256832719519284",
+            "description": "AZURO",
+            "heldProceeds": "0",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0xf4B6a080EAB3e2383aa27ea0EEAeC65B6a0125Ab",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "7156318407960198800000000",
+            "boostAmount": "5920398009950248500000000",
+            "depositAmount": "1235920398009950300000000",
+            "allocPoint": "40000",
+            "lastRewardBlock": "7204347",
+            "accPointsPerShare": "224722186758600257",
+            "totalRewards": "1534119197518899011436320",
+            "description": "USDT",
+            "heldProceeds": "1184079601990049700000000",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0x6898CE3ED25F9ef4AF68C3f61E29C00E21264B73",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "0",
+            "boostAmount": "0",
+            "depositAmount": "0",
+            "allocPoint": "20000",
+            "lastRewardBlock": "7148311",
+            "accPointsPerShare": "0",
+            "totalRewards": "0",
+            "description": "AZUR",
+            "heldProceeds": "0",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0x60bdf3F869d2cf5E4B922B22496C67Bbb9A7E06E",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "100000000000000000000000",
+            "boostAmount": "0",
+            "depositAmount": "100000000000000000000000",
+            "allocPoint": "50000",
+            "lastRewardBlock": "7204351",
+            "accPointsPerShare": "1019633766233766233",
+            "totalRewards": "101963376623376623376623",
+            "description": "stAVAIL",
+            "heldProceeds": "0",
+            "poolBalance": "0"
+        },
+        {
+            "lpToken": "0x006C19cf45F7ea52297aC2E6294821058f385F3D",
+            "l2Farm": "0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9",
+            "amount": "0",
+            "boostAmount": "0",
+            "depositAmount": "0",
+            "allocPoint": "50000",
+            "lastRewardBlock": "7148311",
+            "accPointsPerShare": "0",
+            "totalRewards": "0",
+            "description": "OPN",
+            "heldProceeds": "0",
+            "poolBalance": "0"
+        }
+    ],
+    "users": [
+        {
+            "user": "0x3c902069be2eafb251102446b22d1b054013b998",
+            "pid": "11",
+            "userInfo": {
+                "amount": "4980099502487562000000000",
+                "boostAmount": "4975124378109452500000000",
+                "depositAmount": "4975124378109500000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+            "pid": "1",
+            "userInfo": {
+                "amount": "86033271713322563",
+                "boostAmount": "0",
+                "depositAmount": "86033271713322563",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x3c902069be2eafb251102446b22d1b054013b998",
+            "pid": "0",
+            "userInfo": {
+                "amount": "2990049751243781080000000",
+                "boostAmount": "2487562189054726350000000",
+                "depositAmount": "502487562189054730000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+            "pid": "3",
+            "userInfo": {
+                "amount": "50000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "50000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x38c8935d443ebe6fc161b3b59ba38691cb6c041d",
+            "pid": "11",
+            "userInfo": {
+                "amount": "0",
+                "boostAmount": "0",
+                "depositAmount": "0",
+                "rewardSettled": "14493473277135481180",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x81b76cdee6217545bdc860fc1379ec23888bea9a",
+            "pid": "3",
+            "userInfo": {
+                "amount": "4500500000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "4500500000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x3c902069be2eafb251102446b22d1b054013b998",
+            "pid": "7",
+            "userInfo": {
+                "amount": "50000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "50000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x3d2758b432327e3631b023aa4a0511c5308e4bfc",
+            "pid": "11",
+            "userInfo": {
+                "amount": "1156218905472636800000000",
+                "boostAmount": "945273631840796000000000",
+                "depositAmount": "210945273631840800000000",
+                "rewardSettled": "4413285845679838253",
+                "rewardDebt": "74083231017864489877433"
+            }
+        },
+        {
+            "user": "0x4bc73dcc4c296d744c7e0e215b309fd5304a6094",
+            "pid": "1",
+            "userInfo": {
+                "amount": "3770911063649853",
+                "boostAmount": "3638222933146850",
+                "depositAmount": "132688130503003",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x4bc73dcc4c296d744c7e0e215b309fd5304a6094",
+            "pid": "0",
+            "userInfo": {
+                "amount": "5342004975124378400000",
+                "boostAmount": "4028756218905473000000",
+                "depositAmount": "1313248756218905400000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x4bc73dcc4c296d744c7e0e215b309fd5304a6094",
+            "pid": "2",
+            "userInfo": {
+                "amount": "15141855821527",
+                "boostAmount": "8173160812755",
+                "depositAmount": "6968695008772",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x38c8935d443ebe6fc161b3b59ba38691cb6c041d",
+            "pid": "6",
+            "userInfo": {
+                "amount": "10000000000",
+                "boostAmount": "0",
+                "depositAmount": "10000000000",
+                "rewardSettled": "45196933882623083677",
+                "rewardDebt": "575282871060984669413115"
+            }
+        },
+        {
+            "user": "0x3d2758b432327e3631b023aa4a0511c5308e4bfc",
+            "pid": "8",
+            "userInfo": {
+                "amount": "750000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "750000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+            "pid": "7",
+            "userInfo": {
+                "amount": "195980400000000000000000",
+                "boostAmount": "119988000000000000000000",
+                "depositAmount": "75992400000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x3d2758b432327e3631b023aa4a0511c5308e4bfc",
+            "pid": "9",
+            "userInfo": {
+                "amount": "1000000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "1000000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "1901714840651557705000000"
+            }
+        },
+        {
+            "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+            "pid": "8",
+            "userInfo": {
+                "amount": "30000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "30000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+            "pid": "13",
+            "userInfo": {
+                "amount": "100000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "100000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+            "pid": "10",
+            "userInfo": {
+                "amount": "100000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "100000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "7166686841446234071400"
+            }
+        },
+        {
+            "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+            "pid": "9",
+            "userInfo": {
+                "amount": "12000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "12000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "20678378052040375116"
+            }
+        },
+        {
+            "user": "0x3d2758b432327e3631b023aa4a0511c5308e4bfc",
+            "pid": "0",
+            "userInfo": {
+                "amount": "229601990049751240000000",
+                "boostAmount": "99502487562189050000000",
+                "depositAmount": "130099502487562190000000",
+                "rewardSettled": "112250145328024653199439",
+                "rewardDebt": "92176943183066507649439"
+            }
+        },
+        {
+            "user": "0xfbab39445f51c123194eed79894d5847fd794aa8",
+            "pid": "0",
+            "userInfo": {
+                "amount": "299004975124378120000000",
+                "boostAmount": "248756218905472650000000",
+                "depositAmount": "50248756218905470000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+            "pid": "6",
+            "userInfo": {
+                "amount": "50000000000",
+                "boostAmount": "0",
+                "depositAmount": "50000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+            "pid": "10",
+            "userInfo": {
+                "amount": "30000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "30000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+            "pid": "8",
+            "userInfo": {
+                "amount": "1000000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "1000000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+            "pid": "0",
+            "userInfo": {
+                "amount": "93505082439544696354525",
+                "boostAmount": "93505082439544696354525",
+                "depositAmount": "0",
+                "rewardSettled": "61986914642446682295000",
+                "rewardDebt": "56275001945026492500291"
+            }
+        },
+        {
+            "user": "0x4bc73dcc4c296d744c7e0e215b309fd5304a6094",
+            "pid": "3",
+            "userInfo": {
+                "amount": "22669999999999999988000",
+                "boostAmount": "22669999999999999985000",
+                "depositAmount": "3000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x38c8935d443ebe6fc161b3b59ba38691cb6c041d",
+            "pid": "8",
+            "userInfo": {
+                "amount": "1000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "1000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "451172138415672588000"
+            }
+        },
+        {
+            "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+            "pid": "11",
+            "userInfo": {
+                "amount": "20000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "20000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x81b76cdee6217545bdc860fc1379ec23888bea9a",
+            "pid": "0",
+            "userInfo": {
+                "amount": "4980099502487562000000000",
+                "boostAmount": "4975124378109452500000000",
+                "depositAmount": "4975124378109500000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x3d2758b432327e3631b023aa4a0511c5308e4bfc",
+            "pid": "3",
+            "userInfo": {
+                "amount": "10000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "10000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "149912432794965345790000"
+            }
+        },
+        {
+            "user": "0x3c902069be2eafb251102446b22d1b054013b998",
+            "pid": "9",
+            "userInfo": {
+                "amount": "1000000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "1000000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x81b76cdee6217545bdc860fc1379ec23888bea9a",
+            "pid": "8",
+            "userInfo": {
+                "amount": "2498996667500000000000000",
+                "boostAmount": "2498996667500000000000000",
+                "depositAmount": "0",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+            "pid": "11",
+            "userInfo": {
+                "amount": "1000000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "1000000000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+            "pid": "3",
+            "userInfo": {
+                "amount": "133267200000000000000",
+                "boostAmount": "111584000000000000000",
+                "depositAmount": "21683200000000000000",
+                "rewardSettled": "1485532499206169498286",
+                "rewardDebt": "1844008538358871383774"
+            }
+        },
+        {
+            "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+            "pid": "0",
+            "userInfo": {
+                "amount": "59816119402985075960",
+                "boostAmount": "59770149253731344950",
+                "depositAmount": "45970149253731010",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+            "pid": "9",
+            "userInfo": {
+                "amount": "10000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "10000000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        },
+        {
+            "user": "0x81b76cdee6217545bdc860fc1379ec23888bea9a",
+            "pid": "10",
+            "userInfo": {
+                "amount": "55998000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "55998000000000000000",
+                "rewardSettled": "0",
+                "rewardDebt": "0"
+            }
+        }
+    ]
+}
