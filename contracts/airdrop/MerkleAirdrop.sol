@@ -173,6 +173,22 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         
         PoolInfo memory pool = poolInfo[_pid];
 
+
+        uint256 userAmount = _userInfo.amount;
+        uint256 userDepositAmount = _userInfo.depositAmount;
+        uint256 _withdrawAmount = userDepositAmount;
+
+        _userInfo.rewardSettled =
+            userAmount *
+            pool.accPointsPerShare /
+            1e18 +
+            _userInfo.rewardSettled -
+            _userInfo.rewardDebt;        
+
+        _userInfo.rewardDebt = userAmount *
+            pool.accPointsPerShare /
+            1e18;
+
         SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo, pool.accPointsPerShare);
         emit Claimed(_user, _pid);
     }
