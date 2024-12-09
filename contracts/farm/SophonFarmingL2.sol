@@ -142,23 +142,21 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         if(msg.sender != MERKLE) revert OnlyMerkle();
         require(_userInfo.amount == _userInfo.boostAmount + _userInfo.depositAmount, "balances don't match");
 
-        // TODO handle the situation when user already deposited before claiming
-        UserInfo storage user = userInfo[_pid][_user];
-        uint256 newUserAmount = user.amount + _userInfo.amount;
+        // // TODO handle the situation when user already deposited before claiming
+        // UserInfo storage user = userInfo[_pid][_user];
+        // uint256 newUserAmount = user.amount + _userInfo.amount;
 
-        user.rewardSettled =
-            _userInfo.amount *
-            accPointsPerShare /
-            1e18 +
-            user.rewardSettled -
-            user.rewardDebt;
+        // user.rewardSettled =
+        //     _userInfo.amount *
+        //     accPointsPerShare /
+        //     1e18 +
+        //     user.rewardSettled -
+        //     user.rewardDebt;
 
-        user.rewardDebt = newUserAmount *
-            accPointsPerShare /
-            1e18;
 
-        user.amount = newUserAmount;
+        // user.amount = newUserAmount;
 
+        userInfo[_pid][_user] = _userInfo;
     }
 
     /**

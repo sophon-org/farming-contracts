@@ -96,6 +96,23 @@ Part 3
    ```
       exec(open("./scripts/env/sophon-testnet.py").read())
       deployer = accounts.load("sophon_sepolia")
+      farmingPools = [
+         sDAI,
+         wstETH,
+         weETH,
+         ZERO_ADDRESS,
+         BEAM,
+         ZERO_ADDRESS,
+         USDC,
+         stAETHIR,
+         PEPE,
+         WBTC,
+         AZURO,
+         USDT,
+         AZURO,
+         stAVAIL,
+         ZERO_ADDRESS
+      ]
       import json
       lastRewardBlock = chain.height
       file_path = ('./scripts/merkle-l2/output/1-userinfo-poolinfo.json')
@@ -104,10 +121,11 @@ Part 3
          pools = data.get('pools', [])
          for pid, pool in enumerate(pools):
             print(pool)
-            # _lastRewardBlock should be the block from which farming is starting. it the same time approximately as SF_L1.endBlock
+            # _lastRewardBlock should be the block from which farming is starting. 
+            # it the same time approximately as SF_L1.endBlock
             SF_L2.addPool(
                pid,
-               pool["lpToken"],
+               farmingPools[pid],
                pool["l2Farm"],
                int(pool["amount"]),
                int(pool["boostAmount"]),
@@ -130,7 +148,7 @@ Part 4 - how to start farming on l2 setting points per block
    71000000000000000000
    ```
 
-   assuming 1 sec block have to multiply by 12 =  852000000000000000000
+   assuming 1 sec block have to divide by 10 =  7100000000000000000
 
    ```
    SF_L2.setPointsPerBlock(852000000000000000000, {"from": deployer})

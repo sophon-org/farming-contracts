@@ -78,6 +78,14 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
             totalRewards: _totalRewards,
             description: _description
         });
+
+        if (_pid < poolInfo.length) {
+            poolInfo[_pid] = pool;
+        } else if (_pid == poolInfo.length) {
+            poolInfo.push(pool);
+        } else {
+            revert("wrong pid");
+        }
     }
 
     function unclaim(address user, uint256 id) public onlyRole(ADMIN_ROLE) {
