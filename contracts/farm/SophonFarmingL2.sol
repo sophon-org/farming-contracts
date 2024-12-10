@@ -46,7 +46,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
     /// @notice Emitted when setPointsPerBlock is called
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
-    event SetTotalAllocPoint(uint256 newValue);
 
     /// @notice Emitted when the pool price feed data is updated
     event SetPriceFeedData(bytes32 newHash, uint256 newStaleSeconds);
@@ -138,25 +137,38 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         // require(IERC20(_lpToken).balanceOf(address(this)) >= _amount, "balances don't match");
     }
 
-    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userInfo, uint256 accPointsPerShare) public {
-        if(msg.sender != MERKLE) revert OnlyMerkle();
-        require(_userInfo.amount == _userInfo.boostAmount + _userInfo.depositAmount, "balances don't match");
+    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userFromClaim) public {
+        if (msg.sender != MERKLE) revert OnlyMerkle();
+        require(_userFromClaim.amount == _userFromClaim.boostAmount + _userFromClaim.depositAmount, "balances don't match");
 
-        // // TODO handle the situation when user already deposited before claiming
-        // UserInfo storage user = userInfo[_pid][_user];
-        // uint256 newUserAmount = user.amount + _userInfo.amount;
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][_user];
+        massUpdatePools(true);
 
-        // user.rewardSettled =
-        //     _userInfo.amount *
-        //     accPointsPerShare /
-        //     1e18 +
-        //     user.rewardSettled -
-        //     user.rewardDebt;
+        uint256 userAmount = user.amount;
 
+        user.rewardSettled =
+            user.amount *
+            pool.accPointsPerShare /
+            1e18 +
+            user.rewardSettled -
+            user.rewardDebt;
 
-        // user.amount = newUserAmount;
+        // _userFromClaim.rewardDebt is ignored since user.rewardSettled is already settled
+        user.rewardSettled = user.rewardSettled + _userFromClaim.rewardSettled;
 
-        userInfo[_pid][_user] = _userInfo;
+        user.boostAmount = user.boostAmount + _userFromClaim.boostAmount;
+        pool.boostAmount = pool.boostAmount + _userFromClaim.boostAmount;
+
+        user.depositAmount = user.depositAmount + _userFromClaim.depositAmount;
+        pool.depositAmount = pool.depositAmount + _userFromClaim.depositAmount;
+
+        user.amount = user.amount + _userFromClaim.amount;
+        pool.amount = pool.amount + _userFromClaim.amount;
+
+        user.rewardDebt = user.amount *
+            pool.accPointsPerShare /
+            1e18;
     }
 
     /**
@@ -343,15 +355,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     }
 
     /**
-     * @notice Set total points
-     * @param _totalAllocPoint total total  alloc points
-     */
-    function setTotalAllocPoint(uint256 _totalAllocPoint) virtual public onlyOwner {
-        totalAllocPoint = _totalAllocPoint;
-        emit SetTotalAllocPoint(_totalAllocPoint);
-    }
-
-    /**
      * @notice Set booster multiplier
      * @param _boosterMultiplier booster multiplier to set
      */
@@ -508,8 +511,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         }
         uint256 lpSupply = pool.amount;
         uint256 _pointsPerBlock = pointsPerBlock;
-        uint256 _allocPoint = pool.allocPoint;
-        if (lpSupply == 0 || _pointsPerBlock == 0 || _allocPoint == 0) {
+        if (lpSupply == 0 || _pointsPerBlock == 0) {
             pool.lastRewardBlock = getBlockNumber();
             return;
         }
@@ -523,27 +525,13 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             return;
         }
 
-        /* Feed Hashes
-        ATHUSD: '0x57744b683b8f4f907ef849039fc12760510242140bd5733e2fc9dc7557653f3e',
-        AZURUSD: '0xcd4bc8c9ccfd4a5f6d4369d06be0094ea723b8275ac7156dabfd5c6454aee625',
-        BEAMUSD: '0x7a103d78776b2ff5b0221e26ca533850e59f16be7381ccc952ada02e73beeef7',
-        PEPEUSD: '0x7740d9942fd36998a87156e36a2aa45d138b7679933e21fb59e01a005092c04f',
-        SDAIUSD: '0xf31e0ed7d2f9d8fe977679f2b18841571a064b9b072cf7daa755a526fe9579ec',
-        USDCUSD: '0x7416a56f222e196d0487dce8a1a8003936862e7a15092a91898d69fa8bce290c',
-        USDTUSD: '0x6dcd0a8fb0460d4f0f98c524e06c10c63377cd098b589c0b90314bfb55751558',
-        WBTCUSD: '0x1ddeb20108df88bf27cc4a55fff8489a99c37ae2917ce13927c6cdadf4128503',
-        WEETHUSD: '0x2778ff4ef448d972c023c579b2bff9c55d48d0fde830dcdd72fff8189c01993e',
-        ZENTUSD: '0x01754fec1fe1377161a2abd3ba6b7ccbdc47d66f7a4c169532cdf8c16d082255'
-        */
         IStork.TemporalNumericValue memory storkValue = stork.getTemporalNumericValueUnsafeV1(feedHash);
 
-        /* TODO
         if (block.timestamp - (storkValue.timestampNs / 1000000000) > pv.staleSeconds) {
             // stale price
             pool.lastRewardBlock = getBlockNumber();
             return;
         }
-        */
 
         if (storkValue.quantizedValue <= 0) {
             // invalid price
