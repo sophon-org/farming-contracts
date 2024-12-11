@@ -1,5 +1,5 @@
 {
-    "merkleRoot": "946b693e0c6118b966cd2a7ca342b64947c4d13424a762ad7207320086f7c4e4",
+    "merkleRoot": "6778c9e85ca678945d7160de642ebee49b6d1465ea6746a65a5ce04d4533a334",
     "totalDepositAmount": {},
     "claims": {
         "0x3c902069be2eafb251102446b22d1b054013b998": [
@@ -10,15 +10,15 @@
                 "amount": "4980099502487562000000000",
                 "boostAmount": "4975124378109452500000000",
                 "depositAmount": "4975124378109500000000",
-                "rewardSettled": "0",
+                "rewardSettled": "2566705134800684449792",
                 "rewardDebt": "0",
                 "proof": [
-                    "ae8c8ae40aecdaea01d4dce16b5e05324ce437bbece39fca2f85609d6bf70b94",
-                    "6f92eee0f2938b6f9f5a8821b9f49439e4682609c97e462c87d24a3d9e2e10a6",
-                    "7086c50fe571653fc440c983d424c7a760f8b685912859c9bddcbaa1ee86c716",
-                    "2ab8af56a6d579e95e4714d4666c17919cad6e0b0912fdd62832892b819016c6",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "29c0f6798c00c331dbaaf6c38cc498b2ba993db251ae5700f51baf858eb49425",
+                    "6be847cf93fe54c58166fd3b3e4905c87e263ad717ec2b6020e009e36eadfaeb",
+                    "cf7ab3ff5e501ed8d24ece791b41c7a8a5cd7be58c61d3c0b19f46a02c28d8ab",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -28,15 +28,15 @@
                 "amount": "2990049751243781080000000",
                 "boostAmount": "2487562189054726350000000",
                 "depositAmount": "502487562189054730000000",
-                "rewardSettled": "0",
+                "rewardSettled": "1924052260903777992704",
                 "rewardDebt": "0",
                 "proof": [
-                    "d005083811d59d9231e92a8e114ef39556424587ec3ed68c353d0506efd35cc9",
-                    "6450893819d20b082f36b208417f057bc0cbe3c2a9a9a67112797cfdc0dd7758",
-                    "7086c50fe571653fc440c983d424c7a760f8b685912859c9bddcbaa1ee86c716",
-                    "2ab8af56a6d579e95e4714d4666c17919cad6e0b0912fdd62832892b819016c6",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "8aa8d2564e22a813b6c3cb0b0a2da1e387aa058d45606bcdc154d5f65205862a",
+                    "23d8af5203fa356bb69a265dbafe94fd17cee3f51079f6440d6d0ad325e812bf",
+                    "cf7ab3ff5e501ed8d24ece791b41c7a8a5cd7be58c61d3c0b19f46a02c28d8ab",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -46,15 +46,15 @@
                 "amount": "50000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "50000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "937145725917514170368",
                 "rewardDebt": "0",
                 "proof": [
-                    "ee4cc5a0fcc06b4ed6ba81e743ea8905e35a9a0f19236f580c9e93923d89aaba",
-                    "318f16593a1ef139ea02aa7445a28971631327a58c7af0d0e198599ec0893739",
-                    "8423fb717815b21d14492a0ed22eed1d92e4e587c9176ab7b17640072318496b",
-                    "2ab8af56a6d579e95e4714d4666c17919cad6e0b0912fdd62832892b819016c6",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "d20e5d92674f154a4383818a854d93d814289835086e4b64fcf71f24d8ab914e",
+                    "d41a67d0a3da55223f7227dfabe10f294b0b4af3cf6c3ec6fd2b5c522b5aa334",
+                    "e9679237c0907e6165fe811e496b614e313b627d82bddacf5e4c66829e2dc4b9",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -64,15 +64,15 @@
                 "amount": "1000000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "1000000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "1844135558664699248640",
                 "rewardDebt": "0",
                 "proof": [
-                    "e71f379676e42bf9bf53111611423de841e101f87d37ab984d8f4267cd95ab8b",
-                    "01ab5e8fb75e98b6d3f28c8f4b1ff519f911330d8105de3796a113b370d82a2b",
-                    "625ebaf21a54c339fb450e61310839a7ec8d11f95a06a9edc7f5b45dbb6ba8a4",
-                    "1605049ff95e0a5381c81754bc52714a6d459e773f3dc6089cf551e584c4ee6a",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "839a9630b54f4c18a5f75629b98bf0f31bb0384b3dd95bd0a610403cd4d27b4e",
+                    "4f9eeb2c9d295284ca7f246cbd656b06dd3244ed9c62824653999984bbdaa3ee",
+                    "59f5954b54dee5e1e4ea2383a25eb216a43200c5c7fe17b7665ace44b8b16fef",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             }
         ],
@@ -84,15 +84,15 @@
                 "amount": "86033271713322563",
                 "boostAmount": "0",
                 "depositAmount": "86033271713322563",
-                "rewardSettled": "0",
+                "rewardSettled": "8833595268941901463552",
                 "rewardDebt": "0",
                 "proof": [
-                    "6f34d957a83cd6277b76ead5901ffe47df3e5a3fe1150ab668f8beebf3a2fa4d",
-                    "6f92eee0f2938b6f9f5a8821b9f49439e4682609c97e462c87d24a3d9e2e10a6",
-                    "7086c50fe571653fc440c983d424c7a760f8b685912859c9bddcbaa1ee86c716",
-                    "2ab8af56a6d579e95e4714d4666c17919cad6e0b0912fdd62832892b819016c6",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "75eb2d793b09386939bbb3b95f26e04f035002b736c706a4f05ae8b30e780975",
+                    "6be847cf93fe54c58166fd3b3e4905c87e263ad717ec2b6020e009e36eadfaeb",
+                    "cf7ab3ff5e501ed8d24ece791b41c7a8a5cd7be58c61d3c0b19f46a02c28d8ab",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -102,15 +102,15 @@
                 "amount": "50000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "50000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "1056171974762072113152",
                 "rewardDebt": "0",
                 "proof": [
-                    "15d1ccf7c9e70efd409f2d20d35b38e1ab85e82039c73e5a865d89b3606c96f9",
-                    "6450893819d20b082f36b208417f057bc0cbe3c2a9a9a67112797cfdc0dd7758",
-                    "7086c50fe571653fc440c983d424c7a760f8b685912859c9bddcbaa1ee86c716",
-                    "2ab8af56a6d579e95e4714d4666c17919cad6e0b0912fdd62832892b819016c6",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "c5583b084bc6a355994578965f917e94cad8e3dab400898d5d81ffcc347559c9",
+                    "23d8af5203fa356bb69a265dbafe94fd17cee3f51079f6440d6d0ad325e812bf",
+                    "cf7ab3ff5e501ed8d24ece791b41c7a8a5cd7be58c61d3c0b19f46a02c28d8ab",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -120,15 +120,15 @@
                 "amount": "195980400000000000000000",
                 "boostAmount": "119988000000000000000000",
                 "depositAmount": "75992400000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "3673243884472095997952",
                 "rewardDebt": "0",
                 "proof": [
-                    "c21e66c8b22b691984e992d1bd9c3b9f2a88d91e62364975ab8b31461d164a01",
-                    "3cb39171984625e5e5e5ebac0f65e6a6be1a7ea0012421350ba20250d8fb787c",
-                    "83115c9b4d6cef0403c0df0aa08539c588bfc597ee951c86a5d5323bb8305bfb",
-                    "46a2c80ed7ab6cb7f31805e7602c19be24548c83ddd76374dd80a50653367ae0",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "e1cb031b4c43c97b36c0bda01e7be4cc59a7d1d977426a127fa108c1594105a2",
+                    "a14fbb3bd5fd88aaa226e06b8b2c38b6469cd3201f6ab02f513d2cc3f02dde33",
+                    "bbfa7fd5a11ce9ab5c588ce86596a381844b2efc2a89b082b2584c5025545d97",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -138,15 +138,15 @@
                 "amount": "100000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "100000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "4610389610389609906176",
                 "rewardDebt": "0",
                 "proof": [
-                    "340b44c628835fa12360c0018edaf8e8da2621cecdf36d192737eef05498c8fd",
-                    "cb29cab8ab487e4fd777165d96c477680947c50c5b9096b93959a816b4d052dc",
-                    "6bc7a5ad1fe39b33da546ce3f689ab30e9bde86bae926e9a2996aa1f18d72b86",
-                    "655b3ba5671ce9c991f4d5480506497517a78a08860e98b212f56e8d877b6192",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "25b3af2ac5d8492738b501810bee1ef5bc40514becdd158b091742b11247509b",
+                    "83ffefa3b6dd35a22b941e869ef0f767123429fcd313c399345fa259e0cc4e98",
+                    "ef0430d94d87ecb075db397bbcb0cf2e612b7b699c12e503eb211a2a94dcb24f",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -156,15 +156,15 @@
                 "amount": "50000000000",
                 "boostAmount": "0",
                 "depositAmount": "50000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "4610389610389610430464",
                 "rewardDebt": "0",
                 "proof": [
-                    "04feb0f316ec4cc4bf272103368cad14f3e87329c5236117338d250eff85acb1",
-                    "7b2ec048c987865d77cbdaa7f01d4e301c3b50cdc6e0448b215cefe368fc2b09",
-                    "51ff8520e904b3c749795085b41ccab14e7db90f25d32d4ded98cf0a8e28e60a",
-                    "655b3ba5671ce9c991f4d5480506497517a78a08860e98b212f56e8d877b6192",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "a9f9614d26f80ccf4b61025b5d7a50bc921fc338a493a30ece1f12ea8fcd1e05",
+                    "f2643c9a6af5dc954f2f7d36fe6b26f7fbb00a0d33bb414836ea82a92a9393f6",
+                    "8d14527d3cafd5d258520c8e744a62dd4d967a68cded16238cb1826be270a533",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -174,15 +174,15 @@
                 "amount": "30000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "30000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "4586539908634040598528",
                 "rewardDebt": "0",
                 "proof": [
-                    "134b7b4d2f5db066bcf04d682013cbf6d67535a4971d11cb8118837c91763008",
-                    "4df40b621892becf3a2ac413a7a3f640d380ddabf7df795a3d9827c261b1f3cb",
-                    "51ff8520e904b3c749795085b41ccab14e7db90f25d32d4ded98cf0a8e28e60a",
-                    "655b3ba5671ce9c991f4d5480506497517a78a08860e98b212f56e8d877b6192",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "4a76527a6b1d03bcfa8a2fce73f9107eb3c34e1326aefbacd1c0383bc596662b",
+                    "e6305f4759ea2f30f33211123d15d48f2130d0238c49a2bd4a615abd0733a394",
+                    "8d14527d3cafd5d258520c8e744a62dd4d967a68cded16238cb1826be270a533",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -192,15 +192,15 @@
                 "amount": "1000000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "1000000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "867832598914319253504",
                 "rewardDebt": "0",
                 "proof": [
-                    "8442256bc93a6a57fbf553909c37e22ac1b4945f9174a455b222fe0081328cc0",
-                    "4df40b621892becf3a2ac413a7a3f640d380ddabf7df795a3d9827c261b1f3cb",
-                    "51ff8520e904b3c749795085b41ccab14e7db90f25d32d4ded98cf0a8e28e60a",
-                    "655b3ba5671ce9c991f4d5480506497517a78a08860e98b212f56e8d877b6192",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "0d3792009fe7ebb52c42382a0f92708a76e07545907f7506cc3eb16c89579ed5",
+                    "e6305f4759ea2f30f33211123d15d48f2130d0238c49a2bd4a615abd0733a394",
+                    "8d14527d3cafd5d258520c8e744a62dd4d967a68cded16238cb1826be270a533",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -210,15 +210,15 @@
                 "amount": "93505082439544696354525",
                 "boostAmount": "93505082439544696354525",
                 "depositAmount": "0",
-                "rewardSettled": "61986914642446682295000",
+                "rewardSettled": "60169120998392381440",
                 "rewardDebt": "56275001945026492500291",
                 "proof": [
-                    "d1edb84db692c74f6bd73768a7a9ca9d46cc3224adca7298be0bc280863bb9de",
-                    "3d7cba8bf73c108349fdcb1286b1c8f3c0f4d39eae54021d1078b6c6263d66eb",
-                    "06911c3b20b2ef6df6d737c0aed1d3129855169b4826e3306f8fbe9336317bbf",
-                    "1605049ff95e0a5381c81754bc52714a6d459e773f3dc6089cf551e584c4ee6a",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "2ff017539b9411edf30c903ee61bde7dd072940999ceeba27bd719f3494e5ad6",
+                    "be85b1797cd5b850eaa649d4646d800d762d376217ead33441be38636cdd82f4",
+                    "6de589cc956496fd58063c9888d91c75858561f6cd92e329b10ca203c3081bf5",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -228,15 +228,15 @@
                 "amount": "20000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "20000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "10307846795103647744",
                 "rewardDebt": "0",
                 "proof": [
-                    "03bb05f4c8662760abd3e2332549766f4cdf4929129ad9f81dcade710851b451",
-                    "8a919d9a74cc13a0bbb6f50ac6dbe6a10d206533d6abb6f84db8fd8124f7d4fb",
-                    "06911c3b20b2ef6df6d737c0aed1d3129855169b4826e3306f8fbe9336317bbf",
-                    "1605049ff95e0a5381c81754bc52714a6d459e773f3dc6089cf551e584c4ee6a",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "606a33d9f04224134df5fcb34f77a076fdd6f0f9364fb72af86ee60995a0933b",
+                    "eba668657246452c8f3e69675f7430af7039c46951fe6fa2aa0f21e03d56a307",
+                    "6de589cc956496fd58063c9888d91c75858561f6cd92e329b10ca203c3081bf5",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -246,13 +246,13 @@
                 "amount": "10000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "10000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "18441355586646992",
                 "rewardDebt": "0",
                 "proof": [
-                    "f85d26039d072cf6f1df5c3cb7bd1c9fe4a1b9fef5bd1313489bf5d4e28d6d10",
-                    "886758c9f8b9bf28c089652f9ed5164120a20240fc09054c850756fd60082c5c",
-                    "e55434280dc507206c5b874e4c9d9908654798cd945f3c11baa8c204f474ddd0",
-                    "5289cf0b13367acc08c6f8d1029ca4e3064f4d67d114998f4c84938eb944c3a2"
+                    "45f5ae9e1d88198b514f2c6f6c15cf15711ee80dd911c5edc823b36415dda7af",
+                    "4974a92c42f4d012b8ad67912e2fba58ed190360da01489f8902c5ea2e45808d",
+                    "bcbc2af8096eaded14123746e5e4ef4fe4936ec64828154d1bffca5b08853f98",
+                    "bae3aae23776dac469a7a9ac90c5d31df6926997b1e0931c70401745e1530cac"
                 ]
             }
         ],
@@ -264,15 +264,15 @@
                 "amount": "0",
                 "boostAmount": "0",
                 "depositAmount": "0",
-                "rewardSettled": "14493473277135481180",
+                "rewardSettled": "0",
                 "rewardDebt": "0",
                 "proof": [
-                    "d70061b5985766c23d01d09dad808039e61850c7a90c7028e8af8d2c381bc2c6",
-                    "996bb14cc0bee12f205fd27f9cc1760c33aa1d91d8454667a9cc3e2fdaf6b414",
-                    "8423fb717815b21d14492a0ed22eed1d92e4e587c9176ab7b17640072318496b",
-                    "2ab8af56a6d579e95e4714d4666c17919cad6e0b0912fdd62832892b819016c6",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "3df1d8fdc925209fe90d77a3259f36f9e85d94a50edbafef525de3e779c9ee31",
+                    "b3875019c04990bdea5f5c3e2fd214d7af1ac8bddbcc5f0fcdb115c5a166a24a",
+                    "e9679237c0907e6165fe811e496b614e313b627d82bddacf5e4c66829e2dc4b9",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -282,15 +282,15 @@
                 "amount": "10000000000",
                 "boostAmount": "0",
                 "depositAmount": "10000000000",
-                "rewardSettled": "45196933882623083677",
+                "rewardSettled": "922077922077922033664",
                 "rewardDebt": "575282871060984669413115",
                 "proof": [
-                    "2a0e5923b667377579abb7e81f35b6832908b945766db0c3ceb49ca02797cfa0",
-                    "177b27f93b5ec850a18ee6158bf8aad8b6ed1251c2ad614ffffce9adec454b1a",
-                    "5b32cb48f25739e940a4f874e0cafd8b7317e1eecac0864451c6487031a8fae8",
-                    "46a2c80ed7ab6cb7f31805e7602c19be24548c83ddd76374dd80a50653367ae0",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "a1ee20505a437986d9f3069cff030939cbda8ddaadfa30a04a506c0bec76b196",
+                    "a004bedd0c5e33feccbad370ad53935b18fba775a2d2c245acce8621e7f25559",
+                    "7241bfa794fd036d66f55ebd113febc25eeb4484f5f7f3bd41c457e37610ba24",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -300,15 +300,15 @@
                 "amount": "1000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "1000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "867832598914319488",
                 "rewardDebt": "451172138415672588000",
                 "proof": [
-                    "086db5021ce5ad6d58f66821da43fcda42ffd56f26f95d2b30c715921432d3b6",
-                    "8a919d9a74cc13a0bbb6f50ac6dbe6a10d206533d6abb6f84db8fd8124f7d4fb",
-                    "06911c3b20b2ef6df6d737c0aed1d3129855169b4826e3306f8fbe9336317bbf",
-                    "1605049ff95e0a5381c81754bc52714a6d459e773f3dc6089cf551e584c4ee6a",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "8751c75c1691b92a96412cd11920c019f10ffb816e3b08a03dcc8502f7369c2e",
+                    "eba668657246452c8f3e69675f7430af7039c46951fe6fa2aa0f21e03d56a307",
+                    "6de589cc956496fd58063c9888d91c75858561f6cd92e329b10ca203c3081bf5",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             }
         ],
@@ -320,15 +320,15 @@
                 "amount": "4500500000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "4500500000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "95066039448334123008",
                 "rewardDebt": "0",
                 "proof": [
-                    "7b838db8f0cffaff79b18a44aa4368b1677347ef8ae3fd0ca8aa8a0292190ab4",
-                    "996bb14cc0bee12f205fd27f9cc1760c33aa1d91d8454667a9cc3e2fdaf6b414",
-                    "8423fb717815b21d14492a0ed22eed1d92e4e587c9176ab7b17640072318496b",
-                    "2ab8af56a6d579e95e4714d4666c17919cad6e0b0912fdd62832892b819016c6",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "6841ebf5eeee6b24d6113eddd506043e96d3567c85ff860015f40630232b48cf",
+                    "b3875019c04990bdea5f5c3e2fd214d7af1ac8bddbcc5f0fcdb115c5a166a24a",
+                    "e9679237c0907e6165fe811e496b614e313b627d82bddacf5e4c66829e2dc4b9",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -338,15 +338,15 @@
                 "amount": "4980099502487562000000000",
                 "boostAmount": "4975124378109452500000000",
                 "depositAmount": "4975124378109500000000",
-                "rewardSettled": "0",
+                "rewardSettled": "3204619489458705137664",
                 "rewardDebt": "0",
                 "proof": [
-                    "3968a2c35eb63d5b3820795d47f38c7b70f1daa691dd7cf75033ef729da44c24",
-                    "963d24200c52709312f09e38d9e756a95758c943596bb48130ef81d359ae67ae",
-                    "625ebaf21a54c339fb450e61310839a7ec8d11f95a06a9edc7f5b45dbb6ba8a4",
-                    "1605049ff95e0a5381c81754bc52714a6d459e773f3dc6089cf551e584c4ee6a",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "cc59d609127377e2696c58ccf05006a470946cb30696f71c61ff462c21ac0831",
+                    "d50c676ce7a90306c739406b79d1514760d85a14d9112197122329f4834a5079",
+                    "59f5954b54dee5e1e4ea2383a25eb216a43200c5c7fe17b7665ace44b8b16fef",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -356,15 +356,15 @@
                 "amount": "2498996667500000000000000",
                 "boostAmount": "2498996667500000000000000",
                 "depositAmount": "0",
-                "rewardSettled": "0",
+                "rewardSettled": "2168710772634748190720",
                 "rewardDebt": "0",
                 "proof": [
-                    "28c648cf28c740ef65b55748c9e8a9dcc49dd5ebcdbf68f4e7d35dd56b5fe466",
-                    "01ab5e8fb75e98b6d3f28c8f4b1ff519f911330d8105de3796a113b370d82a2b",
-                    "625ebaf21a54c339fb450e61310839a7ec8d11f95a06a9edc7f5b45dbb6ba8a4",
-                    "1605049ff95e0a5381c81754bc52714a6d459e773f3dc6089cf551e584c4ee6a",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "cc758485634b918d8c31432d8c21e43a93f712c62a99b200deec9ccd723a603b",
+                    "4f9eeb2c9d295284ca7f246cbd656b06dd3244ed9c62824653999984bbdaa3ee",
+                    "59f5954b54dee5e1e4ea2383a25eb216a43200c5c7fe17b7665ace44b8b16fef",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -374,11 +374,11 @@
                 "amount": "55998000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "55998000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "8561235393456301056",
                 "rewardDebt": "0",
                 "proof": [
-                    "e37903cc2ecebe13055a1bed8591b847d4cbe45ee295a105e5f242c01b0e9c0f",
-                    "5289cf0b13367acc08c6f8d1029ca4e3064f4d67d114998f4c84938eb944c3a2"
+                    "dae7dd4ee54c17cba707db5a32fd00e53eac435e13320c53df6ca8735b0b5c1c",
+                    "bae3aae23776dac469a7a9ac90c5d31df6926997b1e0931c70401745e1530cac"
                 ]
             }
         ],
@@ -390,15 +390,15 @@
                 "amount": "1156218905472636800000000",
                 "boostAmount": "945273631840796000000000",
                 "depositAmount": "210945273631840800000000",
-                "rewardSettled": "4413285845679838253",
+                "rewardSettled": "595906366960718315520",
                 "rewardDebt": "74083231017864489877433",
                 "proof": [
-                    "2d2ea595a192fc8a182ecefbe46c25bd1856fc28af8f7d1d7cfa03b30ec79fbb",
-                    "318f16593a1ef139ea02aa7445a28971631327a58c7af0d0e198599ec0893739",
-                    "8423fb717815b21d14492a0ed22eed1d92e4e587c9176ab7b17640072318496b",
-                    "2ab8af56a6d579e95e4714d4666c17919cad6e0b0912fdd62832892b819016c6",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "1c81f7d6ff13634e788c2d3759451b6942efe04ec5f2b130429cd4ab3b2c2c54",
+                    "d41a67d0a3da55223f7227dfabe10f294b0b4af3cf6c3ec6fd2b5c522b5aa334",
+                    "e9679237c0907e6165fe811e496b614e313b627d82bddacf5e4c66829e2dc4b9",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -408,15 +408,15 @@
                 "amount": "750000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "750000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "650874449185739505664",
                 "rewardDebt": "0",
                 "proof": [
-                    "af05599ab7356208b5358aaeffbe184fcae65c86a27bdb3e1f58e5d6b8154254",
-                    "3cb39171984625e5e5e5ebac0f65e6a6be1a7ea0012421350ba20250d8fb787c",
-                    "83115c9b4d6cef0403c0df0aa08539c588bfc597ee951c86a5d5323bb8305bfb",
-                    "46a2c80ed7ab6cb7f31805e7602c19be24548c83ddd76374dd80a50653367ae0",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "79206546d57d57ff78ba1b13489c395db723187e39d7e0213a0ae93fa026926e",
+                    "a14fbb3bd5fd88aaa226e06b8b2c38b6469cd3201f6ab02f513d2cc3f02dde33",
+                    "bbfa7fd5a11ce9ab5c588ce86596a381844b2efc2a89b082b2584c5025545d97",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -426,15 +426,15 @@
                 "amount": "1000000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "1000000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "1844135558664699248640",
                 "rewardDebt": "1901714840651557705000000",
                 "proof": [
-                    "37074526e81a647fc934e8434a595d153bbe426750f165039681c5fc922c805f",
-                    "695e51afbe921451a82e05f1b8a14e1c64d836e88993d298f95fb6c80f670bf8",
-                    "83115c9b4d6cef0403c0df0aa08539c588bfc597ee951c86a5d5323bb8305bfb",
-                    "46a2c80ed7ab6cb7f31805e7602c19be24548c83ddd76374dd80a50653367ae0",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "9cdb3e59302fd7763fb8463fabc5abc19edb16594c89e5d47848e3efc0407403",
+                    "b43ec71216709f0fc427568322ce7961a8affd2044caa1a9bbd16939cabfbf7a",
+                    "bbfa7fd5a11ce9ab5c588ce86596a381844b2efc2a89b082b2584c5025545d97",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -444,15 +444,15 @@
                 "amount": "229601990049751240000000",
                 "boostAmount": "99502487562189050000000",
                 "depositAmount": "130099502487562190000000",
-                "rewardSettled": "112250145328024653199439",
+                "rewardSettled": "147745443994524712960",
                 "rewardDebt": "92176943183066507649439",
                 "proof": [
-                    "0bbbd87b884245986cae538e56e293de02fab301349f53749fad377d3128478f",
-                    "584576f9d2f97baad3b90ede327362f58d40b3c16b208b03e21b948fd3a35c8d",
-                    "6bc7a5ad1fe39b33da546ce3f689ab30e9bde86bae926e9a2996aa1f18d72b86",
-                    "655b3ba5671ce9c991f4d5480506497517a78a08860e98b212f56e8d877b6192",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "92c6358d9ee9c22e5a8fdea7dafec3575ce2458706834405df5c4eab4b9b46f3",
+                    "ce10b7cd072ed60bb4497cf4dbf768f8e5d2002dc49e9996d7935476d5630355",
+                    "ef0430d94d87ecb075db397bbcb0cf2e612b7b699c12e503eb211a2a94dcb24f",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -462,15 +462,15 @@
                 "amount": "10000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "10000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "211234394952414429184",
                 "rewardDebt": "149912432794965345790000",
                 "proof": [
-                    "1e2d07b5b60ea90555f8e2e1d3157aa4114709c991ad600c7a3ac6ce9ad5face",
-                    "963d24200c52709312f09e38d9e756a95758c943596bb48130ef81d359ae67ae",
-                    "625ebaf21a54c339fb450e61310839a7ec8d11f95a06a9edc7f5b45dbb6ba8a4",
-                    "1605049ff95e0a5381c81754bc52714a6d459e773f3dc6089cf551e584c4ee6a",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "386f5696e86bc39f91133559c07abb891acc1605c31447aa68ced9f186a3db81",
+                    "d50c676ce7a90306c739406b79d1514760d85a14d9112197122329f4834a5079",
+                    "59f5954b54dee5e1e4ea2383a25eb216a43200c5c7fe17b7665ace44b8b16fef",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             }
         ],
@@ -482,15 +482,15 @@
                 "amount": "3770911063649853",
                 "boostAmount": "3638222933146850",
                 "depositAmount": "132688130503003",
-                "rewardSettled": "0",
+                "rewardSettled": "387183951837318479872",
                 "rewardDebt": "0",
                 "proof": [
-                    "c8880dd3975b4d7175c0eb5d124894fa1f109720e8ee0ad2e64dc035d3639ee4",
-                    "5fba392930b88fbc1fa4cf70bfe0c6c1fa77c2235e3e7dbcf128da6c852d225b",
-                    "5b32cb48f25739e940a4f874e0cafd8b7317e1eecac0864451c6487031a8fae8",
-                    "46a2c80ed7ab6cb7f31805e7602c19be24548c83ddd76374dd80a50653367ae0",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "4f207e0d6c3bd78e3b37900c54a32953e2423f62f93138f90d9f38e46888b5f8",
+                    "3815380976dab855a5b2d895a0fd6b6a87c7ed83a557d55123876d7ab017d01f",
+                    "7241bfa794fd036d66f55ebd113febc25eeb4484f5f7f3bd41c457e37610ba24",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -500,15 +500,15 @@
                 "amount": "5342004975124378400000",
                 "boostAmount": "4028756218905473000000",
                 "depositAmount": "1313248756218905400000",
-                "rewardSettled": "0",
+                "rewardSettled": "3437500244225632768",
                 "rewardDebt": "0",
                 "proof": [
-                    "72b9d58dae45b75589172b328fb0c99456a3fa4a90ed5f2204e6966f0ac18f54",
-                    "5fba392930b88fbc1fa4cf70bfe0c6c1fa77c2235e3e7dbcf128da6c852d225b",
-                    "5b32cb48f25739e940a4f874e0cafd8b7317e1eecac0864451c6487031a8fae8",
-                    "46a2c80ed7ab6cb7f31805e7602c19be24548c83ddd76374dd80a50653367ae0",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "68fb374148907a1ad4998b2ddd549f5580ac63abedbc98f526a708f7df2e0fc3",
+                    "3815380976dab855a5b2d895a0fd6b6a87c7ed83a557d55123876d7ab017d01f",
+                    "7241bfa794fd036d66f55ebd113febc25eeb4484f5f7f3bd41c457e37610ba24",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -518,15 +518,15 @@
                 "amount": "15141855821527",
                 "boostAmount": "8173160812755",
                 "depositAmount": "6968695008772",
-                "rewardSettled": "0",
+                "rewardSettled": "4610389610389610430464",
                 "rewardDebt": "0",
                 "proof": [
-                    "7be06047ae305711b607697c5a57dbcaedb7cb6bb3b8d07f244e006319fcc83c",
-                    "177b27f93b5ec850a18ee6158bf8aad8b6ed1251c2ad614ffffce9adec454b1a",
-                    "5b32cb48f25739e940a4f874e0cafd8b7317e1eecac0864451c6487031a8fae8",
-                    "46a2c80ed7ab6cb7f31805e7602c19be24548c83ddd76374dd80a50653367ae0",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "135cb9434983262903d9c0756a97868d81ac127ba0e72699489a976f0c14b24f",
+                    "a004bedd0c5e33feccbad370ad53935b18fba775a2d2c245acce8621e7f25559",
+                    "7241bfa794fd036d66f55ebd113febc25eeb4484f5f7f3bd41c457e37610ba24",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -536,15 +536,15 @@
                 "amount": "22669999999999999988000",
                 "boostAmount": "22669999999999999985000",
                 "depositAmount": "3000",
-                "rewardSettled": "0",
+                "rewardSettled": "478868373357123600384",
                 "rewardDebt": "0",
                 "proof": [
-                    "cc830e5b1961ccd55b942f74d18183281389d284d60f804c67e9f875e59cf487",
-                    "3d7cba8bf73c108349fdcb1286b1c8f3c0f4d39eae54021d1078b6c6263d66eb",
-                    "06911c3b20b2ef6df6d737c0aed1d3129855169b4826e3306f8fbe9336317bbf",
-                    "1605049ff95e0a5381c81754bc52714a6d459e773f3dc6089cf551e584c4ee6a",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "b53176dceb8c1e99d9de9a69021a4f508c2770204cc93fd7b0214ced50d7c271",
+                    "be85b1797cd5b850eaa649d4646d800d762d376217ead33441be38636cdd82f4",
+                    "6de589cc956496fd58063c9888d91c75858561f6cd92e329b10ca203c3081bf5",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             }
         ],
@@ -556,15 +556,15 @@
                 "amount": "30000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "30000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "26034977967429580",
                 "rewardDebt": "0",
                 "proof": [
-                    "f00088195e89f87072a26f91d1fd59962cc569692b8eeee64b9883d4158990cf",
-                    "695e51afbe921451a82e05f1b8a14e1c64d836e88993d298f95fb6c80f670bf8",
-                    "83115c9b4d6cef0403c0df0aa08539c588bfc597ee951c86a5d5323bb8305bfb",
-                    "46a2c80ed7ab6cb7f31805e7602c19be24548c83ddd76374dd80a50653367ae0",
-                    "476e25f3ddd8245936d1d687ee1fcc2ea55aff002f04ea5aea253d13e8bef7fc",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "4bc5fac703231f25936b84a659d9e2886da2f55a86bfdcc5a23ae6551ee60024",
+                    "b43ec71216709f0fc427568322ce7961a8affd2044caa1a9bbd16939cabfbf7a",
+                    "bbfa7fd5a11ce9ab5c588ce86596a381844b2efc2a89b082b2584c5025545d97",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -574,15 +574,15 @@
                 "amount": "100000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "100000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "15288466362113468416",
                 "rewardDebt": "7166686841446234071400",
                 "proof": [
-                    "773e2db47784dc6db284858bf3e92c5bbbf4e735ee08246f67be9e89c53027c8",
-                    "cb29cab8ab487e4fd777165d96c477680947c50c5b9096b93959a816b4d052dc",
-                    "6bc7a5ad1fe39b33da546ce3f689ab30e9bde86bae926e9a2996aa1f18d72b86",
-                    "655b3ba5671ce9c991f4d5480506497517a78a08860e98b212f56e8d877b6192",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "0a20318335992a798216d643e90b92ca9879fb2b733716fd41ef99c0d8c62c4b",
+                    "83ffefa3b6dd35a22b941e869ef0f767123429fcd313c399345fa259e0cc4e98",
+                    "ef0430d94d87ecb075db397bbcb0cf2e612b7b699c12e503eb211a2a94dcb24f",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -592,15 +592,15 @@
                 "amount": "12000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "12000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "22129626703976392",
                 "rewardDebt": "20678378052040375116",
                 "proof": [
-                    "a96cc11e7cf50e8e0315477aaa60ff6f11c0df24856201edb25c8740aab16abc",
-                    "584576f9d2f97baad3b90ede327362f58d40b3c16b208b03e21b948fd3a35c8d",
-                    "6bc7a5ad1fe39b33da546ce3f689ab30e9bde86bae926e9a2996aa1f18d72b86",
-                    "655b3ba5671ce9c991f4d5480506497517a78a08860e98b212f56e8d877b6192",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "2aeb97f79f3013d770938bffac861d2dd5b02daf48c1b0a4e7f9a8823384c2db",
+                    "ce10b7cd072ed60bb4497cf4dbf768f8e5d2002dc49e9996d7935476d5630355",
+                    "ef0430d94d87ecb075db397bbcb0cf2e612b7b699c12e503eb211a2a94dcb24f",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             },
             {
@@ -610,13 +610,13 @@
                 "amount": "1000000000000000000000000",
                 "boostAmount": "0",
                 "depositAmount": "1000000000000000000000000",
-                "rewardSettled": "0",
+                "rewardSettled": "515392339755182391296",
                 "rewardDebt": "0",
                 "proof": [
-                    "b64d57090c77542f7c9e46384f3e0e5be19ce8dc21eba4d81151838981a2ec24",
-                    "8e48dfdf1dba935f6136c10a866d1e28fc657505510c8ac8142ba585f7d38a2c",
-                    "e55434280dc507206c5b874e4c9d9908654798cd945f3c11baa8c204f474ddd0",
-                    "5289cf0b13367acc08c6f8d1029ca4e3064f4d67d114998f4c84938eb944c3a2"
+                    "0e60bc2c72bbf72607336cd44ce8e8aaf08a85ac827cf3817b1d333bc8d60047",
+                    "d930b64d4e6baca03ca98391088f503497e24f7765453c294d54bd603428e1da",
+                    "bcbc2af8096eaded14123746e5e4ef4fe4936ec64828154d1bffca5b08853f98",
+                    "bae3aae23776dac469a7a9ac90c5d31df6926997b1e0931c70401745e1530cac"
                 ]
             },
             {
@@ -626,13 +626,13 @@
                 "amount": "133267200000000000000",
                 "boostAmount": "111584000000000000000",
                 "depositAmount": "21683200000000000000",
-                "rewardSettled": "1485532499206169498286",
+                "rewardSettled": "2815061635900240896",
                 "rewardDebt": "1844008538358871383774",
                 "proof": [
-                    "8d60899cd7f7e7960adde7d293342a030d3c515f33d8a763e95a5b92e6451770",
-                    "8e48dfdf1dba935f6136c10a866d1e28fc657505510c8ac8142ba585f7d38a2c",
-                    "e55434280dc507206c5b874e4c9d9908654798cd945f3c11baa8c204f474ddd0",
-                    "5289cf0b13367acc08c6f8d1029ca4e3064f4d67d114998f4c84938eb944c3a2"
+                    "af4c362316c40bdea1cf6e19d464b8414a82b1d4aec57ce6adb76f5524627556",
+                    "d930b64d4e6baca03ca98391088f503497e24f7765453c294d54bd603428e1da",
+                    "bcbc2af8096eaded14123746e5e4ef4fe4936ec64828154d1bffca5b08853f98",
+                    "bae3aae23776dac469a7a9ac90c5d31df6926997b1e0931c70401745e1530cac"
                 ]
             },
             {
@@ -642,13 +642,13 @@
                 "amount": "59816119402985075960",
                 "boostAmount": "59770149253731344950",
                 "depositAmount": "45970149253731010",
-                "rewardSettled": "0",
+                "rewardSettled": "38490777529012576",
                 "rewardDebt": "0",
                 "proof": [
-                    "6ff8012a8a7f52ef3310d99c32df5d417e1cce1f404f20b9dc54953b3b3b10d0",
-                    "886758c9f8b9bf28c089652f9ed5164120a20240fc09054c850756fd60082c5c",
-                    "e55434280dc507206c5b874e4c9d9908654798cd945f3c11baa8c204f474ddd0",
-                    "5289cf0b13367acc08c6f8d1029ca4e3064f4d67d114998f4c84938eb944c3a2"
+                    "4fb6996cec668bfcdfe53cc56a6e4eecf3ccb41b97efac3ad9ecbd2e44cc6982",
+                    "4974a92c42f4d012b8ad67912e2fba58ed190360da01489f8902c5ea2e45808d",
+                    "bcbc2af8096eaded14123746e5e4ef4fe4936ec64828154d1bffca5b08853f98",
+                    "bae3aae23776dac469a7a9ac90c5d31df6926997b1e0931c70401745e1530cac"
                 ]
             }
         ],
@@ -660,15 +660,15 @@
                 "amount": "299004975124378120000000",
                 "boostAmount": "248756218905472650000000",
                 "depositAmount": "50248756218905470000000",
-                "rewardSettled": "0",
+                "rewardSettled": "192405226090377805824",
                 "rewardDebt": "0",
                 "proof": [
-                    "925c3e7ec8883bbe39e4dc94596b90338c8513ed60a10c994cad96fc44d514a6",
-                    "7b2ec048c987865d77cbdaa7f01d4e301c3b50cdc6e0448b215cefe368fc2b09",
-                    "51ff8520e904b3c749795085b41ccab14e7db90f25d32d4ded98cf0a8e28e60a",
-                    "655b3ba5671ce9c991f4d5480506497517a78a08860e98b212f56e8d877b6192",
-                    "5e01e4ed7e14b50b31e5b6838dd051a63886c9c19f274ce3d007f3d412add9b2",
-                    "9371051fce9e0345060d0fa8c07050625f15e5994cabdb76e450f4989efc92f9"
+                    "03569f84c54fb86fcb5d1e26449081306870a351513f04fde39e07839f2a5257",
+                    "f2643c9a6af5dc954f2f7d36fe6b26f7fbb00a0d33bb414836ea82a92a9393f6",
+                    "8d14527d3cafd5d258520c8e744a62dd4d967a68cded16238cb1826be270a533",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
                 ]
             }
         ]

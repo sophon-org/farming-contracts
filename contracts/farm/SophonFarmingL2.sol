@@ -418,16 +418,15 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
     // zero hash allowed; blocks updates to the pool
     // zero stale seconds means no change
-    function setPriceFeedData(uint256 _pid, bytes32 _newHash, uint256 _newStaleSeconds) external onlyOwner {
+    function setPriceFeedData(uint256 _pid, bytes32 _newHash, uint256 _newStaleSeconds, uint256 _emissionsMultiplier) external onlyOwner {
         PoolValue storage pv = poolValue[_pid];
         if (_newHash == pv.feedHash) {
             revert DuplicatePriceFeed();
         }
 
         pv.feedHash = _newHash;
-        if (_newStaleSeconds != 0) {
-            pv.staleSeconds = _newStaleSeconds;
-        }
+        pv.staleSeconds = _newStaleSeconds;
+        pv.emissionsMultiplier = _emissionsMultiplier;
 
         emit SetPriceFeedData(_newHash, _newStaleSeconds);
     }

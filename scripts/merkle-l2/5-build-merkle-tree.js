@@ -11,13 +11,13 @@ function hashUserInfo(userInfo) {
         { t: 'uint256', v: userInfo.userInfo.amount }, // amount
         { t: 'uint256', v: userInfo.userInfo.boostAmount }, // boostAmount
         { t: 'uint256', v: userInfo.userInfo.depositAmount }, // depositAmount
-        { t: 'uint256', v: userInfo.userInfo.rewardSettled }, // rewardSettled
+        { t: 'uint256', v: userInfo.userInfo.new_rewardSettled }, // rewardSettled
         { t: 'uint256', v: userInfo.userInfo.rewardDebt } // rewardDebt
     );
 }
 
 
-fs.readFile('./scripts/merkle-l2/output/1-userinfo-poolinfo.json', 'utf8', (err, data) => {
+fs.readFile('./scripts/merkle-l2/output/2-backdated-rewards.json', 'utf8', (err, data) => {
     if (err) {
         console.error('Error reading file:', err);
         return;
@@ -55,7 +55,7 @@ fs.readFile('./scripts/merkle-l2/output/1-userinfo-poolinfo.json', 'utf8', (err,
                 amount: userInfo.userInfo.amount,
                 boostAmount: userInfo.userInfo.boostAmount,
                 depositAmount: userInfo.userInfo.depositAmount,
-                rewardSettled: userInfo.userInfo.rewardSettled,
+                rewardSettled: userInfo.userInfo.new_rewardSettled,
                 rewardDebt: userInfo.userInfo.rewardDebt,
                 proof: proof
             });

@@ -11,7 +11,7 @@ l1_end_block = 722631; # SF.endBlock()
 l2_start_block = 723631; # just guessing for now 1000 blocks
 l1_pool_pointsPerBlock = 71000000000000000000 #SF.pointsPerBlock()
 blockMultiplier = (l2_start_block - l1_end_block) * 1e18;
-l1_totalAllocPoint = 770000 # SF.totalAllocPoint()ss
+l1_totalAllocPoint = 770000 # SF.totalAllocPoint()
 
 global_accPointsPerShare  = {}
 
@@ -23,7 +23,6 @@ with open(file_path, 'r', encoding='utf-8') as file:
     
     for index, pool in enumerate(pools):
         l1_allocPoint = int(pool["allocPoint"])
-        l1_totalAllocPoint = int(pool["accPointsPerShare"])
         l1_pool_amount = int(pool["amount"])
         accPointsPerShare = 0
         if l1_pool_amount > 0: # skip empty pools
