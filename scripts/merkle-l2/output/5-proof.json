@@ -1,0 +1,676 @@
+{
+    "merkleRoot": "6778c9e85ca678945d7160de642ebee49b6d1465ea6746a65a5ce04d4533a334",
+    "totalDepositAmount": {},
+    "claims": {
+        "0x3c902069be2eafb251102446b22d1b054013b998": [
+            {
+                "index": 0,
+                "user": "0x3c902069be2eafb251102446b22d1b054013b998",
+                "pid": "11",
+                "amount": "4980099502487562000000000",
+                "boostAmount": "4975124378109452500000000",
+                "depositAmount": "4975124378109500000000",
+                "rewardSettled": "2566705134800684449792",
+                "rewardDebt": "0",
+                "proof": [
+                    "29c0f6798c00c331dbaaf6c38cc498b2ba993db251ae5700f51baf858eb49425",
+                    "6be847cf93fe54c58166fd3b3e4905c87e263ad717ec2b6020e009e36eadfaeb",
+                    "cf7ab3ff5e501ed8d24ece791b41c7a8a5cd7be58c61d3c0b19f46a02c28d8ab",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 2,
+                "user": "0x3c902069be2eafb251102446b22d1b054013b998",
+                "pid": "0",
+                "amount": "2990049751243781080000000",
+                "boostAmount": "2487562189054726350000000",
+                "depositAmount": "502487562189054730000000",
+                "rewardSettled": "1924052260903777992704",
+                "rewardDebt": "0",
+                "proof": [
+                    "8aa8d2564e22a813b6c3cb0b0a2da1e387aa058d45606bcdc154d5f65205862a",
+                    "23d8af5203fa356bb69a265dbafe94fd17cee3f51079f6440d6d0ad325e812bf",
+                    "cf7ab3ff5e501ed8d24ece791b41c7a8a5cd7be58c61d3c0b19f46a02c28d8ab",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 6,
+                "user": "0x3c902069be2eafb251102446b22d1b054013b998",
+                "pid": "7",
+                "amount": "50000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "50000000000000000000000",
+                "rewardSettled": "937145725917514170368",
+                "rewardDebt": "0",
+                "proof": [
+                    "d20e5d92674f154a4383818a854d93d814289835086e4b64fcf71f24d8ab914e",
+                    "d41a67d0a3da55223f7227dfabe10f294b0b4af3cf6c3ec6fd2b5c522b5aa334",
+                    "e9679237c0907e6165fe811e496b614e313b627d82bddacf5e4c66829e2dc4b9",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 30,
+                "user": "0x3c902069be2eafb251102446b22d1b054013b998",
+                "pid": "9",
+                "amount": "1000000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "1000000000000000000000000",
+                "rewardSettled": "1844135558664699248640",
+                "rewardDebt": "0",
+                "proof": [
+                    "839a9630b54f4c18a5f75629b98bf0f31bb0384b3dd95bd0a610403cd4d27b4e",
+                    "4f9eeb2c9d295284ca7f246cbd656b06dd3244ed9c62824653999984bbdaa3ee",
+                    "59f5954b54dee5e1e4ea2383a25eb216a43200c5c7fe17b7665ace44b8b16fef",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            }
+        ],
+        "0xe749b7469a9911e451600cb31b5ca180743183ce": [
+            {
+                "index": 1,
+                "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+                "pid": "1",
+                "amount": "86033271713322563",
+                "boostAmount": "0",
+                "depositAmount": "86033271713322563",
+                "rewardSettled": "8833595268941901463552",
+                "rewardDebt": "0",
+                "proof": [
+                    "75eb2d793b09386939bbb3b95f26e04f035002b736c706a4f05ae8b30e780975",
+                    "6be847cf93fe54c58166fd3b3e4905c87e263ad717ec2b6020e009e36eadfaeb",
+                    "cf7ab3ff5e501ed8d24ece791b41c7a8a5cd7be58c61d3c0b19f46a02c28d8ab",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 3,
+                "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+                "pid": "3",
+                "amount": "50000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "50000000000000000000000",
+                "rewardSettled": "1056171974762072113152",
+                "rewardDebt": "0",
+                "proof": [
+                    "c5583b084bc6a355994578965f917e94cad8e3dab400898d5d81ffcc347559c9",
+                    "23d8af5203fa356bb69a265dbafe94fd17cee3f51079f6440d6d0ad325e812bf",
+                    "cf7ab3ff5e501ed8d24ece791b41c7a8a5cd7be58c61d3c0b19f46a02c28d8ab",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 13,
+                "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+                "pid": "7",
+                "amount": "195980400000000000000000",
+                "boostAmount": "119988000000000000000000",
+                "depositAmount": "75992400000000000000000",
+                "rewardSettled": "3673243884472095997952",
+                "rewardDebt": "0",
+                "proof": [
+                    "e1cb031b4c43c97b36c0bda01e7be4cc59a7d1d977426a127fa108c1594105a2",
+                    "a14fbb3bd5fd88aaa226e06b8b2c38b6469cd3201f6ab02f513d2cc3f02dde33",
+                    "bbfa7fd5a11ce9ab5c588ce86596a381844b2efc2a89b082b2584c5025545d97",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 16,
+                "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+                "pid": "13",
+                "amount": "100000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "100000000000000000000000",
+                "rewardSettled": "4610389610389609906176",
+                "rewardDebt": "0",
+                "proof": [
+                    "25b3af2ac5d8492738b501810bee1ef5bc40514becdd158b091742b11247509b",
+                    "83ffefa3b6dd35a22b941e869ef0f767123429fcd313c399345fa259e0cc4e98",
+                    "ef0430d94d87ecb075db397bbcb0cf2e612b7b699c12e503eb211a2a94dcb24f",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 21,
+                "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+                "pid": "6",
+                "amount": "50000000000",
+                "boostAmount": "0",
+                "depositAmount": "50000000000",
+                "rewardSettled": "4610389610389610430464",
+                "rewardDebt": "0",
+                "proof": [
+                    "a9f9614d26f80ccf4b61025b5d7a50bc921fc338a493a30ece1f12ea8fcd1e05",
+                    "f2643c9a6af5dc954f2f7d36fe6b26f7fbb00a0d33bb414836ea82a92a9393f6",
+                    "8d14527d3cafd5d258520c8e744a62dd4d967a68cded16238cb1826be270a533",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 22,
+                "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+                "pid": "10",
+                "amount": "30000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "30000000000000000000000",
+                "rewardSettled": "4586539908634040598528",
+                "rewardDebt": "0",
+                "proof": [
+                    "4a76527a6b1d03bcfa8a2fce73f9107eb3c34e1326aefbacd1c0383bc596662b",
+                    "e6305f4759ea2f30f33211123d15d48f2130d0238c49a2bd4a615abd0733a394",
+                    "8d14527d3cafd5d258520c8e744a62dd4d967a68cded16238cb1826be270a533",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 23,
+                "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+                "pid": "8",
+                "amount": "1000000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "1000000000000000000000000",
+                "rewardSettled": "867832598914319253504",
+                "rewardDebt": "0",
+                "proof": [
+                    "0d3792009fe7ebb52c42382a0f92708a76e07545907f7506cc3eb16c89579ed5",
+                    "e6305f4759ea2f30f33211123d15d48f2130d0238c49a2bd4a615abd0733a394",
+                    "8d14527d3cafd5d258520c8e744a62dd4d967a68cded16238cb1826be270a533",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 24,
+                "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+                "pid": "0",
+                "amount": "93505082439544696354525",
+                "boostAmount": "93505082439544696354525",
+                "depositAmount": "0",
+                "rewardSettled": "60169120998392381440",
+                "rewardDebt": "56275001945026492500291",
+                "proof": [
+                    "2ff017539b9411edf30c903ee61bde7dd072940999ceeba27bd719f3494e5ad6",
+                    "be85b1797cd5b850eaa649d4646d800d762d376217ead33441be38636cdd82f4",
+                    "6de589cc956496fd58063c9888d91c75858561f6cd92e329b10ca203c3081bf5",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 27,
+                "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+                "pid": "11",
+                "amount": "20000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "20000000000000000000000",
+                "rewardSettled": "10307846795103647744",
+                "rewardDebt": "0",
+                "proof": [
+                    "606a33d9f04224134df5fcb34f77a076fdd6f0f9364fb72af86ee60995a0933b",
+                    "eba668657246452c8f3e69675f7430af7039c46951fe6fa2aa0f21e03d56a307",
+                    "6de589cc956496fd58063c9888d91c75858561f6cd92e329b10ca203c3081bf5",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 35,
+                "user": "0xe749b7469a9911e451600cb31b5ca180743183ce",
+                "pid": "9",
+                "amount": "10000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "10000000000000000000",
+                "rewardSettled": "18441355586646992",
+                "rewardDebt": "0",
+                "proof": [
+                    "45f5ae9e1d88198b514f2c6f6c15cf15711ee80dd911c5edc823b36415dda7af",
+                    "4974a92c42f4d012b8ad67912e2fba58ed190360da01489f8902c5ea2e45808d",
+                    "bcbc2af8096eaded14123746e5e4ef4fe4936ec64828154d1bffca5b08853f98",
+                    "bae3aae23776dac469a7a9ac90c5d31df6926997b1e0931c70401745e1530cac"
+                ]
+            }
+        ],
+        "0x38c8935d443ebe6fc161b3b59ba38691cb6c041d": [
+            {
+                "index": 4,
+                "user": "0x38c8935d443ebe6fc161b3b59ba38691cb6c041d",
+                "pid": "11",
+                "amount": "0",
+                "boostAmount": "0",
+                "depositAmount": "0",
+                "rewardSettled": "0",
+                "rewardDebt": "0",
+                "proof": [
+                    "3df1d8fdc925209fe90d77a3259f36f9e85d94a50edbafef525de3e779c9ee31",
+                    "b3875019c04990bdea5f5c3e2fd214d7af1ac8bddbcc5f0fcdb115c5a166a24a",
+                    "e9679237c0907e6165fe811e496b614e313b627d82bddacf5e4c66829e2dc4b9",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 11,
+                "user": "0x38c8935d443ebe6fc161b3b59ba38691cb6c041d",
+                "pid": "6",
+                "amount": "10000000000",
+                "boostAmount": "0",
+                "depositAmount": "10000000000",
+                "rewardSettled": "922077922077922033664",
+                "rewardDebt": "575282871060984669413115",
+                "proof": [
+                    "a1ee20505a437986d9f3069cff030939cbda8ddaadfa30a04a506c0bec76b196",
+                    "a004bedd0c5e33feccbad370ad53935b18fba775a2d2c245acce8621e7f25559",
+                    "7241bfa794fd036d66f55ebd113febc25eeb4484f5f7f3bd41c457e37610ba24",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 26,
+                "user": "0x38c8935d443ebe6fc161b3b59ba38691cb6c041d",
+                "pid": "8",
+                "amount": "1000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "1000000000000000000000",
+                "rewardSettled": "867832598914319488",
+                "rewardDebt": "451172138415672588000",
+                "proof": [
+                    "8751c75c1691b92a96412cd11920c019f10ffb816e3b08a03dcc8502f7369c2e",
+                    "eba668657246452c8f3e69675f7430af7039c46951fe6fa2aa0f21e03d56a307",
+                    "6de589cc956496fd58063c9888d91c75858561f6cd92e329b10ca203c3081bf5",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            }
+        ],
+        "0x81b76cdee6217545bdc860fc1379ec23888bea9a": [
+            {
+                "index": 5,
+                "user": "0x81b76cdee6217545bdc860fc1379ec23888bea9a",
+                "pid": "3",
+                "amount": "4500500000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "4500500000000000000000",
+                "rewardSettled": "95066039448334123008",
+                "rewardDebt": "0",
+                "proof": [
+                    "6841ebf5eeee6b24d6113eddd506043e96d3567c85ff860015f40630232b48cf",
+                    "b3875019c04990bdea5f5c3e2fd214d7af1ac8bddbcc5f0fcdb115c5a166a24a",
+                    "e9679237c0907e6165fe811e496b614e313b627d82bddacf5e4c66829e2dc4b9",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 28,
+                "user": "0x81b76cdee6217545bdc860fc1379ec23888bea9a",
+                "pid": "0",
+                "amount": "4980099502487562000000000",
+                "boostAmount": "4975124378109452500000000",
+                "depositAmount": "4975124378109500000000",
+                "rewardSettled": "3204619489458705137664",
+                "rewardDebt": "0",
+                "proof": [
+                    "cc59d609127377e2696c58ccf05006a470946cb30696f71c61ff462c21ac0831",
+                    "d50c676ce7a90306c739406b79d1514760d85a14d9112197122329f4834a5079",
+                    "59f5954b54dee5e1e4ea2383a25eb216a43200c5c7fe17b7665ace44b8b16fef",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 31,
+                "user": "0x81b76cdee6217545bdc860fc1379ec23888bea9a",
+                "pid": "8",
+                "amount": "2498996667500000000000000",
+                "boostAmount": "2498996667500000000000000",
+                "depositAmount": "0",
+                "rewardSettled": "2168710772634748190720",
+                "rewardDebt": "0",
+                "proof": [
+                    "cc758485634b918d8c31432d8c21e43a93f712c62a99b200deec9ccd723a603b",
+                    "4f9eeb2c9d295284ca7f246cbd656b06dd3244ed9c62824653999984bbdaa3ee",
+                    "59f5954b54dee5e1e4ea2383a25eb216a43200c5c7fe17b7665ace44b8b16fef",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 36,
+                "user": "0x81b76cdee6217545bdc860fc1379ec23888bea9a",
+                "pid": "10",
+                "amount": "55998000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "55998000000000000000",
+                "rewardSettled": "8561235393456301056",
+                "rewardDebt": "0",
+                "proof": [
+                    "dae7dd4ee54c17cba707db5a32fd00e53eac435e13320c53df6ca8735b0b5c1c",
+                    "bae3aae23776dac469a7a9ac90c5d31df6926997b1e0931c70401745e1530cac"
+                ]
+            }
+        ],
+        "0x3d2758b432327e3631b023aa4a0511c5308e4bfc": [
+            {
+                "index": 7,
+                "user": "0x3d2758b432327e3631b023aa4a0511c5308e4bfc",
+                "pid": "11",
+                "amount": "1156218905472636800000000",
+                "boostAmount": "945273631840796000000000",
+                "depositAmount": "210945273631840800000000",
+                "rewardSettled": "595906366960718315520",
+                "rewardDebt": "74083231017864489877433",
+                "proof": [
+                    "1c81f7d6ff13634e788c2d3759451b6942efe04ec5f2b130429cd4ab3b2c2c54",
+                    "d41a67d0a3da55223f7227dfabe10f294b0b4af3cf6c3ec6fd2b5c522b5aa334",
+                    "e9679237c0907e6165fe811e496b614e313b627d82bddacf5e4c66829e2dc4b9",
+                    "b511f58dc922666b8d0914aa562945e34a61fba7b2e7ec35ff8734c1e720fd31",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 12,
+                "user": "0x3d2758b432327e3631b023aa4a0511c5308e4bfc",
+                "pid": "8",
+                "amount": "750000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "750000000000000000000000",
+                "rewardSettled": "650874449185739505664",
+                "rewardDebt": "0",
+                "proof": [
+                    "79206546d57d57ff78ba1b13489c395db723187e39d7e0213a0ae93fa026926e",
+                    "a14fbb3bd5fd88aaa226e06b8b2c38b6469cd3201f6ab02f513d2cc3f02dde33",
+                    "bbfa7fd5a11ce9ab5c588ce86596a381844b2efc2a89b082b2584c5025545d97",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 14,
+                "user": "0x3d2758b432327e3631b023aa4a0511c5308e4bfc",
+                "pid": "9",
+                "amount": "1000000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "1000000000000000000000000",
+                "rewardSettled": "1844135558664699248640",
+                "rewardDebt": "1901714840651557705000000",
+                "proof": [
+                    "9cdb3e59302fd7763fb8463fabc5abc19edb16594c89e5d47848e3efc0407403",
+                    "b43ec71216709f0fc427568322ce7961a8affd2044caa1a9bbd16939cabfbf7a",
+                    "bbfa7fd5a11ce9ab5c588ce86596a381844b2efc2a89b082b2584c5025545d97",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 19,
+                "user": "0x3d2758b432327e3631b023aa4a0511c5308e4bfc",
+                "pid": "0",
+                "amount": "229601990049751240000000",
+                "boostAmount": "99502487562189050000000",
+                "depositAmount": "130099502487562190000000",
+                "rewardSettled": "147745443994524712960",
+                "rewardDebt": "92176943183066507649439",
+                "proof": [
+                    "92c6358d9ee9c22e5a8fdea7dafec3575ce2458706834405df5c4eab4b9b46f3",
+                    "ce10b7cd072ed60bb4497cf4dbf768f8e5d2002dc49e9996d7935476d5630355",
+                    "ef0430d94d87ecb075db397bbcb0cf2e612b7b699c12e503eb211a2a94dcb24f",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 29,
+                "user": "0x3d2758b432327e3631b023aa4a0511c5308e4bfc",
+                "pid": "3",
+                "amount": "10000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "10000000000000000000000",
+                "rewardSettled": "211234394952414429184",
+                "rewardDebt": "149912432794965345790000",
+                "proof": [
+                    "386f5696e86bc39f91133559c07abb891acc1605c31447aa68ced9f186a3db81",
+                    "d50c676ce7a90306c739406b79d1514760d85a14d9112197122329f4834a5079",
+                    "59f5954b54dee5e1e4ea2383a25eb216a43200c5c7fe17b7665ace44b8b16fef",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            }
+        ],
+        "0x4bc73dcc4c296d744c7e0e215b309fd5304a6094": [
+            {
+                "index": 8,
+                "user": "0x4bc73dcc4c296d744c7e0e215b309fd5304a6094",
+                "pid": "1",
+                "amount": "3770911063649853",
+                "boostAmount": "3638222933146850",
+                "depositAmount": "132688130503003",
+                "rewardSettled": "387183951837318479872",
+                "rewardDebt": "0",
+                "proof": [
+                    "4f207e0d6c3bd78e3b37900c54a32953e2423f62f93138f90d9f38e46888b5f8",
+                    "3815380976dab855a5b2d895a0fd6b6a87c7ed83a557d55123876d7ab017d01f",
+                    "7241bfa794fd036d66f55ebd113febc25eeb4484f5f7f3bd41c457e37610ba24",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 9,
+                "user": "0x4bc73dcc4c296d744c7e0e215b309fd5304a6094",
+                "pid": "0",
+                "amount": "5342004975124378400000",
+                "boostAmount": "4028756218905473000000",
+                "depositAmount": "1313248756218905400000",
+                "rewardSettled": "3437500244225632768",
+                "rewardDebt": "0",
+                "proof": [
+                    "68fb374148907a1ad4998b2ddd549f5580ac63abedbc98f526a708f7df2e0fc3",
+                    "3815380976dab855a5b2d895a0fd6b6a87c7ed83a557d55123876d7ab017d01f",
+                    "7241bfa794fd036d66f55ebd113febc25eeb4484f5f7f3bd41c457e37610ba24",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 10,
+                "user": "0x4bc73dcc4c296d744c7e0e215b309fd5304a6094",
+                "pid": "2",
+                "amount": "15141855821527",
+                "boostAmount": "8173160812755",
+                "depositAmount": "6968695008772",
+                "rewardSettled": "4610389610389610430464",
+                "rewardDebt": "0",
+                "proof": [
+                    "135cb9434983262903d9c0756a97868d81ac127ba0e72699489a976f0c14b24f",
+                    "a004bedd0c5e33feccbad370ad53935b18fba775a2d2c245acce8621e7f25559",
+                    "7241bfa794fd036d66f55ebd113febc25eeb4484f5f7f3bd41c457e37610ba24",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 25,
+                "user": "0x4bc73dcc4c296d744c7e0e215b309fd5304a6094",
+                "pid": "3",
+                "amount": "22669999999999999988000",
+                "boostAmount": "22669999999999999985000",
+                "depositAmount": "3000",
+                "rewardSettled": "478868373357123600384",
+                "rewardDebt": "0",
+                "proof": [
+                    "b53176dceb8c1e99d9de9a69021a4f508c2770204cc93fd7b0214ced50d7c271",
+                    "be85b1797cd5b850eaa649d4646d800d762d376217ead33441be38636cdd82f4",
+                    "6de589cc956496fd58063c9888d91c75858561f6cd92e329b10ca203c3081bf5",
+                    "0424cf7fd066944ce09eaa6a23c8a3cb4158e95983383b74cec940921c4717f2",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            }
+        ],
+        "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe": [
+            {
+                "index": 15,
+                "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+                "pid": "8",
+                "amount": "30000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "30000000000000000000",
+                "rewardSettled": "26034977967429580",
+                "rewardDebt": "0",
+                "proof": [
+                    "4bc5fac703231f25936b84a659d9e2886da2f55a86bfdcc5a23ae6551ee60024",
+                    "b43ec71216709f0fc427568322ce7961a8affd2044caa1a9bbd16939cabfbf7a",
+                    "bbfa7fd5a11ce9ab5c588ce86596a381844b2efc2a89b082b2584c5025545d97",
+                    "1080ba060fcf0a1922b7b001a273ad9b64f3523c5330d51d8f400ac5e1746694",
+                    "a75df0488796f1dd9751ba27470539ba80e27f2cc470fb9a4c52c0972bf88fc9",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 17,
+                "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+                "pid": "10",
+                "amount": "100000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "100000000000000000000",
+                "rewardSettled": "15288466362113468416",
+                "rewardDebt": "7166686841446234071400",
+                "proof": [
+                    "0a20318335992a798216d643e90b92ca9879fb2b733716fd41ef99c0d8c62c4b",
+                    "83ffefa3b6dd35a22b941e869ef0f767123429fcd313c399345fa259e0cc4e98",
+                    "ef0430d94d87ecb075db397bbcb0cf2e612b7b699c12e503eb211a2a94dcb24f",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 18,
+                "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+                "pid": "9",
+                "amount": "12000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "12000000000000000000",
+                "rewardSettled": "22129626703976392",
+                "rewardDebt": "20678378052040375116",
+                "proof": [
+                    "2aeb97f79f3013d770938bffac861d2dd5b02daf48c1b0a4e7f9a8823384c2db",
+                    "ce10b7cd072ed60bb4497cf4dbf768f8e5d2002dc49e9996d7935476d5630355",
+                    "ef0430d94d87ecb075db397bbcb0cf2e612b7b699c12e503eb211a2a94dcb24f",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            },
+            {
+                "index": 32,
+                "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+                "pid": "11",
+                "amount": "1000000000000000000000000",
+                "boostAmount": "0",
+                "depositAmount": "1000000000000000000000000",
+                "rewardSettled": "515392339755182391296",
+                "rewardDebt": "0",
+                "proof": [
+                    "0e60bc2c72bbf72607336cd44ce8e8aaf08a85ac827cf3817b1d333bc8d60047",
+                    "d930b64d4e6baca03ca98391088f503497e24f7765453c294d54bd603428e1da",
+                    "bcbc2af8096eaded14123746e5e4ef4fe4936ec64828154d1bffca5b08853f98",
+                    "bae3aae23776dac469a7a9ac90c5d31df6926997b1e0931c70401745e1530cac"
+                ]
+            },
+            {
+                "index": 33,
+                "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+                "pid": "3",
+                "amount": "133267200000000000000",
+                "boostAmount": "111584000000000000000",
+                "depositAmount": "21683200000000000000",
+                "rewardSettled": "2815061635900240896",
+                "rewardDebt": "1844008538358871383774",
+                "proof": [
+                    "af4c362316c40bdea1cf6e19d464b8414a82b1d4aec57ce6adb76f5524627556",
+                    "d930b64d4e6baca03ca98391088f503497e24f7765453c294d54bd603428e1da",
+                    "bcbc2af8096eaded14123746e5e4ef4fe4936ec64828154d1bffca5b08853f98",
+                    "bae3aae23776dac469a7a9ac90c5d31df6926997b1e0931c70401745e1530cac"
+                ]
+            },
+            {
+                "index": 34,
+                "user": "0x1c9ff39402b15e9a7c67ffd1a260d04d852f5dfe",
+                "pid": "0",
+                "amount": "59816119402985075960",
+                "boostAmount": "59770149253731344950",
+                "depositAmount": "45970149253731010",
+                "rewardSettled": "38490777529012576",
+                "rewardDebt": "0",
+                "proof": [
+                    "4fb6996cec668bfcdfe53cc56a6e4eecf3ccb41b97efac3ad9ecbd2e44cc6982",
+                    "4974a92c42f4d012b8ad67912e2fba58ed190360da01489f8902c5ea2e45808d",
+                    "bcbc2af8096eaded14123746e5e4ef4fe4936ec64828154d1bffca5b08853f98",
+                    "bae3aae23776dac469a7a9ac90c5d31df6926997b1e0931c70401745e1530cac"
+                ]
+            }
+        ],
+        "0xfbab39445f51c123194eed79894d5847fd794aa8": [
+            {
+                "index": 20,
+                "user": "0xfbab39445f51c123194eed79894d5847fd794aa8",
+                "pid": "0",
+                "amount": "299004975124378120000000",
+                "boostAmount": "248756218905472650000000",
+                "depositAmount": "50248756218905470000000",
+                "rewardSettled": "192405226090377805824",
+                "rewardDebt": "0",
+                "proof": [
+                    "03569f84c54fb86fcb5d1e26449081306870a351513f04fde39e07839f2a5257",
+                    "f2643c9a6af5dc954f2f7d36fe6b26f7fbb00a0d33bb414836ea82a92a9393f6",
+                    "8d14527d3cafd5d258520c8e744a62dd4d967a68cded16238cb1826be270a533",
+                    "1c072fd112a88d36c515f701e14d856be417c1c2bbf85112fa2bb607e80112fa",
+                    "4be9c9c264f22a57d82d98938754db1a59c7ac2b8277ddf0f0bee5ad62231281",
+                    "4781fa64980d6d0ae6037aac7e0b188a29d0c51790dd7641071c7cc7b168de00"
+                ]
+            }
+        ]
+    }
+}
