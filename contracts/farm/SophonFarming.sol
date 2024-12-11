@@ -810,57 +810,23 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         emit Withdraw(msg.sender, _pid, _withdrawAmount);
     }
 
-    /**
-    * @notice Removes liquidity from a Uniswap V2 pool for the specified token pair.
-    * @dev This function checks if farming has ended and ensures the withdrawal period is over before allowing liquidity removal.
-    *      It interacts with the Uniswap V2 Router to perform the liquidity removal.
-    * @param tokenA The address of token A in the liquidity pair.
-    * @param tokenB The address of token B in the liquidity pair.
-    * @param amountAMin The minimum amount of token A to be received during liquidity removal.
-    * @param amountBMin The minimum amount of token B to be received during liquidity removal.
-    * @notice The function will revert with `Unauthorized()` if farming has not ended, the withdrawal period has not ended, or the pool has already been bridged.
-    * @notice The liquidity is removed to the contract's address (`address(this)`), meaning that the tokens will be held by the contract.
-    */
-    function removeLiquidity(
-        address tokenA,
-        address tokenB,
-        uint256 amountAMin,
-        uint256 amountBMin
-    ) external {
-        uint pid = 4;
-        // Revert if farming has not ended, the withdrawal period is not over, or if the pool is already bridged.
-        if (!isFarmingEnded() || !isWithdrawPeriodEnded()) {
-            revert Unauthorized();
-        }
-
-        // Update the pool state before removing liquidity.
-        updatePool(pid);
-
-        // Retrieve the pool information for the specified _pid.
-        PoolInfo storage pool = poolInfo[pid];
-
-        // Initialize the Uniswap V2 Router.
-        IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
-
-        // Remove liquidity from the pool using the router.
-        uniswapRouter.removeLiquidity(
-            tokenA,                             // Token A of the pair.
-            tokenB,                             // Token B of the pair.
-            pool.lpToken.balanceOf(address(this)), // Amount of liquidity to remove.
-            amountAMin,                         // Minimum amount of token A to receive.
-            amountBMin,                         // Minimum amount of token B to receive.
-            address(this),                      // The tokens will be sent to the contract's address.
-            block.timestamp                     // Deadline for the transaction (current block timestamp).
-        );
-    }
-
     
     /**
      * @notice Permissionless function to allow anyone to bridge during the correct period
      * @param _pid pid to bridge
      * @param _mintValue _mintValue SOPH gas price
      */
+    
     function bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken) external payable {
+        // USDC exception
+        if (_pid == 7) {
+            revert Unauthorized();
+        }
+
+        _bridgePool(_pid, _mintValue, _sophToken, bridge);
+    }
+
+    function _bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken, IBridgehub _bridge) internal {
 
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
@@ -898,10 +864,23 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         IERC20(_sophToken).safeIncreaseAllowance(_request.secondBridgeAddress, _mintValue);
         
         // Actual values are pending the launch of Sophon testnet
-        bridge.requestL2TransactionTwoBridges(_request);
+        _bridge.requestL2TransactionTwoBridges(_request);
 
         isBridged[_pid] = true;
         emit BridgePool(msg.sender, _pid, depositAmount);
+    }
+
+
+    // bridge USDC
+    function bridgeUSDC(uint256 _mintValue, address _sophToken, IBridgehub _bridge) external onlyOwner {
+        uint256 _pid = 7;
+        if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
+            revert Unauthorized();
+        }
+
+        // IBridgehub _bridge = IBridgehub(address(0));
+        _bridgePool(_pid, _mintValue, _sophToken, _bridge);
+
     }
 
     /**
@@ -921,8 +900,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         poolInfo[_pid].l2Farm = _l2Farm;
     }
 
-    // TODO: does this function need to call claimFailedDeposit on the bridge?
-    // This is pending the launch of Sophon testnet
+
     /**
      * @notice Called by an admin if a bridge process to Sophon fails
      * @param _pid pid of the failed bridge to revert
