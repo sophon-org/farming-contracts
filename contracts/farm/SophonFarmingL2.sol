@@ -87,11 +87,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @notice Construct SophonFarming
      */
     constructor(address _MERKLE, address _stork) {
+        if (_MERKLE == address(0)) revert ZeroAddress();
         MERKLE = _MERKLE;
 
-        if (_stork == address(0)) {
-            revert ZeroAddress();
-        }
+        if (_stork == address(0)) revert ZeroAddress();
         stork = IStork(_stork);
     }
 
