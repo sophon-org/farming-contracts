@@ -261,11 +261,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function isFarmingEnded() public view returns (bool) {
         uint256 _endBlock = endBlock;
-        if (_endBlock != 0 && getBlockNumber() > _endBlock) {
-            return true;
-        } else {
-            return false;
-        }
+        return (_endBlock != 0 && getBlockNumber() > _endBlock);
     }
 
     /**
