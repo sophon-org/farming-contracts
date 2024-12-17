@@ -148,15 +148,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         // sDAI
         typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", _initialPoolStartBlock, 0);
-        IERC20(dai).approve(sDAI, 2**256-1);
+        IERC20(dai).approve(sDAI, type(uint256).max);
 
         // wstETH
         typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, wstETH, "wstETH", _initialPoolStartBlock, 0);
-        IERC20(stETH).approve(wstETH, 2**256-1);
+        IERC20(stETH).approve(wstETH, type(uint256).max);
 
         // weETH
         typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, weETH, "weETH", _initialPoolStartBlock, 0);
-        IERC20(eETH).approve(weETH, 2**256-1);
+        IERC20(eETH).approve(weETH, type(uint256).max);
     }
 
     /**
