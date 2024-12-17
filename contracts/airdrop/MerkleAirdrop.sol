@@ -105,15 +105,15 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         }
     }
 
-    // TODO add index
     function _claim(address _user, address _customReceiver, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) internal {
-        if (hasClaimed[_user][_pid]) revert AlreadyClaimed();
+        bool alreadyClaimed = hasClaimed[_user][_pid];
+        if (alreadyClaimed) revert AlreadyClaimed();
 
         // Verify the Merkle proof.
         bytes32 leaf = keccak256(abi.encodePacked(_user, _pid, _userInfo.amount, _userInfo.boostAmount, _userInfo.depositAmount, _userInfo.rewardSettled, _userInfo.rewardDebt));
         if (!MerkleProof.verify(_merkleProof, merkleRoot, leaf)) revert InvalidMerkleProof();
 
-        // Mark it claimed and transfer the tokens.
+        // Mark it claimed and update user info.
         hasClaimed[_user][_pid] = true;
 
         SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo);
