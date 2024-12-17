@@ -93,6 +93,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @dev 0:dai, 1:sDAI, 2:weth, 3:stETH, 4:wstETH, 5:eETH, 6:eETHLiquidityPool, 7:weETH
      */
     constructor(address[8] memory tokens_, uint256 _CHAINID) {
+        for (uint256 i = 0; i < tokens_.length; i++) {
+            require(tokens_[i] != address(0), "cannot be zero");
+        }
+
         dai = tokens_[0];
         sDAI = tokens_[1];
         weth = tokens_[2];
