@@ -130,7 +130,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         } else if (_pid == poolInfo.length) {
             poolInfo.push(pool);
         } else {
-            revert("wrong pid");
+            revert PoolDoesNotExist();
         }
         heldProceeds[_pid] = _heldProceeds;
         poolExists[address(_lpToken)] = true;
