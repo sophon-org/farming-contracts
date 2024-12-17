@@ -7,11 +7,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "contracts/token/LinearVestingWithPenalty.sol";
-import "contracts/farm/SophonFarmingL2.sol";
+import "interfaces/ISophonFarming.sol";
 
 contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    SophonFarmingL2 public SF_L2;
+    ISophonFarming public SF_L2;
     bytes32 public merkleRoot;
 
     // Changed mapping to track claims per user per PID
@@ -38,7 +38,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     }
 
     function initialize(address _SF_L2) public initializer {
-        SF_L2 = SophonFarmingL2(_SF_L2);
+        SF_L2 = ISophonFarming(_SF_L2);
 
         __AccessControl_init();
         __UUPSUpgradeable_init();
@@ -63,12 +63,12 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     function setSFL2(address _SF_L2) external onlyRole(ADMIN_ROLE) {
         require(_SF_L2 != address(0), "Invalid address");
         address oldAddress = address(SF_L2);
-        SF_L2 = SophonFarmingL2(_SF_L2);
+        SF_L2 = ISophonFarming(_SF_L2);
         emit SFL2AddressUpdated(oldAddress, _SF_L2);
     }
 
 
-    function claim(address _user, address _customReceiver, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) external onlyRole(ADMIN_ROLE) {
+    function claim(address _user, address _customReceiver, uint256 _pid, ISophonFarming.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) external onlyRole(ADMIN_ROLE) {
         _claim(_user, _customReceiver, _pid, _userInfo, _merkleProof);
     }
 
@@ -79,7 +79,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
      * @param _userInfo The `UserInfo` struct containing the user's info.
      * @param _merkleProof The Merkle proof to verify the user's inclusion in the tree.
      */
-    function claim(address _user, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) external {
+    function claim(address _user, uint256 _pid, ISophonFarming.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) external {
         if (msg.sender != _user) revert NotAuthorized();
         _claim(_user, _user, _pid, _userInfo, _merkleProof);
     }
@@ -94,7 +94,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     function claimMultiple(
         address _user,
         uint256[] calldata _pids,
-        SophonFarmingState.UserInfo[] calldata _userInfos,
+        ISophonFarming.UserInfo[] calldata _userInfos,
         bytes32[][] calldata _merkleProofs
     ) external {
         if (msg.sender != _user) revert NotAuthorized();
@@ -106,7 +106,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     }
 
     // TODO add index
-    function _claim(address _user, address _customReceiver, uint256 _pid, SophonFarmingState.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) internal {
+    function _claim(address _user, address _customReceiver, uint256 _pid, ISophonFarming.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) internal {
         if (hasClaimed[_user][_pid]) revert AlreadyClaimed();
 
         // Verify the Merkle proof.
