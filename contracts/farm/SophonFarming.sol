@@ -858,7 +858,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         });
 
         if (pool.lpToken.allowance(address(this), _request.secondBridgeAddress) < depositAmount) {
-            pool.lpToken.safeIncreaseAllowance(_request.secondBridgeAddress, type(uint256).max);
+            pool.lpToken.forceApprove(_request.secondBridgeAddress, type(uint256).max);
         }
         IERC20(_sophToken).safeTransferFrom(msg.sender, address(this), _mintValue);
         IERC20(_sophToken).safeIncreaseAllowance(_request.secondBridgeAddress, _mintValue);
