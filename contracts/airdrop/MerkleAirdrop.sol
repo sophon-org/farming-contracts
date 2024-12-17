@@ -38,6 +38,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     }
 
     function initialize(address _SF_L2) public initializer {
+        require(_SF_L2 != address(0), "SF_L2 is zero address");
         SF_L2 = SophonFarmingL2(_SF_L2);
 
         __AccessControl_init();
