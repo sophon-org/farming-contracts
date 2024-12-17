@@ -139,6 +139,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
     function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userFromClaim) public {
         if (msg.sender != MERKLE) revert OnlyMerkle();
+        require(_pid < poolInfo.length, "Invalid pool id");
         require(_userFromClaim.amount == _userFromClaim.boostAmount + _userFromClaim.depositAmount, "balances don't match");
 
         PoolInfo storage pool = poolInfo[_pid];
@@ -154,9 +155,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             user.rewardSettled -
             user.rewardDebt;
 
-        // _userFromClaim.rewardDebt is ignored since user.rewardSettled is already settled
         user.rewardSettled = user.rewardSettled + _userFromClaim.rewardSettled;
-
         user.boostAmount = user.boostAmount + _userFromClaim.boostAmount;
         pool.boostAmount = pool.boostAmount + _userFromClaim.boostAmount;
 
@@ -166,9 +165,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         user.amount = user.amount + _userFromClaim.amount;
         pool.amount = pool.amount + _userFromClaim.amount;
 
-        user.rewardDebt = user.amount *
-            pool.accPointsPerShare /
-            1e18;
+        user.rewardDebt = user.amount * pool.accPointsPerShare / 1e18;
     }
 
     /**
