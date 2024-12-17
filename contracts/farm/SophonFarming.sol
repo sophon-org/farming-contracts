@@ -53,7 +53,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
 
     error ZeroAddress();
-    error PoolExists();
     error PoolDoesNotExist();
     error AlreadyInitialized();
     error NotFound(address lpToken);
@@ -173,7 +172,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert ZeroAddress();
         }
         if (poolExists[_lpToken]) {
-            revert PoolExists();
+            revert PoolDoesNotExist();
         }
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
@@ -890,7 +889,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function setL2Farm(uint256 _pid, address _l2Farm) external onlyOwner {
         if (_pid >= poolInfo.length) {
-            revert PoolExists();
+            revert PoolDoesNotExist();
         }
 
         if (_l2Farm == address(0)) {
