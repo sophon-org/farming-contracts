@@ -874,10 +874,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     // bridge USDC
     function bridgeUSDC(uint256 _mintValue, address _sophToken, IBridgehub _bridge) external onlyOwner {
         uint256 _pid = 7;
-        if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
-            revert Unauthorized();
-        }
-
         // IBridgehub _bridge = IBridgehub(address(0));
         _bridgePool(_pid, _mintValue, _sophToken, _bridge);
 
