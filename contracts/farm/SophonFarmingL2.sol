@@ -290,12 +290,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      */
     function isFarmingEnded() public view returns (bool) {
         uint256 _endBlock = endBlock;
-        if (_endBlock != 0 && getBlockNumber() > _endBlock) {
-            return true;
-        } else {
-            return false;
-        }
+        return _endBlock != 0 && getBlockNumber() > _endBlock;
     }
+
 
     /**
      * @notice Checks if the withdrawal period is ended
@@ -303,11 +300,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      */
     function isWithdrawPeriodEnded() public view returns (bool) {
         uint256 _endBlockForWithdrawals = endBlockForWithdrawals;
-        if (_endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals) {
-            return true;
-        } else {
-            return false;
-        }
+        return _endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals;
     }
 
     /**
