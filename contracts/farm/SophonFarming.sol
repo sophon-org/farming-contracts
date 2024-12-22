@@ -84,7 +84,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     address public immutable eETHLiquidityPool;
     address public immutable weETH;
     uint256 public immutable CHAINID;
-    uint256 public constant BEAM_WEHT_PID = 4;
+    uint256 public constant BEAM_WETH_PID = 4;
     address public constant PENDLE_EXCEPTION = 0x065347C1Dd7A23Aa043e3844B4D0746ff7715246;
 
     /**
@@ -93,6 +93,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @dev 0:dai, 1:sDAI, 2:weth, 3:stETH, 4:wstETH, 5:eETH, 6:eETHLiquidityPool, 7:weETH
      */
     constructor(address[8] memory tokens_, uint256 _CHAINID) {
+        for (uint256 i = 0; i < tokens_.length; i++) {
+            require(tokens_[i] != address(0), "cannot be zero");
+        }
+
         dai = tokens_[0];
         sDAI = tokens_[1];
         weth = tokens_[2];
@@ -129,7 +133,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert AlreadyInitialized();
         }
 
-        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1_000e18) {
             revert InvalidPointsPerBlock();
         }
         pointsPerBlock = _pointsPerBlock;
@@ -148,15 +152,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         // sDAI
         typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", _initialPoolStartBlock, 0);
-        IERC20(dai).approve(sDAI, 2**256-1);
+        IERC20(dai).approve(sDAI, type(uint256).max);
 
         // wstETH
         typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, wstETH, "wstETH", _initialPoolStartBlock, 0);
-        IERC20(stETH).approve(wstETH, 2**256-1);
+        IERC20(stETH).approve(wstETH, type(uint256).max);
 
         // weETH
         typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, weETH, "weETH", _initialPoolStartBlock, 0);
-        IERC20(eETH).approve(weETH, 2**256-1);
+        IERC20(eETH).approve(weETH, type(uint256).max);
     }
 
     /**
@@ -338,7 +342,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1_000e18) {
             revert InvalidPointsPerBlock();
         }
         massUpdatePools();
@@ -840,8 +844,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
         uint256 depositAmount = IERC20(pool.lpToken).balanceOf(address(this));
 
-        if (_pid == BEAM_WEHT_PID) {
-            UserInfo storage user = userInfo[BEAM_WEHT_PID][PENDLE_EXCEPTION];
+        if (_pid == BEAM_WETH_PID) {
+            UserInfo storage user = userInfo[BEAM_WETH_PID][PENDLE_EXCEPTION];
             depositAmount -= user.depositAmount - user.boostAmount / boosterMultiplier;
         }
 
@@ -858,7 +862,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         });
 
         if (pool.lpToken.allowance(address(this), _request.secondBridgeAddress) < depositAmount) {
-            pool.lpToken.safeIncreaseAllowance(_request.secondBridgeAddress, type(uint256).max);
+            pool.lpToken.forceApprove(_request.secondBridgeAddress, type(uint256).max);
         }
         IERC20(_sophToken).safeTransferFrom(msg.sender, address(this), _mintValue);
         IERC20(_sophToken).safeIncreaseAllowance(_request.secondBridgeAddress, _mintValue);
@@ -874,10 +878,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     // bridge USDC
     function bridgeUSDC(uint256 _mintValue, address _sophToken, IBridgehub _bridge) external onlyOwner {
         uint256 _pid = 7;
-        if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
-            revert Unauthorized();
-        }
-
         // IBridgehub _bridge = IBridgehub(address(0));
         _bridgePool(_pid, _mintValue, _sophToken, _bridge);
 
