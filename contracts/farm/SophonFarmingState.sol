@@ -78,5 +78,6 @@ contract SophonFarmingState {
     
     mapping(uint256 pid => PoolValue) public poolValue;
 
+    // total USD value of all pools including all deposits, boosts, and emissionsMultipliers
     uint256 public totalValue;
 }
