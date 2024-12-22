@@ -261,7 +261,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function isFarmingEnded() public view returns (bool) {
         uint256 _endBlock = endBlock;
-        return (_endBlock != 0 && getBlockNumber() > _endBlock;
+        return _endBlock != 0 && getBlockNumber() > _endBlock;
     }
 
     /**
@@ -270,11 +270,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function isWithdrawPeriodEnded() public view returns (bool) {
         uint256 _endBlockForWithdrawals = endBlockForWithdrawals;
-        if (_endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals) {
-            return true;
-        } else {
-            return false;
-        }
+        return _endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals;
     }
 
     /**
