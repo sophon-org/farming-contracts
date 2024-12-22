@@ -84,8 +84,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     address public immutable eETHLiquidityPool;
     address public immutable weETH;
     uint256 public immutable CHAINID;
-    uint256 internal constant BEAM_WETH_PID = 4;
-    address internal constant PENDLE_EXCEPTION = 0x065347C1Dd7A23Aa043e3844B4D0746ff7715246;
+    uint256 public constant BEAM_WETH_PID = 4;
+    address public constant PENDLE_EXCEPTION = 0x065347C1Dd7A23Aa043e3844B4D0746ff7715246;
 
     /**
      * @notice Construct SophonFarming
