@@ -422,7 +422,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         if (_newHash == pv.feedHash) {
             revert DuplicatePriceFeed();
         }
-
+        massUpdatePools();
         pv.feedHash = _newHash;
         pv.staleSeconds = _newStaleSeconds;
         pv.emissionsMultiplier = _emissionsMultiplier;
