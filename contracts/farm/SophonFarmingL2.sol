@@ -346,7 +346,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1_000e18) {
             revert InvalidPointsPerBlock();
         }
         massUpdatePools();
