@@ -129,7 +129,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert AlreadyInitialized();
         }
 
-        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1_000e18) {
             revert InvalidPointsPerBlock();
         }
         pointsPerBlock = _pointsPerBlock;
@@ -338,7 +338,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1_000e18) {
             revert InvalidPointsPerBlock();
         }
         massUpdatePools();
