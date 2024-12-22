@@ -295,12 +295,12 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (_l2Farm == address(0)) {
             revert ZeroAddress();
         }
-        if (address(poolInfo[_pid].lpToken) == address(0)) {
+        PoolInfo storage pool = poolInfo[_pid];
+        if (address(pool.lpToken) == address(0)) {
             revert PoolDoesNotExist();
         }
-        poolInfo[_pid].l2Farm = _l2Farm;
+        pool.l2Farm = _l2Farm;
     }
-
     /**
      * @notice Set the end block of the farm
      * @param _endBlock the end block
