@@ -10,6 +10,7 @@ import "contracts/token/LinearVestingWithPenalty.sol";
 import "contracts/farm/SophonFarmingL2.sol";
 
 contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
+    using SafeERC20 for IERC20;
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     SophonFarmingL2 public SF_L2;
     bytes32 public merkleRoot;
@@ -127,7 +128,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
      * @param to The address to send the recovered tokens to.
      */
     function rescue(IERC20 token, address to) external onlyRole(ADMIN_ROLE) {
-        SafeERC20.safeTransfer(token, to, token.balanceOf(address(this)));
+        token.safeTransfer(to, token.balanceOf(address(this)));
     }
 
     /**
