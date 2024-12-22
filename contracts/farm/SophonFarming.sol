@@ -83,8 +83,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     address public immutable eETHLiquidityPool;
     address public immutable weETH;
     uint256 public immutable CHAINID;
-    uint256 public constant BEAM_WETH_PID = 4;
-    address public constant PENDLE_EXCEPTION = 0x065347C1Dd7A23Aa043e3844B4D0746ff7715246;
+    uint256 internal constant PEPE_PID = 9;
+    address internal constant PENDLE_EXCEPTION = 0x065347C1Dd7A23Aa043e3844B4D0746ff7715246;
 
     /**
      * @notice Construct SophonFarming
@@ -836,8 +836,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         }
         uint256 depositAmount = IERC20(pool.lpToken).balanceOf(address(this));
 
-        if (_pid == BEAM_WETH_PID) {
-            UserInfo storage user = userInfo[BEAM_WETH_PID][PENDLE_EXCEPTION];
+        if (_pid == PEPE_PID) {
+            UserInfo storage user = userInfo[PEPE_PID][PENDLE_EXCEPTION];
             depositAmount -= user.depositAmount - user.boostAmount / boosterMultiplier;
         }
 
