@@ -383,8 +383,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @param _isInWhitelist to add or remove
      */
     function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external onlyOwner {
+        mapping(address user => bool inWhitelist) storage whitelist_ = whitelist[_userAdmin];
         for(uint i = 0; i < _users.length; i++) {
-            whitelist[_userAdmin][_users[i]] = _isInWhitelist;
+            whitelist_[_users[i]] = _isInWhitelist;
         }
     }
 
