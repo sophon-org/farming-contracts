@@ -111,7 +111,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     ) public onlyOwner {
         require(_amount == _boostAmount + _depositAmount, "balances don't match");
 
-        PoolInfo memory pool = PoolInfo({
+        PoolInfo memory newPool = PoolInfo({
             lpToken: _lpToken,
             l2Farm: _l2Farm,
             amount: _amount,
@@ -125,15 +125,18 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         });
 
         if (_pid < poolInfo.length) {
-            poolInfo[_pid] = pool;
+            PoolInfo storage existingPool = poolInfo[_pid];
+            require(existingPool.lpToken == _lpToken, "Pool LP token mismatch");
+            // Update the pool
+            poolInfo[_pid] = newPool;
         } else if (_pid == poolInfo.length) {
-            poolInfo.push(pool);
+            // Add new pool
+            poolInfo.push(newPool);
         } else {
-            revert PoolDoesNotExist();
+            revert("wrong pid");
         }
         heldProceeds[_pid] = _heldProceeds;
         poolExists[address(_lpToken)] = true;
-        // require(IERC20(_lpToken).balanceOf(address(this)) >= _amount, "balances don't match");
     }
 
     function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userFromClaim) public {
