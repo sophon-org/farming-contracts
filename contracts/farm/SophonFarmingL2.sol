@@ -87,11 +87,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @notice Construct SophonFarming
      */
     constructor(address _MERKLE, address _stork) {
+        if (_MERKLE == address(0)) revert ZeroAddress();
         MERKLE = _MERKLE;
 
-        if (_stork == address(0)) {
-            revert ZeroAddress();
-        }
+        if (_stork == address(0)) revert ZeroAddress();
         stork = IStork(_stork);
     }
 
@@ -130,7 +129,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         } else if (_pid == poolInfo.length) {
             poolInfo.push(pool);
         } else {
-            revert("wrong pid");
+            revert PoolDoesNotExist();
         }
         heldProceeds[_pid] = _heldProceeds;
         poolExists[address(_lpToken)] = true;
@@ -139,6 +138,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
     function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userFromClaim) public {
         if (msg.sender != MERKLE) revert OnlyMerkle();
+        require(_pid < poolInfo.length, "Invalid pool id");
         require(_userFromClaim.amount == _userFromClaim.boostAmount + _userFromClaim.depositAmount, "balances don't match");
 
         PoolInfo storage pool = poolInfo[_pid];
@@ -154,9 +154,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             user.rewardSettled -
             user.rewardDebt;
 
-        // _userFromClaim.rewardDebt is ignored since user.rewardSettled is already settled
         user.rewardSettled = user.rewardSettled + _userFromClaim.rewardSettled;
-
         user.boostAmount = user.boostAmount + _userFromClaim.boostAmount;
         pool.boostAmount = pool.boostAmount + _userFromClaim.boostAmount;
 
@@ -166,9 +164,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         user.amount = user.amount + _userFromClaim.amount;
         pool.amount = pool.amount + _userFromClaim.amount;
 
-        user.rewardDebt = user.amount *
-            pool.accPointsPerShare /
-            1e18;
+        user.rewardDebt = user.amount * pool.accPointsPerShare / 1e18;
     }
 
     /**
@@ -294,12 +290,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      */
     function isFarmingEnded() public view returns (bool) {
         uint256 _endBlock = endBlock;
-        if (_endBlock != 0 && getBlockNumber() > _endBlock) {
-            return true;
-        } else {
-            return false;
-        }
+        return _endBlock != 0 && getBlockNumber() > _endBlock;
     }
+
 
     /**
      * @notice Checks if the withdrawal period is ended
@@ -307,11 +300,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      */
     function isWithdrawPeriodEnded() public view returns (bool) {
         uint256 _endBlockForWithdrawals = endBlockForWithdrawals;
-        if (_endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals) {
-            return true;
-        } else {
-            return false;
-        }
+        return _endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals;
     }
 
     /**
@@ -346,7 +335,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1_000e18) {
             revert InvalidPointsPerBlock();
         }
         massUpdatePools();
@@ -394,8 +383,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @param _isInWhitelist to add or remove
      */
     function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external onlyOwner {
+        mapping(address user => bool inWhitelist) storage whitelist_ = whitelist[_userAdmin];
         for(uint i = 0; i < _users.length; i++) {
-            whitelist[_userAdmin][_users[i]] = _isInWhitelist;
+            whitelist_[_users[i]] = _isInWhitelist;
         }
     }
 
@@ -423,7 +413,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         if (_newHash == pv.feedHash) {
             revert DuplicatePriceFeed();
         }
-
+        massUpdatePools();
         pv.feedHash = _newHash;
         pv.staleSeconds = _newStaleSeconds;
         pv.emissionsMultiplier = _emissionsMultiplier;

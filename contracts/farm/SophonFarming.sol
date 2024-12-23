@@ -53,7 +53,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
 
     error ZeroAddress();
-    error PoolExists();
     error PoolDoesNotExist();
     error AlreadyInitialized();
     error NotFound(address lpToken);
@@ -93,6 +92,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @dev 0:dai, 1:sDAI, 2:weth, 3:stETH, 4:wstETH, 5:eETH, 6:eETHLiquidityPool, 7:weETH
      */
     constructor(address[8] memory tokens_, uint256 _CHAINID) {
+        for (uint256 i = 0; i < tokens_.length; i++) {
+            require(tokens_[i] != address(0), "cannot be zero");
+        }
+
         dai = tokens_[0];
         sDAI = tokens_[1];
         weth = tokens_[2];
@@ -129,7 +132,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert AlreadyInitialized();
         }
 
-        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1_000e18) {
             revert InvalidPointsPerBlock();
         }
         pointsPerBlock = _pointsPerBlock;
@@ -148,15 +151,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         // sDAI
         typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", _initialPoolStartBlock, 0);
-        IERC20(dai).approve(sDAI, 2**256-1);
+        IERC20(dai).approve(sDAI, type(uint256).max);
 
         // wstETH
         typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, wstETH, "wstETH", _initialPoolStartBlock, 0);
-        IERC20(stETH).approve(wstETH, 2**256-1);
+        IERC20(stETH).approve(wstETH, type(uint256).max);
 
         // weETH
         typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, weETH, "weETH", _initialPoolStartBlock, 0);
-        IERC20(eETH).approve(weETH, 2**256-1);
+        IERC20(eETH).approve(weETH, type(uint256).max);
     }
 
     /**
@@ -173,7 +176,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert ZeroAddress();
         }
         if (poolExists[_lpToken]) {
-            revert PoolExists();
+            revert PoolDoesNotExist();
         }
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
@@ -261,11 +264,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function isFarmingEnded() public view returns (bool) {
         uint256 _endBlock = endBlock;
-        if (_endBlock != 0 && getBlockNumber() > _endBlock) {
-            return true;
-        } else {
-            return false;
-        }
+        return _endBlock != 0 && getBlockNumber() > _endBlock;
     }
 
     /**
@@ -274,11 +273,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function isWithdrawPeriodEnded() public view returns (bool) {
         uint256 _endBlockForWithdrawals = endBlockForWithdrawals;
-        if (_endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals) {
-            return true;
-        } else {
-            return false;
-        }
+        return _endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals;
     }
 
     /**
@@ -300,12 +295,12 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (_l2Farm == address(0)) {
             revert ZeroAddress();
         }
-        if (address(poolInfo[_pid].lpToken) == address(0)) {
+        PoolInfo storage pool = poolInfo[_pid];
+        if (address(pool.lpToken) == address(0)) {
             revert PoolDoesNotExist();
         }
-        poolInfo[_pid].l2Farm = _l2Farm;
+        pool.l2Farm = _l2Farm;
     }
-
     /**
      * @notice Set the end block of the farm
      * @param _endBlock the end block
@@ -338,7 +333,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1_000e18) {
             revert InvalidPointsPerBlock();
         }
         massUpdatePools();
@@ -386,8 +381,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _isInWhitelist to add or remove
      */
     function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external onlyOwner {
+        mapping(address user => bool inWhitelist) storage whitelist_ = whitelist[_userAdmin];
         for(uint i = 0; i < _users.length; i++) {
-            whitelist[_userAdmin][_users[i]] = _isInWhitelist;
+            whitelist_[_users[i]] = _isInWhitelist;
         }
     }
 
@@ -858,7 +854,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         });
 
         if (pool.lpToken.allowance(address(this), _request.secondBridgeAddress) < depositAmount) {
-            pool.lpToken.safeIncreaseAllowance(_request.secondBridgeAddress, type(uint256).max);
+            pool.lpToken.forceApprove(_request.secondBridgeAddress, type(uint256).max);
         }
         IERC20(_sophToken).safeTransferFrom(msg.sender, address(this), _mintValue);
         IERC20(_sophToken).safeIncreaseAllowance(_request.secondBridgeAddress, _mintValue);
@@ -874,10 +870,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     // bridge USDC
     function bridgeUSDC(uint256 _mintValue, address _sophToken, IBridgehub _bridge) external onlyOwner {
         uint256 _pid = 7;
-        if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
-            revert Unauthorized();
-        }
-
         // IBridgehub _bridge = IBridgehub(address(0));
         _bridgePool(_pid, _mintValue, _sophToken, _bridge);
 
@@ -890,7 +882,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function setL2Farm(uint256 _pid, address _l2Farm) external onlyOwner {
         if (_pid >= poolInfo.length) {
-            revert PoolExists();
+            revert PoolDoesNotExist();
         }
 
         if (_l2Farm == address(0)) {
