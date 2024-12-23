@@ -765,7 +765,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _withdrawAmount amount of the withdraw
      */
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external {
-        if (isWithdrawPeriodEnded()) {
+        if (isWithdrawPeriodEnded() && msg.sender != PENDLE_EXCEPTION) {
             revert WithdrawNotAllowed();
         }
         if (_withdrawAmount == 0) {
