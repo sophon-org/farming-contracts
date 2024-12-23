@@ -838,7 +838,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         if (_pid == PEPE_PID) {
             UserInfo storage user = userInfo[PEPE_PID][PENDLE_EXCEPTION];
-            depositAmount -= user.depositAmount - user.boostAmount / boosterMultiplier;
+            depositAmount -= user.depositAmount;
         }
 
         L2TransactionRequestTwoBridgesOuter memory _request = L2TransactionRequestTwoBridgesOuter({
