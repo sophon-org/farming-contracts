@@ -79,4 +79,6 @@ contract SophonFarmingState {
     mapping(uint256 pid => PoolValue) public poolValue;
 
     uint256 public totalValue;
+
+    mapping(address => bool) public depositLock;
 }
