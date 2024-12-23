@@ -163,5 +163,5 @@ interface ISophonFarming {
     function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external;
     function setL2Farm(uint256 _pid, address _l2Farm) external;
     function setPriceFeedData(uint256 _pid, bytes32 _newHash, uint256 _newStaleSeconds, uint256 _emissionsMultiplier) external;
-    function updateUserInfo1(address _user, uint256 _pid, UserInfo memory _userFromClaim) external;
+    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userFromClaim) external;
 }
