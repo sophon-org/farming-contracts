@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.26;
+pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -10,6 +10,7 @@ import "contracts/token/LinearVestingWithPenalty.sol";
 import "interfaces/ISophonFarming.sol";
 
 contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
+    using SafeERC20 for IERC20;
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     ISophonFarming public SF_L2;
     bytes32 public merkleRoot;
@@ -38,6 +39,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     }
 
     function initialize(address _SF_L2) public initializer {
+        require(_SF_L2 != address(0), "SF_L2 is zero address");
         SF_L2 = ISophonFarming(_SF_L2);
 
         __AccessControl_init();
@@ -107,13 +109,14 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
 
     // TODO add index
     function _claim(address _user, address _customReceiver, uint256 _pid, ISophonFarming.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) internal {
-        if (hasClaimed[_user][_pid]) revert AlreadyClaimed();
+        bool alreadyClaimed = hasClaimed[_user][_pid];
+        if (alreadyClaimed) revert AlreadyClaimed();
 
         // Verify the Merkle proof.
         bytes32 leaf = keccak256(abi.encodePacked(_user, _pid, _userInfo.amount, _userInfo.boostAmount, _userInfo.depositAmount, _userInfo.rewardSettled, _userInfo.rewardDebt));
         if (!MerkleProof.verify(_merkleProof, merkleRoot, leaf)) revert InvalidMerkleProof();
 
-        // Mark it claimed and transfer the tokens.
+        // Mark it claimed and update user info.
         hasClaimed[_user][_pid] = true;
 
         SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo);
@@ -126,7 +129,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
      * @param to The address to send the recovered tokens to.
      */
     function rescue(IERC20 token, address to) external onlyRole(ADMIN_ROLE) {
-        SafeERC20.safeTransfer(token, to, token.balanceOf(address(this)));
+        token.safeTransfer(to, token.balanceOf(address(this)));
     }
 
     /**
