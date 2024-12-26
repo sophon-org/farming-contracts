@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity 0.8.26;
 
@@ -761,7 +761,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _withdrawAmount amount of the withdraw
      */
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external {
-        if (isWithdrawPeriodEnded()) {
+        if (isWithdrawPeriodEnded() && msg.sender != PENDLE_EXCEPTION) {
             revert WithdrawNotAllowed();
         }
         if (_withdrawAmount == 0) {
@@ -838,7 +838,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         if (_pid == PEPE_PID) {
             UserInfo storage user = userInfo[PEPE_PID][PENDLE_EXCEPTION];
-            depositAmount -= user.depositAmount - user.boostAmount / boosterMultiplier;
+            depositAmount -= user.depositAmount;
         }
 
         L2TransactionRequestTwoBridgesOuter memory _request = L2TransactionRequestTwoBridgesOuter({
