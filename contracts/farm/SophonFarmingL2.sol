@@ -50,6 +50,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when the pool price feed data is updated
     event SetPriceFeedData(bytes32 newHash, uint256 newStaleSeconds);
 
+     /// @notice Emitted when held proceeds are withdrawn
+    event WithdrawHeldProceeds(uint256 indexed pid, address indexed to, uint256 amount);
+
     error ZeroAddress();
     error PoolExists();
     error PoolDoesNotExist();
@@ -137,6 +140,26 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         }
         heldProceeds[_pid] = _heldProceeds;
         poolExists[address(_lpToken)] = true;
+    }
+
+     /**
+     * @notice Withdraw heldProceeds for a given pool
+     * @param _pid The pool ID to withdraw from
+     * @param _to The address that will receive the tokens
+     */
+    function withdrawHeldProceeds(uint256 _pid, address _to) external onlyOwner {
+        if (_to == address(0)) revert ZeroAddress();
+
+        uint256 amount = heldProceeds[_pid];
+        if (amount == 0) revert NothingInPool();
+
+        // Transfer the tokens to the specified address
+        poolInfo[_pid].lpToken.safeTransfer(_to, amount);
+
+        // Reset the mapping for that pid
+        heldProceeds[_pid] = 0;
+
+        emit WithdrawHeldProceeds(_pid, _to, amount);
     }
 
     function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userFromClaim) public {
