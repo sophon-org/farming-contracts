@@ -27,4 +27,6 @@ interface IPriceFeeds {
     function getPrice(address poolToken_) external view returns (uint256);
 
     function getStorkPrice(bytes32 feedHash_, uint256 staleSeconds_) external view returns (uint256);
+
+    function setStorkFeedsData(address farmContract, address[] memory poolTokens_, StorkData[] memory poolTokenDatas_) external;
 }
