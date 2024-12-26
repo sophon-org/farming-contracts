@@ -42,7 +42,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
 
     /// @notice Emitted when the the updatePool function is called
-    event PoolUpdated(uint256 indexed pid, uint256 currentValue);
+    event PoolUpdated(uint256 indexed pid, uint256 currentValue, uint256 newPrice);
 
     /// @notice Emitted when setPointsPerBlock is called
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
@@ -458,8 +458,8 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         uint256 totalNewValue;
         uint256 _pid;
 
-        // [[lastRewardBlock, lastValue, lpSupply]]
-        uint256[3][] memory valuesArray = new uint256[3][](length);
+        // [[lastRewardBlock, lastValue, lpSupply, newPrice]]
+        uint256[4][] memory valuesArray = new uint256[4][](length);
         for(_pid = 0; _pid < length; ++_pid) {
             valuesArray[_pid] = _updatePool(_pid);
             totalNewValue += valuesArray[_pid][1];
@@ -469,7 +469,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         uint256 _pointsPerBlock = pointsPerBlock;
         for(_pid = 0; _pid < length; ++_pid) {
-            uint256[3] memory values = valuesArray[_pid];
+            uint256[4] memory values = valuesArray[_pid];
             PoolInfo storage pool = poolInfo[_pid];
 
             if (getBlockNumber() <= values[0]) {
@@ -493,12 +493,12 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
             pool.lastRewardBlock = getBlockNumber();
 
-            emit PoolUpdated(_pid, values[1]);
+            emit PoolUpdated(_pid, values[1], values[3]);
         }
     }
 
-    // returns [lastRewardBlock, lastValue, lpSupply]
-    function _updatePool(uint256 _pid) internal returns (uint256[3] memory values) {
+    // returns [lastRewardBlock, lastValue, lpSupply, newPrice]
+    function _updatePool(uint256 _pid) internal returns (uint256[4] memory values) {
 
         PoolInfo storage pool = poolInfo[_pid];
         values[0] = pool.lastRewardBlock;
@@ -522,13 +522,13 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             return values;
         }
 
-        uint256 newPrice = priceFeeds.getPrice(address(pool.lpToken));
-        if (newPrice == 0) {
+        values[3] = priceFeeds.getPrice(address(pool.lpToken));
+        if (values[3] == 0) {
             // invalid price
             return values;
         }
 
-        uint256 newValue = values[2] * newPrice / 1e18;
+        uint256 newValue = values[2] * values[3] / 1e18;
         newValue = newValue * pv.emissionsMultiplier / 1e18;
         if (newValue == 0) {
             // invalid value
