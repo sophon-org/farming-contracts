@@ -12,7 +12,7 @@ import "./interfaces/IwstETH.sol";
 import "./interfaces/IsDAI.sol";
 import "./interfaces/IeETHLiquidityPool.sol";
 import "./interfaces/IweETH.sol";
-import "./interfaces/IStork.sol";
+import "./interfaces/IPriceFeeds.sol";
 import "../proxies/Upgradeable2Step.sol";
 import "./SophonFarmingState.sol";
 
@@ -47,8 +47,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when setPointsPerBlock is called
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
 
-    /// @notice Emitted when the pool price feed data is updated
-    event SetPriceFeedData(bytes32 newHash, uint256 newStaleSeconds);
+    /// @notice Emitted when setEmissionsMultiplier is called
+    event SetEmissionsMultiplier(uint256 oldValue, uint256 newValue);
+
 
     error ZeroAddress();
     error PoolExists();
@@ -73,25 +74,21 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     error BoostIsZero();
     error BridgeInvalid();
     error OnlyMerkle();
-    error DuplicatePriceFeed();
-    error PriceFeedNotSet();
-    error InvalidStaleSeconds();
-    error InvalidPrice(uint256 pid, uint256 price);
-    error InvalidValue(uint256 value);
+
 
     address public immutable MERKLE;
 
-    IStork public immutable stork;
+    IPriceFeeds public immutable priceFeeds;
 
     /**
      * @notice Construct SophonFarming
      */
-    constructor(address _MERKLE, address _stork) {
+    constructor(address _MERKLE, address _priceFeeds) {
         if (_MERKLE == address(0)) revert ZeroAddress();
         MERKLE = _MERKLE;
 
-        if (_stork == address(0)) revert ZeroAddress();
-        stork = IStork(_stork);
+        if (_priceFeeds == address(0)) revert ZeroAddress();
+        priceFeeds = IPriceFeeds(_priceFeeds);
     }
 
     // Order is important
@@ -173,15 +170,13 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     /**
      * @notice Adds a new pool to the farm. Can only be called by the owner.
      * @param _lpToken lpToken address
-     * @param _priceFeedHash lpToken price feed hash
-     * @param _staleSeconds lpToken price stale seconds
      * @param _emissionsMultiplier multiplier for emissions fine tuning; use 0 or 1e18 for 1x
      * @param _description description of new pool
      * @param _poolStartBlock block at which points start to accrue for the pool
      * @param _newPointsPerBlock update global points per block; 0 means no update
      * @return uint256 The pid of the newly created asset
      */
-    function add(address _lpToken, bytes32 _priceFeedHash, uint256 _staleSeconds, uint256 _emissionsMultiplier, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
+    function add(address _lpToken, uint256 _emissionsMultiplier, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
         if (_lpToken == address(0)) {
             revert ZeroAddress();
         }
@@ -190,13 +185,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         }
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
-        }
-
-        if (_priceFeedHash == 0) {
-            revert PriceFeedNotSet();
-        }
-        if (_staleSeconds == 0) {
-            revert InvalidStaleSeconds();
         }
 
         if (_newPointsPerBlock != 0) {
@@ -230,12 +218,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             // set multiplier to 1x
             _emissionsMultiplier = 1e18;
         }
-
-        PoolValue storage pv = poolValue[pid];
-        pv.emissionsMultiplier = _emissionsMultiplier;
-        pv.feedHash = _priceFeedHash;
-        pv.staleSeconds = _staleSeconds;
-        emit SetPriceFeedData(_priceFeedHash, _staleSeconds);
+        poolValue[pid].emissionsMultiplier = _emissionsMultiplier;
 
         emit Add(_lpToken, pid, 0);
 
@@ -409,19 +392,21 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             user.rewardDebt;
     }
 
-    // zero hash allowed; blocks updates to the pool
-    // zero stale seconds means no change
-    function setPriceFeedData(uint256 _pid, bytes32 _newHash, uint256 _newStaleSeconds, uint256 _emissionsMultiplier) external onlyOwner {
-        PoolValue storage pv = poolValue[_pid];
-        if (_newHash == pv.feedHash) {
-            revert DuplicatePriceFeed();
+    /**
+     * @notice Set emissions multiplier
+     * @param _emissionsMultiplier emissions multiplier to set
+     */
+    function setEmissionsMultiplier(uint256 _pid, uint256 _emissionsMultiplier) external onlyOwner {
+        if (_emissionsMultiplier == 0) {
+            // set multiplier to 1x
+            _emissionsMultiplier = 1e18;
         }
-        massUpdatePools();
-        pv.feedHash = _newHash;
-        pv.staleSeconds = _newStaleSeconds;
-        pv.emissionsMultiplier = _emissionsMultiplier;
 
-        emit SetPriceFeedData(_newHash, _newStaleSeconds);
+        massUpdatePools();
+
+        PoolValue storage pv = poolValue[_pid];
+        emit SetEmissionsMultiplier(pv.emissionsMultiplier, _emissionsMultiplier);
+        pv.emissionsMultiplier = _emissionsMultiplier;
     }
 
     /**
@@ -537,29 +522,16 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             return values;
         }
 
-        bytes32 feedHash = pv.feedHash;
-        if (feedHash == 0) {
-            //revert PriceFeedNotSet();
-            return values;
-        }
-
-        IStork.TemporalNumericValue memory storkValue = stork.getTemporalNumericValueUnsafeV1(feedHash);
-
-        if (block.timestamp - (storkValue.timestampNs / 1000000000) > pv.staleSeconds) {
-            // stale price
-            return values;
-        }
-
-        if (storkValue.quantizedValue <= 0) {
+        uint256 newPrice = priceFeeds.getPrice(address(pool.lpToken));
+        if (newPrice == 0) {
             // invalid price
             return values;
         }
-        uint256 newPrice = uint256(uint192(storkValue.quantizedValue));
 
         uint256 newValue = values[2] * newPrice / 1e18;
         newValue = newValue * pv.emissionsMultiplier / 1e18;
         if (newValue == 0) {
-            //revert InvalidValue(newValue);
+            // invalid value
             return values;
         }
 

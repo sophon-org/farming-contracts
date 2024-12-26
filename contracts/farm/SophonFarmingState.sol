@@ -70,8 +70,6 @@ contract SophonFarmingState {
     mapping(address userAdmin => mapping(address user => bool inWhitelist)) public whitelist;
 
     struct PoolValue {
-        bytes32 feedHash;
-        uint256 staleSeconds;
         uint256 lastValue;
         uint256 emissionsMultiplier;
     }
