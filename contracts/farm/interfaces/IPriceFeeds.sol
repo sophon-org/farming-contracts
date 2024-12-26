@@ -7,6 +7,7 @@ interface IPriceFeeds {
     event SetPriceFeedData(FeedType feedType, bytes32 feedHash, uint256 staleSeconds);
 
     error ZeroAddress();
+    error CountMismatch();
     error InvalidCall();
     error InvalidType();
     error TypeMismatch();

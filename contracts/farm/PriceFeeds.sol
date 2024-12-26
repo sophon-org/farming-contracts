@@ -49,15 +49,12 @@ contract PriceFeeds is IPriceFeeds, Upgradeable2Step {
     }
 
     // zero feedHash allowed, which would block updates to the pool
-    function setStorkFeedData(address farmContract, address poolToken_, FeedType feedType_, bytes32 feedHash_, uint256 staleSeconds_) external onlyOwner {
+    function setStorkFeedsData(address farmContract, address[] memory poolTokens_, StorkData[] memory poolTokenDatas_) external onlyOwner {
         if (farmContract == address(0)) {
             revert ZeroAddress();
         }
-        if (feedType_ != FeedType.Stork) {
-            revert InvalidType();
-        }
-        if (staleSeconds_ == 0) {
-            revert InvalidStaleSeconds();
+        if (poolTokens_.length != poolTokenDatas_.length) {
+            revert CountMismatch();
         }
 
         (bool success, ) = farmContract.call(abi.encodeWithSignature("massUpdatePools()"));
@@ -65,21 +62,30 @@ contract PriceFeeds is IPriceFeeds, Upgradeable2Step {
             revert InvalidCall();
         }
 
-        StorkData storage token0Data = storkData[poolToken_];
-
-        FeedType currentType = token0Data.feedType;
-        if (currentType == FeedType.Undefined) {
-            token0Data.feedType = feedType_;
-        } else {
-            if (feedType_ != currentType) {
-                // we can't change the FeedType once it is set
-                revert TypeMismatch();
+        for (uint256 i; i < poolTokens_.length; i++) {
+            if (poolTokenDatas_[i].feedType != FeedType.Stork) {
+                revert InvalidType();
             }
+            if (poolTokenDatas_[i].staleSeconds == 0) {
+                revert InvalidStaleSeconds();
+            }
+
+            StorkData storage tokenData = storkData[poolTokens_[i]];
+
+            FeedType currentType = tokenData.feedType;
+            if (currentType == FeedType.Undefined) {
+                tokenData.feedType = poolTokenDatas_[i].feedType;
+            } else {
+                if (poolTokenDatas_[i].feedType != currentType) {
+                    // we can't change the FeedType once it is set
+                    revert TypeMismatch();
+                }
+            }
+
+            tokenData.feedHash = poolTokenDatas_[i].feedHash;
+            tokenData.staleSeconds = poolTokenDatas_[i].staleSeconds;
+
+            emit SetPriceFeedData(poolTokenDatas_[i].feedType, poolTokenDatas_[i].feedHash, poolTokenDatas_[i].staleSeconds);
         }
-
-        token0Data.feedHash = feedHash_;
-        token0Data.staleSeconds = staleSeconds_;
-
-        emit SetPriceFeedData(feedType_, feedHash_, staleSeconds_);
     }
 }
