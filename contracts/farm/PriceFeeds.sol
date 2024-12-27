@@ -35,7 +35,7 @@ contract PriceFeeds is IPriceFeeds, Upgradeable2Step {
 
         IStork.TemporalNumericValue memory storkValue = stork.getTemporalNumericValueUnsafeV1(feedHash_);
 
-        if (staleSeconds_ != 0 && block.timestamp - (storkValue.timestampNs / 1000000000) > staleSeconds_) {
+        if (staleSeconds_ != 0 && block.timestamp > (storkValue.timestampNs / 1000000000) + staleSeconds_) {
             // stale price
             return 0;
         }
