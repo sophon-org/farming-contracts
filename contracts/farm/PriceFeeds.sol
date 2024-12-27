@@ -85,7 +85,7 @@ contract PriceFeeds is IPriceFeeds, Upgradeable2Step {
             tokenData.feedHash = poolTokenDatas_[i].feedHash;
             tokenData.staleSeconds = poolTokenDatas_[i].staleSeconds;
 
-            emit SetPriceFeedData(poolTokenDatas_[i].feedType, poolTokenDatas_[i].feedHash, poolTokenDatas_[i].staleSeconds);
+            emit SetPriceFeedData(poolTokens_[i], poolTokenDatas_[i].feedType, poolTokenDatas_[i].feedHash, poolTokenDatas_[i].staleSeconds);
         }
     }
 }
