@@ -29,11 +29,12 @@ replacements = {k.lower(): v.lower() for k, v in replacements.items()}
 
 global_accPointsPerShare  = {}
 
+
 with open(file_path, 'r', encoding='utf-8') as file:
     data = json.load(file)
     users = data.get('users', [])
     pools = data.get('pools', [])
-    
+    accPointsPerShares = [pool['accPointsPerShare'] for pool in pools]
     
     for index, pool in enumerate(pools):
         l1_allocPoint = int(pool["allocPoint"])
@@ -52,8 +53,21 @@ with open(file_path, 'r', encoding='utf-8') as file:
     for user in users:
         print(user)
         l1_user_amount = int(user["userInfo"]["amount"])
+        rewardSettled = int(user["userInfo"]["rewardSettled"])
+        rewardDebt = int(user["userInfo"]["rewardDebt"])
         pid = user["pid"]
-        rewardSettled = l1_user_amount * global_accPointsPerShare[pid] / 1e18;
+        rewardSettled = l1_user_amount * int(accPointsPerShares[int(pid)]) / 1e18 + rewardSettled - rewardDebt;
+
+        # user.rewardSettled =
+        #     user.amount *
+        #     pool.accPointsPerShare /
+        #     1e18 +
+        #     user.rewardSettled -
+        #     user.rewardDebt;
+        #          int(82630000 * 1106695059245760088814745713292 / 1e18 + 0 - 77360583371057891283)
+        # 14085629374419271680
+        # SF.pendingPoints(12, "0xfffba048296609a129d384b2ebb75941f2d63e0c")
+        # 14085629374419264855
         user["userInfo"]["new_rewardSettled"] = str(int(rewardSettled))
         new_user = replacements.get(user["user"].lower())
         if new_user is None:
