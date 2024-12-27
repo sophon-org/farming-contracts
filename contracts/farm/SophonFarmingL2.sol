@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity 0.8.26;
 
@@ -12,7 +12,7 @@ import "./interfaces/IwstETH.sol";
 import "./interfaces/IsDAI.sol";
 import "./interfaces/IeETHLiquidityPool.sol";
 import "./interfaces/IweETH.sol";
-import "./interfaces/IStork.sol";
+import "./interfaces/IPriceFeeds.sol";
 import "../proxies/Upgradeable2Step.sol";
 import "./SophonFarmingState.sol";
 
@@ -42,13 +42,14 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     event IncreaseBoost(address indexed user, uint256 indexed pid, uint256 boostAmount);
 
     /// @notice Emitted when the the updatePool function is called
-    event PoolUpdated(uint256 indexed pid);
+    event PoolUpdated(uint256 indexed pid, uint256 currentValue, uint256 newPrice);
 
     /// @notice Emitted when setPointsPerBlock is called
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
 
-    /// @notice Emitted when the pool price feed data is updated
-    event SetPriceFeedData(bytes32 newHash, uint256 newStaleSeconds);
+    /// @notice Emitted when setEmissionsMultiplier is called
+    event SetEmissionsMultiplier(uint256 oldValue, uint256 newValue);
+
 
     event ToggleDepositLock(address indexed user, bool isEnabled);
 
@@ -75,26 +76,21 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     error BoostIsZero();
     error BridgeInvalid();
     error OnlyMerkle();
-    error DuplicatePriceFeed();
-    error PriceFeedNotSet();
-    error InvalidStaleSeconds();
-    error InvalidPrice(uint256 pid, uint256 price);
-    error InvalidValue(uint256 value);
     error ActionNotAllowed();
 
     address public immutable MERKLE;
 
-    IStork public immutable stork;
+    IPriceFeeds public immutable priceFeeds;
 
     /**
      * @notice Construct SophonFarming
      */
-    constructor(address _MERKLE, address _stork) {
+    constructor(address _MERKLE, address _priceFeeds) {
         if (_MERKLE == address(0)) revert ZeroAddress();
         MERKLE = _MERKLE;
 
-        if (_stork == address(0)) revert ZeroAddress();
-        stork = IStork(_stork);
+        if (_priceFeeds == address(0)) revert ZeroAddress();
+        priceFeeds = IPriceFeeds(_priceFeeds);
     }
 
     // Order is important
@@ -114,7 +110,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     ) public onlyOwner {
         require(_amount == _boostAmount + _depositAmount, "balances don't match");
 
-        PoolInfo memory pool = PoolInfo({
+        PoolInfo memory newPool = PoolInfo({
             lpToken: _lpToken,
             l2Farm: _l2Farm,
             amount: _amount,
@@ -128,15 +124,18 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         });
 
         if (_pid < poolInfo.length) {
-            poolInfo[_pid] = pool;
+            PoolInfo storage existingPool = poolInfo[_pid];
+            require(existingPool.lpToken == _lpToken, "Pool LP token mismatch");
+            // Update the pool
+            poolInfo[_pid] = newPool;
         } else if (_pid == poolInfo.length) {
-            poolInfo.push(pool);
+            // Add new pool
+            poolInfo.push(newPool);
         } else {
-            revert PoolDoesNotExist();
+            revert("wrong pid");
         }
         heldProceeds[_pid] = _heldProceeds;
         poolExists[address(_lpToken)] = true;
-        // require(IERC20(_lpToken).balanceOf(address(this)) >= _amount, "balances don't match");
     }
 
     function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userFromClaim) public {
@@ -146,7 +145,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        massUpdatePools(true);
+        massUpdatePools();
 
         uint256 userAmount = user.amount;
 
@@ -173,15 +172,13 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     /**
      * @notice Adds a new pool to the farm. Can only be called by the owner.
      * @param _lpToken lpToken address
-     * @param _priceFeedHash lpToken price feed hash
-     * @param _staleSeconds lpToken price stale seconds
      * @param _emissionsMultiplier multiplier for emissions fine tuning; use 0 or 1e18 for 1x
      * @param _description description of new pool
      * @param _poolStartBlock block at which points start to accrue for the pool
      * @param _newPointsPerBlock update global points per block; 0 means no update
      * @return uint256 The pid of the newly created asset
      */
-    function add(address _lpToken, bytes32 _priceFeedHash, uint256 _staleSeconds, uint256 _emissionsMultiplier, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
+    function add(address _lpToken, uint256 _emissionsMultiplier, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) public onlyOwner returns (uint256) {
         if (_lpToken == address(0)) {
             revert ZeroAddress();
         }
@@ -190,13 +187,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         }
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
-        }
-
-        if (_priceFeedHash == 0) {
-            revert PriceFeedNotSet();
-        }
-        if (_staleSeconds == 0) {
-            revert InvalidStaleSeconds();
         }
 
         if (_newPointsPerBlock != 0) {
@@ -230,12 +220,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             // set multiplier to 1x
             _emissionsMultiplier = 1e18;
         }
-
-        PoolValue storage pv = poolValue[pid];
-        pv.emissionsMultiplier = _emissionsMultiplier;
-        pv.feedHash = _priceFeedHash;
-        pv.staleSeconds = _staleSeconds;
-        emit SetPriceFeedData(_priceFeedHash, _staleSeconds);
+        poolValue[pid].emissionsMultiplier = _emissionsMultiplier;
 
         emit Add(_lpToken, pid, 0);
 
@@ -409,19 +394,21 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             user.rewardDebt;
     }
 
-    // zero hash allowed; blocks updates to the pool
-    // zero stale seconds means no change
-    function setPriceFeedData(uint256 _pid, bytes32 _newHash, uint256 _newStaleSeconds, uint256 _emissionsMultiplier) external onlyOwner {
-        PoolValue storage pv = poolValue[_pid];
-        if (_newHash == pv.feedHash) {
-            revert DuplicatePriceFeed();
+    /**
+     * @notice Set emissions multiplier
+     * @param _emissionsMultiplier emissions multiplier to set
+     */
+    function setEmissionsMultiplier(uint256 _pid, uint256 _emissionsMultiplier) external onlyOwner {
+        if (_emissionsMultiplier == 0) {
+            // set multiplier to 1x
+            _emissionsMultiplier = 1e18;
         }
-        massUpdatePools();
-        pv.feedHash = _newHash;
-        pv.staleSeconds = _newStaleSeconds;
-        pv.emissionsMultiplier = _emissionsMultiplier;
 
-        emit SetPriceFeedData(_newHash, _newStaleSeconds);
+        massUpdatePools();
+
+        PoolValue storage pv = poolValue[_pid];
+        emit SetEmissionsMultiplier(pv.emissionsMultiplier, _emissionsMultiplier);
+        pv.emissionsMultiplier = _emissionsMultiplier;
     }
 
     /**
@@ -469,99 +456,91 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @notice Update accounting of all pools
      */
     function massUpdatePools() public {
-        massUpdatePools(false);
-    }
-
-    /**
-     * @notice Update accounting of all pools
-     * @param _silent emit event if false
-     */
-    function massUpdatePools(bool _silent) public {
         uint256 length = poolInfo.length;
-        for(uint256 pid = 0; pid < length; ++pid) {
-            updatePool(pid, _silent);
-        }
-    }
+        uint256 totalNewValue;
+        uint256 _pid;
 
-    /**
-     * @notice Updating accounting of a single pool
-     * @param _pid pid to update
-     */
-    function updatePool(uint256 _pid) public {
-        updatePool(_pid, false);
-    }
-
-    /**
-     * @notice Updating accounting of a single pool
-     * @param _pid pid to update
-     * @param _silent emit event if false
-     */
-    function updatePool(uint256 _pid, bool _silent) public {
-        PoolInfo storage pool = poolInfo[_pid];
-        if (getBlockNumber() <= pool.lastRewardBlock) {
-            return;
+        // [[lastRewardBlock, lastValue, lpSupply, newPrice]]
+        uint256[4][] memory valuesArray = new uint256[4][](length);
+        for(_pid = 0; _pid < length; ++_pid) {
+            valuesArray[_pid] = _updatePool(_pid);
+            totalNewValue += valuesArray[_pid][1];
         }
-        uint256 lpSupply = pool.amount;
+
+        totalValue = totalNewValue;
+
         uint256 _pointsPerBlock = pointsPerBlock;
-        if (lpSupply == 0 || _pointsPerBlock == 0) {
+        for(_pid = 0; _pid < length; ++_pid) {
+            uint256[4] memory values = valuesArray[_pid];
+            PoolInfo storage pool = poolInfo[_pid];
+
+            if (getBlockNumber() <= values[0]) {
+                continue;
+            }
+
+            if (values[2] != 0 && values[1] != 0) {
+                uint256 blockMultiplier = _getBlockMultiplier(values[0], getBlockNumber());
+                uint256 pointReward =
+                    blockMultiplier *
+                    _pointsPerBlock *
+                    values[1] /
+                    totalNewValue;
+
+                pool.totalRewards = pool.totalRewards + pointReward / 1e18;
+
+                pool.accPointsPerShare = pointReward /
+                    values[2] +
+                    pool.accPointsPerShare;
+            }
+
             pool.lastRewardBlock = getBlockNumber();
-            return;
+
+            emit PoolUpdated(_pid, values[1], values[3]);
+        }
+    }
+
+    // returns [lastRewardBlock, lastValue, lpSupply, newPrice]
+    function _updatePool(uint256 _pid) internal returns (uint256[4] memory values) {
+
+        PoolInfo storage pool = poolInfo[_pid];
+        values[0] = pool.lastRewardBlock;
+
+        if (getBlockNumber() < values[0]) {
+            // pool doesn't start until a future block
+            return values;
         }
 
-        /* START Update Pool Weighting Block */
         PoolValue storage pv = poolValue[_pid];
-        bytes32 feedHash = pv.feedHash;
-        if (feedHash == 0) {
-            //revert PriceFeedNotSet();
-            pool.lastRewardBlock = getBlockNumber();
-            return;
+        values[1] = pv.lastValue;
+
+        if (getBlockNumber() == values[0]) {
+            // pool was already processed this block, but we still need the value
+            return values;
         }
 
-        IStork.TemporalNumericValue memory storkValue = stork.getTemporalNumericValueUnsafeV1(feedHash);
+        values[2] = pool.amount;
 
-        if (block.timestamp - (storkValue.timestampNs / 1000000000) > pv.staleSeconds) {
-            // stale price
-            pool.lastRewardBlock = getBlockNumber();
-            return;
+        if (values[2] == 0) {
+            return values;
         }
 
-        if (storkValue.quantizedValue <= 0) {
+        values[3] = priceFeeds.getPrice(address(pool.lpToken));
+        if (values[3] == 0) {
             // invalid price
-            pool.lastRewardBlock = getBlockNumber();
-            return;
+            return values;
         }
-        uint256 newPrice = uint256(uint192(storkValue.quantizedValue));
 
-        uint256 newValue = lpSupply * newPrice / 1e18;
+        uint256 newValue = values[2] * values[3] / 1e18;
         newValue = newValue * pv.emissionsMultiplier / 1e18;
         if (newValue == 0) {
-            //revert InvalidValue(newValue);
-            pool.lastRewardBlock = getBlockNumber();
-            return;
+            // invalid value
+            return values;
         }
 
-        totalValue = totalValue - pv.lastValue + newValue;
         pv.lastValue = newValue;
-        /* END Update Pool Weighting Block */
+        values[1] = newValue;
 
-        uint256 blockMultiplier = _getBlockMultiplier(pool.lastRewardBlock, getBlockNumber());
-        uint256 pointReward =
-            blockMultiplier *
-            _pointsPerBlock *
-            newValue /
-            totalValue;
-
-        pool.totalRewards = pool.totalRewards + pointReward / 1e18;
-
-        pool.accPointsPerShare = pointReward /
-            lpSupply +
-            pool.accPointsPerShare;
-
-        pool.lastRewardBlock = getBlockNumber();
-
-        if (!_silent) {
-            emit PoolUpdated(_pid);
-        }
+        return values;
     }
 
     /**
@@ -602,7 +581,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        massUpdatePools(true);
+        massUpdatePools();
 
         uint256 userAmount = user.amount;
 
@@ -665,7 +644,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        massUpdatePools(true);
+        massUpdatePools();
 
         uint256 userAmount = user.amount;
 
@@ -728,7 +707,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        massUpdatePools(true);
+        massUpdatePools();
 
         uint256 userDepositAmount = user.depositAmount;
 
@@ -787,7 +766,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             revert PoolDoesNotExist();
         }
 
-        massUpdatePools(true);
+        massUpdatePools();
         uint256 accPointsPerShare = pool.accPointsPerShare;
 
         UserInfo storage userFrom = userInfo[_pid][_sender];

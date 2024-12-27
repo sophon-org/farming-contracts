@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity 0.8.26;
 
@@ -70,14 +70,13 @@ contract SophonFarmingState {
     mapping(address userAdmin => mapping(address user => bool inWhitelist)) public whitelist;
 
     struct PoolValue {
-        bytes32 feedHash;
-        uint256 staleSeconds;
         uint256 lastValue;
         uint256 emissionsMultiplier;
     }
     
     mapping(uint256 pid => PoolValue) public poolValue;
 
+    // total USD value of all pools including all deposits, boosts, and emissionsMultipliers
     uint256 public totalValue;
 
     mapping(address => bool) public depositLock;

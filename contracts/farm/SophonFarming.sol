@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity 0.8.26;
 
@@ -53,6 +53,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     event SetPointsPerBlock(uint256 oldValue, uint256 newValue);
 
     error ZeroAddress();
+    error PoolExists();
     error PoolDoesNotExist();
     error AlreadyInitialized();
     error NotFound(address lpToken);
@@ -176,7 +177,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert ZeroAddress();
         }
         if (poolExists[_lpToken]) {
-            revert PoolDoesNotExist();
+            revert PoolExists();
         }
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
@@ -819,10 +820,10 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert Unauthorized();
         }
 
-        _bridgePool(_pid, _mintValue, _sophToken, bridge);
+        _bridgePool(_pid, _mintValue, _sophToken, address(bridge.sharedBridge()));
     }
 
-    function _bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken, IBridgehub _bridge) internal {
+    function _bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken, address sharedBridge) internal {
 
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
@@ -838,7 +839,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         if (_pid == PEPE_PID) {
             UserInfo storage user = userInfo[PEPE_PID][PENDLE_EXCEPTION];
-            depositAmount -= user.depositAmount - user.boostAmount / boosterMultiplier;
+            depositAmount -= user.depositAmount;
         }
 
         L2TransactionRequestTwoBridgesOuter memory _request = L2TransactionRequestTwoBridgesOuter({
@@ -847,8 +848,8 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             l2Value: 0,
             l2GasLimit: 2000000,
             l2GasPerPubdataByteLimit: 800,
-            refundRecipient: address(this),
-            secondBridgeAddress: address(bridge.sharedBridge()),
+            refundRecipient: 0x50B238788747B26c408681283D148659F9da7Cf9,
+            secondBridgeAddress: sharedBridge,
             secondBridgeValue: 0,
             secondBridgeCalldata: abi.encode(pool.lpToken, depositAmount, pool.l2Farm)
         });
@@ -860,7 +861,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         IERC20(_sophToken).safeIncreaseAllowance(_request.secondBridgeAddress, _mintValue);
         
         // Actual values are pending the launch of Sophon testnet
-        _bridge.requestL2TransactionTwoBridges(_request);
+        bridge.requestL2TransactionTwoBridges(_request);
 
         isBridged[_pid] = true;
         emit BridgePool(msg.sender, _pid, depositAmount);
@@ -868,10 +869,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
 
     // bridge USDC
-    function bridgeUSDC(uint256 _mintValue, address _sophToken, IBridgehub _bridge) external onlyOwner {
+    function bridgeUSDC(uint256 _mintValue, address _sophToken) external {
         uint256 _pid = 7;
         // IBridgehub _bridge = IBridgehub(address(0));
-        _bridgePool(_pid, _mintValue, _sophToken, _bridge);
+        address sharedBridge = 0xf553E6D903AA43420ED7e3bc2313bE9286A8F987; // USDC L1USDCBridge
+        _bridgePool(_pid, _mintValue, _sophToken, sharedBridge);
 
     }
 

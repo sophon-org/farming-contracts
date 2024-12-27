@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.26;
 
 import {IL1SharedBridge} from "../farm/interfaces/bridge/IL1SharedBridge.sol";
