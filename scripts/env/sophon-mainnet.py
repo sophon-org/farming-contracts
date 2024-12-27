@@ -74,7 +74,7 @@ pools = [
     stAZURO,
     USDT,
     stAVAIL,
-    ZERO_ADDRESS, # OPN
+    OPN, # OPN
 ]
 
 
