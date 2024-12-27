@@ -858,7 +858,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             pool.lpToken.forceApprove(_request.secondBridgeAddress, type(uint256).max);
         }
         IERC20(_sophToken).safeTransferFrom(msg.sender, address(this), _mintValue);
-        IERC20(_sophToken).safeIncreaseAllowance(_request.secondBridgeAddress, _mintValue);
+        IERC20(_sophToken).safeIncreaseAllowance(address(bridge.sharedBridge()), _mintValue);
         
         // Actual values are pending the launch of Sophon testnet
         bridge.requestL2TransactionTwoBridges(_request);
