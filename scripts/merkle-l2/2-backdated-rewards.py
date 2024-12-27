@@ -9,7 +9,7 @@ total_deposit_amount = 0
 
 l1_end_block = 21440000; # SF.endBlock() 21440000 Dec-19-2024 11:58:11 PM +UTC
 # L2 https://sophscan.xyz/block/162751 Dec-19-2024 11:58:11 PM +UTC
-l2_start_block = 21504000; #  https://sophscan.xyz/block/countdown/929314
+l2_start_block = 21504400; #  https://sophscan.xyz/block/countdown/929314
 l1_pool_pointsPerBlock = 76000000000000000000 #SF.pointsPerBlock()
 blockMultiplier = (l2_start_block - l1_end_block) * 1e18;
 l1_totalAllocPoint = 770000 # SF.totalAllocPoint()

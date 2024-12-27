@@ -1,6 +1,6 @@
 import json
 from decimal import Decimal
-file_path = ('./scripts/merkle-l2/output/1-userinfo-poolinfo.json')
+file_path = ('./scripts/merkle-l2/output/2-backdated-rewards.json')
 
 
 # there are couple of rules to verify
