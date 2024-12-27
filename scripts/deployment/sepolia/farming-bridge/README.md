@@ -81,6 +81,7 @@ Part 3
    ```
    exec(open("./scripts/env/sophon-testnet.py").read())
    deployer = accounts.load("sophon_sepolia")
+   MAImpl = MerkleAirdrop.deploy({"from": deployer, 'paymaster_address': "0x98546B226dbbA8230cf620635a1e4ab01F6A99B2"})
    proxy = UUPSProxy.deploy(
          MAImpl.address,
          MAImpl.initialize.encode_input(SF_L2),
@@ -172,7 +173,7 @@ Part 4 - how to start farming on l2 setting points per block
       WBTCUSD: '0x1ddeb20108df88bf27cc4a55fff8489a99c37ae2917ce13927c6cdadf4128503',
       AZURUSD: '0xcd4bc8c9ccfd4a5f6d4369d06be0094ea723b8275ac7156dabfd5c6454aee625',
       USDTUSD: '0x6dcd0a8fb0460d4f0f98c524e06c10c63377cd098b589c0b90314bfb55751558',
-
+      
       priceFeeds = [
          "0xf31e0ed7d2f9d8fe977679f2b18841571a064b9b072cf7daa755a526fe9579ec",
          0,
@@ -191,6 +192,39 @@ Part 4 - how to start farming on l2 setting points per block
          0
       ]
 
-      for index, p in enumerate(priceFeeds):
-         SF_L2.setPriceFeedData(index, p, 60*60, 1e18, {"from": deployer, 'paymaster_address':"0x98546B226dbbA8230cf620635a1e4ab01F6A99B2"})
+      exec(open("./scripts/env/sophon-testnet.py").read())
+      deployer = accounts.load("sophon_sepolia")
+      farmingPools = [
+         sDAI,
+         wstETH,
+         weETH,
+         ZERO_ADDRESS,
+         BEAM,
+         ZERO_ADDRESS,
+         USDC,
+         stAETHIR,
+         PEPE,
+         WBTC,
+         AZURO,
+         USDT,
+         AZURO,
+         stAVAIL,
+         ZERO_ADDRESS
+      ]
+      import json
+      lastRewardBlock = chain.height
+      file_path = ('./scripts/merkle-l2/output/1-userinfo-poolinfo.json')
+      with open(file_path, 'r', encoding='utf-8') as file:
+         data = json.load(file)
+         pools = data.get('pools', [])
+         storks = []
+         lps = []
+         for pid, pool in enumerate(pools):
+            storks.append((priceFeeds[pid], 60*60, 1))
+            lps.append(farmingPools[pid])
+            print(pool)
+
+      
+         PF.setStorkFeedsData(SF_L2, lps, storks, {"from": deployer})
+
    ```

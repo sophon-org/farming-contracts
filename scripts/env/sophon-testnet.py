@@ -5,6 +5,7 @@ SF_L2 = interface.ISophonFarming("0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9")
 # SF_L2 = SophonFarmingL2.at("0x0fcdc6e06687756ba5aC3c3D98c1315ddFD055E9")
 STORK = interface.IStork("0x6a2ab154d7c5Ba9fdea6d8A0C79818A4463a63f9")
 
+PF =  PriceFeeds.at("0xb77BcD25DBf84ae932326aB516c2cf54bAF2B1BA")
 
 
 sDAI = interface.IERC20Metadata("0x97EE70aBf079767B243368Fd4765aaDf9C10c9B3")

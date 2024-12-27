@@ -2,10 +2,18 @@
 deployer = accounts.load("sophon_sepolia")
 exec(open("./scripts/env/sophon-testnet.py").read())
 
-SFImpl = SophonFarmingL2.deploy(MA.address, STORK.address, {'from': deployer, 'paymaster_address': "0x98546B226dbbA8230cf620635a1e4ab01F6A99B2"})
+SFImpl = SophonFarmingL2.deploy(MA.address, PF.address, {'from': deployer, 'paymaster_address': "0x98546B226dbbA8230cf620635a1e4ab01F6A99B2"})
 
 SF_L2.replaceImplementation(SFImpl, {'from': deployer, 'paymaster_address': "0x98546B226dbbA8230cf620635a1e4ab01F6A99B2"})
 SFImpl.becomeImplementation(SF_L2, {'from': deployer})
+
+
+
+# PFProxy = SophonFarmingProxy.at(PF)
+PFImpl = PriceFeeds.deploy(STORK.address, {'from': deployer})
+PF.replaceImplementation(PFImpl, {'from': deployer})
+PFImpl.becomeImplementation(PF.address, {'from': deployer})
+# PFProxy = SophonFarmingProxy.deploy(PFImpl.address, {"from": deployer})
 
 
 MAImpl = MerkleAirdrop.deploy({"from": deployer, 'paymaster_address': "0x98546B226dbbA8230cf620635a1e4ab01F6A99B2"})
@@ -39,3 +47,13 @@ with open(file_path, 'r', encoding='utf-8') as file:
         #                       {"from": deployer, 'paymaster_address': "0x98546B226dbbA8230cf620635a1e4ab01F6A99B2"});
 
     # MA.claimMultiple(a, pids, userInfos, proofs, {"from": a, 'paymaster_address': "0x98546B226dbbA8230cf620635a1e4ab01F6A99B2"})
+
+
+arr = [
+"ZeroAddress()",
+"CountMismatch()",
+"InvalidCall()",
+"InvalidType()",
+"TypeMismatch()",
+"InvalidStaleSeconds()",
+]

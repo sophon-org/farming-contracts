@@ -6,7 +6,7 @@ const fs = require('fs');
 
 function hashUserInfo(userInfo) {
     return Web3.utils.soliditySha3(
-        { t: 'address', v: userInfo.user }, // address
+        { t: 'address', v: userInfo.new_user }, // address
         { t: 'uint256', v: userInfo.pid }, // pid
         { t: 'uint256', v: userInfo.userInfo.amount }, // amount
         { t: 'uint256', v: userInfo.userInfo.boostAmount }, // boostAmount
@@ -43,14 +43,14 @@ fs.readFile('./scripts/merkle-l2/output/2-backdated-rewards.json', 'utf8', (err,
             console.log('users;', jsonData.users[index])
             userInfo = jsonData.users[index]
             // Initialize the user's claims array if it doesn't exist
-            if (!claims[userInfo.user]) {
-                claims[userInfo.user] = [];
+            if (!claims[userInfo.new_user]) {
+                claims[userInfo.new_user] = [];
             }
             
             // Push the new claim into the user's claims array
-            claims[userInfo.user].push({
+            claims[userInfo.new_user].push({
                 index: index,
-                user: userInfo.user,
+                user: userInfo.new_user,
                 pid: userInfo.pid,
                 amount: userInfo.userInfo.amount,
                 boostAmount: userInfo.userInfo.boostAmount,

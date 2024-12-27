@@ -1,5 +1,5 @@
-# exec(open("./scripts/env/eth.py").read())
-exec(open("./scripts/env/sepolia.py").read())
+exec(open("./scripts/env/eth.py").read())
+# exec(open("./scripts/env/sepolia.py").read())
 
 from subgrounds import Subgrounds
 import concurrent.futures
@@ -10,10 +10,10 @@ sg = Subgrounds()
 api_key = 'a5004bf85784712fbda24f94c724a4f9'
 
 # ETH URL
-# url = "https://gateway.thegraph.com/api/" + api_key + "/subgraphs/id/GYJVGvEKEwLMLmFjq8LGoCACDT4FHKCvk16BZMMB5Zje"
+url = "https://gateway.thegraph.com/api/" + api_key + "/subgraphs/id/GYJVGvEKEwLMLmFjq8LGoCACDT4FHKCvk16BZMMB5Zje"
 
 # SEPOLIA URL
-url = "https://gateway.thegraph.com/api/" + api_key + "/subgraphs/id/Cip9XMxUmEVsdHJwDzKCPHXbHsU7frwdd2VWc4Vi2hx3"
+# url = "https://gateway.thegraph.com/api/" + api_key + "/subgraphs/id/Cip9XMxUmEVsdHJwDzKCPHXbHsU7frwdd2VWc4Vi2hx3"
 
 # Load the subgraph
 subgraph = sg.load_subgraph(url)
