@@ -50,7 +50,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     /// @notice Emitted when setEmissionsMultiplier is called
     event SetEmissionsMultiplier(uint256 oldValue, uint256 newValue);
 
-
+    /// @notice Emitted when toggleDepositLock is called
     event ToggleDepositLock(address indexed user, bool isEnabled);
 
      /// @notice Emitted when held proceeds are withdrawn
