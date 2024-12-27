@@ -1,10 +1,11 @@
 
-MA = MerkleAirdrop.at("0xa24F69fAA295426Bca2Cf610bf992CDc992CeEa0")
-SF_L2 = interface.ISophonFarming("0x5753fBeC29De6E2b56F73f7d7786e9f0d34897bb")
 
-STORK = interface.IStork("0x6a2ab154d7c5Ba9fdea6d8A0C79818A4463a63f9")
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
-PF =  PriceFeeds.at("0x2eDf18b640A705F16947A7B95Fc338fde340Dd48")
+SF_L2 = Contract.from_abi("farmL2", "0x5753fBeC29De6E2b56F73f7d7786e9f0d34897bb", SophonFarmingL2.abi)
+MA = Contract.from_abi("merkle", "0xa24F69fAA295426Bca2Cf610bf992CDc992CeEa0", MerkleAirdrop.abi)
+PF = Contract.from_abi("priceFeeds", "0x2eDf18b640A705F16947A7B95Fc338fde340Dd48", PriceFeeds.abi)
+STORK = Contract.from_abi("stork", "0x6a2ab154d7c5Ba9fdea6d8A0C79818A4463a63f9", interface.IStork.abi)
 
 
 ATHUSD = '0x57744b683b8f4f907ef849039fc12760510242140bd5733e2fc9dc7557653f3e'
@@ -63,7 +64,7 @@ pools = [
     wstETH,
     weETH,
     BEAM,
-    BEAM_ETH_LP,
+    ZERO_ADDRESS, # BEAM_ETH_LP,
     ZERO_ADDRESS, # ZENT
     stZENT,
     USDC,
@@ -75,4 +76,37 @@ pools = [
     stAVAIL,
     ZERO_ADDRESS, # OPN
 ]
+
+
+poolsForUpdate = [
+    sDAI,
+    wstETH,
+    weETH,
+    BEAM,
+    stZENT,
+    USDC,
+    stATH,
+    PEPE,
+    WBTC,
+    stAZURO,
+    USDT,
+    stAVAIL
+]
+
+poolDatas = [
+    [SDAIUSD, 3600, 1],
+    [WSTETHUSD, 3600, 1],
+    [WEETHUSD, 3600, 1],
+    [BEAMUSD, 3600, 1],
+    [ZENTUSD, 3600, 1],
+    [USDCUSD, 3600, 1],
+    [ATHUSD, 3600, 1],
+    [PEPEUSD, 3600, 1],
+    [WBTCUSD, 3600, 1],
+    [AZURUSD, 3600, 1],
+    [USDTUSD, 3600, 1],
+    [AVAILUSD, 3600, 1]
+]
+
+## PF.setStorkFeedsData(SF_L2.address, poolsForUpdate, poolDatas, {"from": acct, "paymaster_address": "0x98546B226dbbA8230cf620635a1e4ab01F6A99B2"})
 
