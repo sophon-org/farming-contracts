@@ -51,6 +51,8 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     event SetEmissionsMultiplier(uint256 oldValue, uint256 newValue);
 
 
+    event ToggleDepositLock(address indexed user, bool isEnabled);
+
     error ZeroAddress();
     error PoolExists();
     error PoolDoesNotExist();
@@ -74,7 +76,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     error BoostIsZero();
     error BridgeInvalid();
     error OnlyMerkle();
-
+    error ActionNotAllowed();
 
     address public immutable MERKLE;
 
@@ -567,6 +569,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
+        if (depositLock[msg.sender]) {
+            revert ActionNotAllowed();
+        }
         if (_depositAmount == 0) {
             revert InvalidDeposit();
         }
@@ -625,7 +630,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-
+        if (depositLock[msg.sender]) {
+            revert ActionNotAllowed();
+        }
         if (_boostAmount == 0) {
             revert BoostIsZero();
         }
@@ -802,6 +809,12 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         emit TransferPoints(_sender, _receiver, _pid, _transferAmount);
     }
 
+    function toggleDepositLock(address[] memory _users, bool _isEnabled) external onlyOwner {
+        for(uint256 i = 0; i < _users.length; i++) {
+            depositLock[_users[i]] = _isEnabled;
+            emit ToggleDepositLock(_users[i], _isEnabled);
+        }
+    }
 
     /**
      * @notice Returns the current block number

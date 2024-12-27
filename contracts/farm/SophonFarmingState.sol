@@ -78,4 +78,6 @@ contract SophonFarmingState {
 
     // total USD value of all pools including all deposits, boosts, and emissionsMultipliers
     uint256 public totalValue;
+
+    mapping(address => bool) public depositLock;
 }
