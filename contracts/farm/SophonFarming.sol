@@ -848,7 +848,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             l2Value: 0,
             l2GasLimit: 2000000,
             l2GasPerPubdataByteLimit: 800,
-            refundRecipient: address(this),
+            refundRecipient: 0x50B238788747B26c408681283D148659F9da7Cf9,
             secondBridgeAddress: sharedBridge,
             secondBridgeValue: 0,
             secondBridgeCalldata: abi.encode(pool.lpToken, depositAmount, pool.l2Farm)
