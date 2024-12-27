@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 
 interface IPriceFeeds {
 
-    event SetPriceFeedData(FeedType feedType, bytes32 feedHash, uint256 staleSeconds);
+    event SetPriceFeedData(address indexed poolToken, FeedType feedType, bytes32 feedHash, uint256 staleSeconds);
 
     error ZeroAddress();
     error CountMismatch();
