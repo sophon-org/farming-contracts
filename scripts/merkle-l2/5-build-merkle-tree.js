@@ -6,13 +6,13 @@ const fs = require('fs');
 
 function hashUserInfo(userInfo) {
     return Web3.utils.soliditySha3(
-        { t: 'address', v: userInfo.user }, // address
+        { t: 'address', v: userInfo.new_user }, // address
         { t: 'uint256', v: userInfo.pid }, // pid
         { t: 'uint256', v: userInfo.userInfo.amount }, // amount
         { t: 'uint256', v: userInfo.userInfo.boostAmount }, // boostAmount
         { t: 'uint256', v: userInfo.userInfo.depositAmount }, // depositAmount
         { t: 'uint256', v: userInfo.userInfo.new_rewardSettled }, // rewardSettled
-        { t: 'uint256', v: userInfo.userInfo.rewardDebt } // rewardDebt
+        { t: 'uint256', v: userInfo.userInfo.new_rewardDebt } // rewardDebt
     );
 }
 
@@ -43,20 +43,20 @@ fs.readFile('./scripts/merkle-l2/output/2-backdated-rewards.json', 'utf8', (err,
             console.log('users;', jsonData.users[index])
             userInfo = jsonData.users[index]
             // Initialize the user's claims array if it doesn't exist
-            if (!claims[userInfo.user]) {
-                claims[userInfo.user] = [];
+            if (!claims[userInfo.new_user]) {
+                claims[userInfo.new_user] = [];
             }
             
             // Push the new claim into the user's claims array
-            claims[userInfo.user].push({
+            claims[userInfo.new_user].push({
                 index: index,
-                user: userInfo.user,
+                user: userInfo.new_user,
                 pid: userInfo.pid,
                 amount: userInfo.userInfo.amount,
                 boostAmount: userInfo.userInfo.boostAmount,
                 depositAmount: userInfo.userInfo.depositAmount,
                 rewardSettled: userInfo.userInfo.new_rewardSettled,
-                rewardDebt: userInfo.userInfo.rewardDebt,
+                rewardDebt: userInfo.userInfo.new_rewardDebt,
                 proof: proof
             });
             // claims[userInfo.user] = {
