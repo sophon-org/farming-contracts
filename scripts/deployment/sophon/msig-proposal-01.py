@@ -3,7 +3,7 @@ from safe_eth.safe.enums import SafeOperationEnum
 import json
 
 SEND_TO_MAINNET = False
-LAST_REWARD_BLOCK = 21504400
+LAST_REWARD_BLOCK = 934000
 
 TECH_MULTISIG = "0x902767c9e11188C985eB3494ee469E53f1b6de53"
 SAFE = BrownieSafe(TECH_MULTISIG)
@@ -38,14 +38,14 @@ with open(file_path, 'r', encoding='utf-8') as file:
        payload = SF_L2.addPool.encode_input(
                 pid,
                 farmingpools[pid],
-                pool["l2Farm"],
+                ZERO_ADDRESS,
                 int(pool["amount"]),
                 int(pool["boostAmount"]),
                 int(pool["depositAmount"]),
-                int(pool["allocPoint"]),
+                0,
                 LAST_REWARD_BLOCK, # this will start farming right immediately.
-                int(pool["accPointsPerShare"]),
-                int(pool["totalRewards"]),
+                0,
+                int(pool["new_total_rewards"]),
                 pool["description"],
                 int(pool["heldProceeds"])
             )
