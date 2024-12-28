@@ -76,7 +76,8 @@ with open(file_path, 'r', encoding='utf-8') as file:
         rewardSettled_backdated = l1_user_amount * int(new_accPointsPerShare[int(pid)]) / 1e18
         ### End backdating ###
 
-        rewardSettled = rewardSettled_latest_from_L1 + rewardSettled_backdated
+        # rewardSettled = rewardSettled_latest_from_L1 + rewardSettled_backdated
+        rewardSettled = rewardSettled_backdated # on L2 we pass only backdated rewards
 
         new_TotalRewards[int(pid)] += int(rewardSettled)
 
