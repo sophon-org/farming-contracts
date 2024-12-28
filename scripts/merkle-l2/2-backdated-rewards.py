@@ -47,16 +47,27 @@ with open(file_path, 'r', encoding='utf-8') as file:
             pointReward = 0
         
         pool["new_accPointsPerShare"] = int(accPointsPerShare)
-        global_accPointsPerShare[str(index)] = accPointsPerShare
-        
-	
+        ## global_accPointsPerShare[str(index)] = accPointsPerShare <-- delete
+    
+    new_accPointsPerShare = [pool['new_accPointsPerShare'] for pool in pools]
+    new_TotalRewards = [0] * len(pools)
+
     for user in users:
         print(user)
         l1_user_amount = int(user["userInfo"]["amount"])
         rewardSettled = int(user["userInfo"]["rewardSettled"])
         rewardDebt = int(user["userInfo"]["rewardDebt"])
         pid = user["pid"]
-        rewardSettled = l1_user_amount * int(accPointsPerShares[int(pid)]) / 1e18 + rewardSettled - rewardDebt;
+        rewardSettled_latest_from_L1 = l1_user_amount * int(accPointsPerShares[int(pid)]) / 1e18 + rewardSettled - rewardDebt;
+
+        ### Backdating section ###
+        rewardSettled_backdated = l1_user_amount * int(new_accPointsPerShare[int(pid)]) / 1e18
+        ### End backdating ###
+
+        rewardSettled = rewardSettled_latest_from_L1 + rewardSettled_backdated
+
+        new_TotalRewards[int(pid)] += rewardSettled
+
 
         # user.rewardSettled =
         #     user.amount *
