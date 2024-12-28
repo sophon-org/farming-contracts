@@ -35,6 +35,7 @@ with open(file_path, 'r', encoding='utf-8') as file:
     users = data.get('users', [])
     pools = data.get('pools', [])
     accPointsPerShares = [pool['accPointsPerShare'] for pool in pools]
+    totalRewards = [pool['totalRewards'] for pool in pools]
     
     for index, pool in enumerate(pools):
         l1_allocPoint = int(pool["allocPoint"])
@@ -66,7 +67,7 @@ with open(file_path, 'r', encoding='utf-8') as file:
 
         rewardSettled = rewardSettled_latest_from_L1 + rewardSettled_backdated
 
-        new_TotalRewards[int(pid)] += rewardSettled
+        new_TotalRewards[int(pid)] += int(rewardSettled)
 
 
         # user.rewardSettled =
@@ -100,7 +101,10 @@ with open(file_path, 'r', encoding='utf-8') as file:
         if user["user"].lower() == "0xE6Ce227C9D27e4f39209653473aC72262d00B560".lower():
             print()
             print(user)    
-        
+    
+    
+    for i, pool in enumerate(pools):
+        pool['new_total_rewards'] = new_TotalRewards[i]    
 
     excluded_users = [
     user["user"] for user in users
