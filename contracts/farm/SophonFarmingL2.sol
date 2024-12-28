@@ -106,7 +106,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         uint256 _totalRewards,
         string memory _description,
         uint256 _heldProceeds
-    ) public onlyOwner {
+    ) external onlyOwner {
         require(_amount == _boostAmount + _depositAmount, "balances don't match");
 
         PoolInfo memory newPool = PoolInfo({
@@ -157,35 +157,29 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         emit WithdrawHeldProceeds(_pid, _to, amount);
     }
 
-    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userFromClaim) public {
+    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userFromClaim) external {
         if (msg.sender != MERKLE) revert OnlyMerkle();
         require(_pid < poolInfo.length, "Invalid pool id");
         require(_userFromClaim.amount == _userFromClaim.boostAmount + _userFromClaim.depositAmount, "balances don't match");
 
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][_user];
         massUpdatePools();
 
-        uint256 userAmount = user.amount;
+        UserInfo storage user = userInfo[_pid][_user];
+        uint256 accPointsPerShare = poolInfo[_pid].accPointsPerShare;
 
         user.rewardSettled =
             user.amount *
-            pool.accPointsPerShare /
+            accPointsPerShare /
             1e18 +
             user.rewardSettled -
             user.rewardDebt;
 
         user.rewardSettled = user.rewardSettled + _userFromClaim.rewardSettled;
         user.boostAmount = user.boostAmount + _userFromClaim.boostAmount;
-        pool.boostAmount = pool.boostAmount + _userFromClaim.boostAmount;
-
         user.depositAmount = user.depositAmount + _userFromClaim.depositAmount;
-        pool.depositAmount = pool.depositAmount + _userFromClaim.depositAmount;
-
         user.amount = user.amount + _userFromClaim.amount;
-        pool.amount = pool.amount + _userFromClaim.amount;
 
-        user.rewardDebt = user.amount * pool.accPointsPerShare / 1e18;
+        user.rewardDebt = user.amount * accPointsPerShare / 1e18;
     }
 
     /**
@@ -595,9 +589,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             revert BoostTooHigh(_depositAmount);
         }
 
+        massUpdatePools();
+
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        massUpdatePools();
 
         uint256 userAmount = user.amount;
 
@@ -655,9 +650,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             revert BoostTooHigh(maxAdditionalBoost);
         }
 
+        massUpdatePools();
+
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        massUpdatePools();
 
         uint256 userAmount = user.amount;
 
@@ -718,9 +714,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             revert WithdrawIsZero();
         }
 
+        massUpdatePools();
+
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        massUpdatePools();
 
         uint256 userDepositAmount = user.depositAmount;
 
@@ -773,13 +770,14 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             revert InvalidTransfer();
         }
 
+        massUpdatePools();
+
         PoolInfo storage pool = poolInfo[_pid];
 
         if (address(pool.lpToken) == address(0)) {
             revert PoolDoesNotExist();
         }
 
-        massUpdatePools();
         uint256 accPointsPerShare = pool.accPointsPerShare;
 
         UserInfo storage userFrom = userInfo[_pid][_sender];
