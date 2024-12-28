@@ -16,7 +16,7 @@ farmingpools = [
     wstETH,
     weETH,
     BEAM,
-    ZERO_ADDRESS, # BEAM_ETH_LP,
+    BEAM_ETH_LP,
     ZERO_ADDRESS, # ZENT
     stZENT,
     USDC,
@@ -29,12 +29,17 @@ farmingpools = [
     OPN, # OPN
 ]
 
+
+
 file_path = ('./scripts/merkle-l2/output/2-backdated-rewards.json')
 with open(file_path, 'r', encoding='utf-8') as file:
    data = json.load(file)
    pools = data.get('pools', [])
    for pid, pool in enumerate(pools):
-       print(pool)
+       lrb = LAST_REWARD_BLOCK
+       if farmingpools[pid] == BEAM_ETH_LP or farmingpools[pid] == ZERO_ADDRESS or farmingpools[pid] == OPN:
+           lrb = lrb + 10000000000
+       print(pool, lrb)
        payload = SF_L2.addPool.encode_input(
                 pid,
                 farmingpools[pid],
@@ -43,7 +48,7 @@ with open(file_path, 'r', encoding='utf-8') as file:
                 int(pool["boostAmount"]),
                 int(pool["depositAmount"]),
                 0,
-                LAST_REWARD_BLOCK, # this will start farming right immediately.
+                lrb,
                 0,
                 int(pool["new_total_rewards"]),
                 pool["description"],
