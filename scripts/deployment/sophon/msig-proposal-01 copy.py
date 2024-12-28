@@ -3,10 +3,10 @@ from safe_eth.safe.enums import SafeOperationEnum
 import json
 
 SEND_TO_MAINNET = False
-LAST_REWARD_BLOCK = 934000
+LAST_REWARD_BLOCK = 21504400
 
-OWNER_MULTISIG = "0xe52757064e04bB7ec756C3e91aAa3acA1fD88b08"
-SAFE = BrownieSafe(OWNER_MULTISIG)
+TECH_MULTISIG = "0xe52757064e04bB7ec756C3e91aAa3acA1fD88b08"
+SAFE = BrownieSafe(TECH_MULTISIG)
 exec(open("./scripts/env/sophon-mainnet.py").read())
 
 tx_list = []
@@ -16,7 +16,7 @@ farmingpools = [
     wstETH,
     weETH,
     BEAM,
-    BEAM_ETH_LP,
+    ZERO_ADDRESS, # BEAM_ETH_LP,
     ZERO_ADDRESS, # ZENT
     stZENT,
     USDC,
@@ -26,9 +26,8 @@ farmingpools = [
     stAZURO,
     USDT,
     stAVAIL,
-    OPN, # OPN
+    ZERO_ADDRESS, # OPN
 ]
-
 
 
 file_path = ('./scripts/merkle-l2/output/2-backdated-rewards.json')
@@ -36,21 +35,18 @@ with open(file_path, 'r', encoding='utf-8') as file:
    data = json.load(file)
    pools = data.get('pools', [])
    for pid, pool in enumerate(pools):
-       lrb = LAST_REWARD_BLOCK
-       if farmingpools[pid] == BEAM_ETH_LP or farmingpools[pid] == ZERO_ADDRESS or farmingpools[pid] == OPN:
-           lrb = lrb + 10000000000
-       print(pool, lrb)
+       print(pool)
        payload = SF_L2.addPool.encode_input(
                 pid,
                 farmingpools[pid],
-                ZERO_ADDRESS,
+                pool["l2Farm"],
                 int(pool["amount"]),
                 int(pool["boostAmount"]),
                 int(pool["depositAmount"]),
-                0,
-                lrb,
-                0,
-                int(pool["new_total_rewards"]),
+                int(pool["allocPoint"]),
+                LAST_REWARD_BLOCK, # this will start farming right immediately.
+                int(pool["accPointsPerShare"]),
+                int(pool["totalRewards"]),
                 pool["description"],
                 int(pool["heldProceeds"])
             )
