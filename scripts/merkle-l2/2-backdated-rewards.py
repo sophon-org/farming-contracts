@@ -93,6 +93,7 @@ with open(file_path, 'r', encoding='utf-8') as file:
         # SF.pendingPoints(12, "0xfffba048296609a129d384b2ebb75941f2d63e0c")
         # 14085629374419264855
         user["userInfo"]["new_rewardSettled"] = str(int(rewardSettled))
+        user["userInfo"]["new_rewardDebt"] = "0"
         new_user = replacements.get(user["user"].lower())
         if new_user is None:
             user["new_user"] = user["user"]
@@ -114,7 +115,8 @@ with open(file_path, 'r', encoding='utf-8') as file:
         'boostAmount': "0",
         'depositAmount': "0",
         'new_rewardSettled': "0",
-        'rewardDebt': "0"
+        'rewardDebt': "0",
+        'new_rewardDebt': '0'
     }
 ]
 

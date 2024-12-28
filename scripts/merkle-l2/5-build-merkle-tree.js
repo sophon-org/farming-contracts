@@ -12,7 +12,7 @@ function hashUserInfo(userInfo) {
         { t: 'uint256', v: userInfo.userInfo.boostAmount }, // boostAmount
         { t: 'uint256', v: userInfo.userInfo.depositAmount }, // depositAmount
         { t: 'uint256', v: userInfo.userInfo.new_rewardSettled }, // rewardSettled
-        { t: 'uint256', v: userInfo.userInfo.rewardDebt } // rewardDebt
+        { t: 'uint256', v: userInfo.userInfo.new_rewardDebt } // rewardDebt
     );
 }
 
@@ -56,7 +56,7 @@ fs.readFile('./scripts/merkle-l2/output/2-backdated-rewards.json', 'utf8', (err,
                 boostAmount: userInfo.userInfo.boostAmount,
                 depositAmount: userInfo.userInfo.depositAmount,
                 rewardSettled: userInfo.userInfo.new_rewardSettled,
-                rewardDebt: userInfo.userInfo.rewardDebt,
+                rewardDebt: userInfo.userInfo.new_rewardDebt,
                 proof: proof
             });
             // claims[userInfo.user] = {
