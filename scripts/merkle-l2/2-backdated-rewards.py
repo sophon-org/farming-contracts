@@ -55,6 +55,17 @@ with open(file_path, 'r', encoding='utf-8') as file:
 
     for user in users:
         print(user)
+        # zero out pendle before total rewards calc
+        if user["user"].lower() == PENDLE_EXCEPTION:
+        # ZERO OUT PENDLE POOL
+            user["userInfo"] = {
+                        'amount': "0",
+                        'boostAmount': "0",
+                        'depositAmount': "0",
+                        'new_rewardSettled': "0",
+                        'rewardDebt': "0",
+                        'rewardSettled': "0"
+                    }
         l1_user_amount = int(user["userInfo"]["amount"])
         rewardSettled = int(user["userInfo"]["rewardSettled"])
         rewardDebt = int(user["userInfo"]["rewardDebt"])
@@ -87,21 +98,8 @@ with open(file_path, 'r', encoding='utf-8') as file:
         else:
             user["new_user"] = new_user
             
-        if user["user"].lower() == PENDLE_EXCEPTION:
-            # ZERO OUT PENDLE POOL
-            user["userInfo"] = {
-                        'amount': "0",
-                        'boostAmount': "0",
-                        'depositAmount': "0",
-                        'new_rewardSettled': "0",
-                        'rewardDebt': "0",
-                        'rewardSettled': "0"
-                    }
+
             
-        if user["user"].lower() == "0xE6Ce227C9D27e4f39209653473aC72262d00B560".lower():
-            print()
-            print(user)    
-    
     
     for i, pool in enumerate(pools):
         pool['new_total_rewards'] = new_TotalRewards[i]    

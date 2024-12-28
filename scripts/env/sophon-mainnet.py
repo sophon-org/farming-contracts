@@ -1,6 +1,5 @@
 
-
-ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+from brownie import ZERO_ADDRESS
 
 SF_L2 = Contract.from_abi("farmL2", "0x5753fBeC29De6E2b56F73f7d7786e9f0d34897bb", SophonFarmingL2.abi)
 MA = Contract.from_abi("merkle", "0xa24F69fAA295426Bca2Cf610bf992CDc992CeEa0", MerkleAirdrop.abi)
