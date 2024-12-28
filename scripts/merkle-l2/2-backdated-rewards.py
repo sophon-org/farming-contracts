@@ -105,40 +105,33 @@ with open(file_path, 'r', encoding='utf-8') as file:
     
     for i, pool in enumerate(pools):
         pool['new_total_rewards'] = new_TotalRewards[i]    
+    
+    filtered_users = []
+    excluded_users = []
 
-    excluded_users = [
-    user["user"] for user in users
-    if {
-        key: value for key, value in user["userInfo"].items() if key != "rewardSettled"
-    } == {
-        'amount': "0",
-        'boostAmount': "0",
-        'depositAmount': "0",
-        'new_rewardSettled': "0",
-        'rewardDebt': "0",
-        'new_rewardDebt': '0'
-    }
-]
+    for user in users:
+        if user["userInfo"]["amount"] == "0" and \
+        user["userInfo"]["boostAmount"] == "0" and \
+        user["userInfo"]["depositAmount"] == "0":
+            excluded_users.append(user)
+            print("Excluded User:", user)  # Print excluded user
+        else:
+            filtered_users.append(user)
 
-    for excluded_user in excluded_users:
-        print("Excluded user:", excluded_user)
-
-    # Filter out the excluded users from the original list
-    users = [
-        user for user in users
-        if {
-            key: value for key, value in user["userInfo"].items() if key != "rewardSettled"
-        } != {
-            'amount': "0",
-            'boostAmount': "0",
-            'depositAmount': "0",
-            'new_rewardSettled': "0",
-            'rewardDebt': "0"
-        }
-    ]
+    # # Filter out the excluded users from the original list
+    # users = [
+    #     user for user in users
+    #     if {
+    #         key: value for key, value in user["userInfo"].items() if key != "rewardSettled"
+    #     } != {
+    #         'amount': "0",
+    #         'boostAmount': "0",
+    #         'depositAmount': "0",
+    #     }
+    # ]
     data = {
         "pools": pools,
-        "users": users
+        "users": filtered_users
     }
     
     
