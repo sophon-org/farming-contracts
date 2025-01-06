@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.25;
+pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "contracts/farm/interfaces/bridge/IBridgehub.sol";
 
 interface ISophonFarming {
     // Info of each pool.
@@ -55,9 +56,6 @@ interface ISophonFarming {
     /// @notice Emitted when all pool funds are bridged to Sophon blockchain
     event BridgePool(address indexed user, uint256 indexed pid, uint256 amount);
 
-    /// @notice Emitted when the admin bridges booster proceeds
-    event BridgeProceeds(uint256 indexed pid, uint256 proceeds);
-
     /// @notice Emitted when the the revertFailedBridge function is called
     event RevertFailedBridge(uint256 indexed pid);
 
@@ -89,12 +87,12 @@ interface ISophonFarming {
 
     function initialize(uint256 wstEthAllocPoint_, uint256 weEthAllocPoint_, uint256 sDAIAllocPoint_, uint256 _pointsPerBlock, uint256 _initialPoolStartBlock, uint256 _boosterMultiplier) external;
     function add(uint256 _allocPoint, address _lpToken, string memory _description, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external returns (uint256);
+    function addPool( uint256 _pid, IERC20 _lpToken, address _l2Farm, uint256 _amount, uint256 _boostAmount, uint256 _depositAmount, uint256 _allocPoint, uint256 _lastRewardBlock, uint256 _accPointsPerShare, uint256 _totalRewards, string memory _description, uint256 _heldProceeds) external;
     function set(uint256 _pid, uint256 _allocPoint, uint256 _poolStartBlock, uint256 _newPointsPerBlock) external;
     function poolLength() external view returns (uint256);
     function isFarmingEnded() external view returns (bool);
     function isWithdrawPeriodEnded() external view returns (bool);
     function setBridge(address _bridge) external;
-    function setBridgeForPool(uint256 _pid, address _l2Farm) external;
     function setEndBlock(uint256 _endBlock, uint256 _withdrawalBlocks) external;
     function setPointsPerBlock(uint256 _pointsPerBlock) external;
     function setBoosterMultiplier(uint256 _boosterMultiplier) external;
@@ -108,15 +106,17 @@ interface ISophonFarming {
     function depositeEth(uint256 _amount, uint256 _boostAmount) external;
     function depositWeth(uint256 _amount, uint256 _boostAmount, PredefinedPool predefinedPool) external;
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external;
-    function bridgePool(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external;
+    function bridgePool(uint256 _pid, uint256 _mintValue, address sophToken) external;
+    function bridgeUSDC(uint256 _mintValue, address _sophToken, IBridgehub _bridge) external;
     function revertFailedBridge(uint256 _pid) external;
     function increaseBoost(uint256 _pid, uint256 _boostAmount) external;
-    function bridgeProceeds(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external;
     function getPoolInfo() external view returns (PoolInfo[] memory);
     function getOptimizedUserInfo(address[] memory _users) external view returns (uint256[4][][] memory);
     function getPendingPoints(address[] memory _users) external view returns (uint256[][] memory);
     function getBlockMultiplier(uint256 _from, uint256 _to) external view returns (uint256);
+    function getBlockNumber() external view returns (uint256);
     function whitelist(address userAdmin, address user) external view returns (bool);
+    function getMaxAdditionalBoost(address _user, uint256 _pid) external view returns (uint256);
 
     function dai() external view returns (address);
     function sDAI() external view returns (address);
@@ -126,6 +126,7 @@ interface ISophonFarming {
     function eETH() external view returns (address);
     function eETHLiquidityPool() external view returns (address);
     function weETH() external view returns (address);
+    function MERKLE() external view returns (address);
 
 
     function typeToId(PredefinedPool poolType) external view returns (uint256);
@@ -140,7 +141,14 @@ interface ISophonFarming {
     function endBlockForWithdrawals() external view returns (uint256);
     function bridge() external view returns (address);
     function isBridged(uint256 poolId) external view returns (bool);
+    function setTotalAllocPoint(uint256 _totalAllocPoint) external;
     function transferPoints(uint256 _pid, address _sender, address _receiver, uint256 _transferAmount) external;
+    function poolValue(uint256 pid) external view returns (
+        bytes32 feedHash,
+        uint256 staleSeconds,
+        uint256 lastValue,
+        uint256 emissionsMultiplier
+    );
     
     
     function pendingOwner() external view returns (address);
@@ -153,7 +161,7 @@ interface ISophonFarming {
     function pendingImplementation() external returns(address);
     function implementation() external view returns (address);
     function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external;
-    function migrateAzur(address  stAZUR, uint256 pid) external;
-
-    
+    function setL2Farm(uint256 _pid, address _l2Farm) external;
+    function setPriceFeedData(uint256 _pid, bytes32 _newHash, uint256 _newStaleSeconds, uint256 _emissionsMultiplier) external;
+    function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userFromClaim) external;
 }

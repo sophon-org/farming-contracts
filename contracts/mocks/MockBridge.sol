@@ -1,27 +1,29 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.26;
 
-import {BridgeLike} from "../farm/SophonFarmingState.sol";
+import {IL1SharedBridge} from "../farm/interfaces/bridge/IL1SharedBridge.sol";
 
-contract MockBridge is BridgeLike {
+contract MockBridge {
 
-    function deposit(
-        address _l2Receiver,
-        address _l1Token,
-        uint256 _amount,
-        uint256 _l2TxGasLimit,
-        uint256 _l2TxGasPerPubdataByte,
-        address _refundRecipient
-    ) external payable returns (bytes32 l2TxHash) {
-        // Future bridge implementation
+    struct L2TransactionRequestTwoBridgesOuter {
+        uint256 chainId;
+        uint256 mintValue;
+        uint256 l2Value;
+        uint256 l2GasLimit;
+        uint256 l2GasPerPubdataByteLimit;
+        address refundRecipient;
+        address secondBridgeAddress;
+        uint256 secondBridgeValue;
+        bytes secondBridgeCalldata;
+    }
 
-        _l2Receiver;
-        _l1Token;
-        _amount;
-        _l2TxGasLimit;
-        _l2TxGasPerPubdataByte;
-        _refundRecipient;
-
+    function requestL2TransactionTwoBridges(
+        L2TransactionRequestTwoBridgesOuter calldata _request
+    ) external payable returns (bytes32 canonicalTxHash) {
         return bytes32(0);
+    }
+
+    function sharedBridge() external view returns (IL1SharedBridge) {
+        return IL1SharedBridge(address(0x0123456789012345678901234567890123456789));
     }
 }

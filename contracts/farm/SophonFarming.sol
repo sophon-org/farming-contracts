@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity 0.8.26;
 
@@ -13,6 +13,7 @@ import "./interfaces/IeETHLiquidityPool.sol";
 import "./interfaces/IweETH.sol";
 import "../proxies/Upgradeable2Step.sol";
 import "./SophonFarmingState.sol";
+import 'contracts/interfaces/uniswap/IUniswapV2Router02.sol';
 
 /**
  * @title Sophon Farming Contract
@@ -41,9 +42,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
     /// @notice Emitted when all pool funds are bridged to Sophon blockchain
     event BridgePool(address indexed user, uint256 indexed pid, uint256 amount);
-
-    /// @notice Emitted when the admin bridges booster proceeds
-    event BridgeProceeds(uint256 indexed pid, uint256 proceeds);
 
     /// @notice Emitted when the the revertFailedBridge function is called
     event RevertFailedBridge(uint256 indexed pid);
@@ -85,13 +83,20 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
     address public immutable eETH;
     address public immutable eETHLiquidityPool;
     address public immutable weETH;
+    uint256 public immutable CHAINID;
+    uint256 internal constant PEPE_PID = 9;
+    address internal constant PENDLE_EXCEPTION = 0x065347C1Dd7A23Aa043e3844B4D0746ff7715246;
 
     /**
      * @notice Construct SophonFarming
      * @param tokens_ Immutable token addresses
      * @dev 0:dai, 1:sDAI, 2:weth, 3:stETH, 4:wstETH, 5:eETH, 6:eETHLiquidityPool, 7:weETH
      */
-    constructor(address[8] memory tokens_) {
+    constructor(address[8] memory tokens_, uint256 _CHAINID) {
+        for (uint256 i = 0; i < tokens_.length; i++) {
+            require(tokens_[i] != address(0), "cannot be zero");
+        }
+
         dai = tokens_[0];
         sDAI = tokens_[1];
         weth = tokens_[2];
@@ -100,6 +105,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         eETH = tokens_[5];
         eETHLiquidityPool = tokens_[6];
         weETH = tokens_[7];
+        CHAINID = _CHAINID;
     }
 
     /**
@@ -127,7 +133,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
             revert AlreadyInitialized();
         }
 
-        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1_000e18) {
             revert InvalidPointsPerBlock();
         }
         pointsPerBlock = _pointsPerBlock;
@@ -146,15 +152,15 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
 
         // sDAI
         typeToId[PredefinedPool.sDAI] = add(sDAIAllocPoint_, sDAI, "sDAI", _initialPoolStartBlock, 0);
-        IERC20(dai).approve(sDAI, 2**256-1);
+        IERC20(dai).approve(sDAI, type(uint256).max);
 
         // wstETH
         typeToId[PredefinedPool.wstETH] = add(wstEthAllocPoint_, wstETH, "wstETH", _initialPoolStartBlock, 0);
-        IERC20(stETH).approve(wstETH, 2**256-1);
+        IERC20(stETH).approve(wstETH, type(uint256).max);
 
         // weETH
         typeToId[PredefinedPool.weETH] = add(weEthAllocPoint_, weETH, "weETH", _initialPoolStartBlock, 0);
-        IERC20(eETH).approve(weETH, 2**256-1);
+        IERC20(eETH).approve(weETH, type(uint256).max);
     }
 
     /**
@@ -259,11 +265,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function isFarmingEnded() public view returns (bool) {
         uint256 _endBlock = endBlock;
-        if (_endBlock != 0 && getBlockNumber() > _endBlock) {
-            return true;
-        } else {
-            return false;
-        }
+        return _endBlock != 0 && getBlockNumber() > _endBlock;
     }
 
     /**
@@ -272,11 +274,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      */
     function isWithdrawPeriodEnded() public view returns (bool) {
         uint256 _endBlockForWithdrawals = endBlockForWithdrawals;
-        if (_endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals) {
-            return true;
-        } else {
-            return false;
-        }
+        return _endBlockForWithdrawals != 0 && getBlockNumber() > _endBlockForWithdrawals;
     }
 
     /**
@@ -286,7 +284,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (_bridge == address(0)) {
             revert ZeroAddress();
         }
-        bridge = BridgeLike(_bridge);
+        bridge = IBridgehub(_bridge);
     }
 
     /**
@@ -298,12 +296,12 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         if (_l2Farm == address(0)) {
             revert ZeroAddress();
         }
-        if (address(poolInfo[_pid].lpToken) == address(0)) {
+        PoolInfo storage pool = poolInfo[_pid];
+        if (address(pool.lpToken) == address(0)) {
             revert PoolDoesNotExist();
         }
-        poolInfo[_pid].l2Farm = _l2Farm;
+        pool.l2Farm = _l2Farm;
     }
-
     /**
      * @notice Set the end block of the farm
      * @param _endBlock the end block
@@ -332,11 +330,11 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Set points per block
      * @param _pointsPerBlock points per block to set
      */
-    function setPointsPerBlock(uint256 _pointsPerBlock) public onlyOwner {
+    function setPointsPerBlock(uint256 _pointsPerBlock) virtual public onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
         }
-        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1000e18) {
+        if (_pointsPerBlock < 1e18 || _pointsPerBlock > 1_000e18) {
             revert InvalidPointsPerBlock();
         }
         massUpdatePools();
@@ -348,7 +346,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @notice Set booster multiplier
      * @param _boosterMultiplier booster multiplier to set
      */
-    function setBoosterMultiplier(uint256 _boosterMultiplier) external onlyOwner {
+    function setBoosterMultiplier(uint256 _boosterMultiplier) virtual external onlyOwner {
         if (_boosterMultiplier < 1e18 || _boosterMultiplier > 10e18) {
             revert InvalidBooster();
         }
@@ -384,8 +382,9 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _isInWhitelist to add or remove
      */
     function setUsersWhitelisted(address _userAdmin, address[] memory _users, bool _isInWhitelist) external onlyOwner {
+        mapping(address user => bool inWhitelist) storage whitelist_ = whitelist[_userAdmin];
         for(uint i = 0; i < _users.length; i++) {
-            whitelist[_userAdmin][_users[i]] = _isInWhitelist;
+            whitelist_[_users[i]] = _isInWhitelist;
         }
     }
 
@@ -763,7 +762,7 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
      * @param _withdrawAmount amount of the withdraw
      */
     function withdraw(uint256 _pid, uint256 _withdrawAmount) external {
-        if (isWithdrawPeriodEnded()) {
+        if (isWithdrawPeriodEnded() && msg.sender != PENDLE_EXCEPTION) {
             revert WithdrawNotAllowed();
         }
         if (_withdrawAmount == 0) {
@@ -808,14 +807,23 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         emit Withdraw(msg.sender, _pid, _withdrawAmount);
     }
 
+    
     /**
      * @notice Permissionless function to allow anyone to bridge during the correct period
      * @param _pid pid to bridge
-     * @param _l2TxGasLimit l2TxGasLimit for the bridge txn
-     * @param _l2TxGasPerPubdataByte l2TxGasPerPubdataByte for the bridge txn
+     * @param _mintValue _mintValue SOPH gas price
      */
-    function bridgePool(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external payable {
-        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
+    
+    function bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken) external payable {
+        // USDC exception
+        if (_pid == 7) {
+            revert Unauthorized();
+        }
+
+        _bridgePool(_pid, _mintValue, _sophToken, address(bridge.sharedBridge()));
+    }
+
+    function _bridgePool(uint256 _pid, uint256 _mintValue, address _sophToken, address sharedBridge) internal {
 
         if (!isFarmingEnded() || !isWithdrawPeriodEnded() || isBridged[_pid]) {
             revert Unauthorized();
@@ -824,41 +832,102 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         updatePool(_pid);
         PoolInfo storage pool = poolInfo[_pid];
 
-        uint256 depositAmount = pool.depositAmount;
-        if (depositAmount == 0 || address(bridge) == address(0) || pool.l2Farm == address(0)) {
+        if (pool.depositAmount == 0 || address(bridge) == address(0) || pool.l2Farm == address(0)) {
             revert BridgeInvalid();
         }
+        uint256 depositAmount = IERC20(pool.lpToken).balanceOf(address(this));
+
+        if (_pid == PEPE_PID) {
+            UserInfo storage user = userInfo[PEPE_PID][PENDLE_EXCEPTION];
+            depositAmount -= user.depositAmount;
+        }
+
+        L2TransactionRequestTwoBridgesOuter memory _request = L2TransactionRequestTwoBridgesOuter({
+            chainId: CHAINID,
+            mintValue: _mintValue,
+            l2Value: 0,
+            l2GasLimit: 2000000,
+            l2GasPerPubdataByteLimit: 800,
+            refundRecipient: 0x50B238788747B26c408681283D148659F9da7Cf9,
+            secondBridgeAddress: sharedBridge,
+            secondBridgeValue: 0,
+            secondBridgeCalldata: abi.encode(pool.lpToken, depositAmount, pool.l2Farm)
+        });
+
+        if (pool.lpToken.allowance(address(this), _request.secondBridgeAddress) < depositAmount) {
+            pool.lpToken.forceApprove(_request.secondBridgeAddress, type(uint256).max);
+        }
+        IERC20(_sophToken).safeTransferFrom(msg.sender, address(this), _mintValue);
+        IERC20(_sophToken).safeIncreaseAllowance(address(bridge.sharedBridge()), _mintValue);
+        
+        // Actual values are pending the launch of Sophon testnet
+        bridge.requestL2TransactionTwoBridges(_request);
 
         isBridged[_pid] = true;
-
-        IERC20 lpToken = pool.lpToken;
-        lpToken.approve(address(bridge), depositAmount);
-
-        // Actual values are pending the launch of Sophon testnet
-        bridge.deposit{value: msg.value}(
-            pool.l2Farm,            // _l2Receiver
-            address(lpToken),       // _l1Token
-            depositAmount,          // _amount
-            _l2TxGasLimit,          // _l2TxGasLimit
-            _l2TxGasPerPubdataByte, // _l2TxGasPerPubdataByte
-            owner()                 // _refundRecipient
-        );
-
         emit BridgePool(msg.sender, _pid, depositAmount);
     }
 
-    // TODO: does this function need to call claimFailedDeposit on the bridge?
-    // This is pending the launch of Sophon testnet
+
+    // bridge USDC
+    function bridgeUSDC(uint256 _mintValue, address _sophToken) external {
+        uint256 _pid = 7;
+        // IBridgehub _bridge = IBridgehub(address(0));
+        address sharedBridge = 0xf553E6D903AA43420ED7e3bc2313bE9286A8F987; // USDC L1USDCBridge
+        _bridgePool(_pid, _mintValue, _sophToken, sharedBridge);
+
+    }
+
+    /**
+     * @notice Set L2Farming contract for particular pool
+     * @param _pid pid to bridge
+     * @param _l2Farm address of the contract for farming on L2 side
+     */
+    function setL2Farm(uint256 _pid, address _l2Farm) external onlyOwner {
+        if (_pid >= poolInfo.length) {
+            revert PoolDoesNotExist();
+        }
+
+        if (_l2Farm == address(0)) {
+            revert ZeroAddress();
+        }
+
+        poolInfo[_pid].l2Farm = _l2Farm;
+    }
+
+
     /**
      * @notice Called by an admin if a bridge process to Sophon fails
      * @param _pid pid of the failed bridge to revert
      */
-    function revertFailedBridge(uint256 _pid) external onlyOwner {
-        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
+    function revertFailedBridge(
+        address _l1SharedBridge,
+        uint256 _pid,       
+        uint256 _chainId,
+        address _depositSender,
+        address _l1Token,
+        uint256 _amount,
+        bytes32 _l2TxHash,
+        uint256 _l2BatchNumber,
+        uint256 _l2MessageIndex,
+        uint16 _l2TxNumberInBatch,
+        bytes32[] calldata _merkleProof) external onlyOwner {
 
         if (address(poolInfo[_pid].lpToken) == address(0)) {
             revert PoolDoesNotExist();
         }
+        
+        IL1SharedBridge(_l1SharedBridge).claimFailedDeposit(
+            _chainId,
+            _depositSender,
+            _l1Token,
+            _amount,
+            _l2TxHash,
+            _l2BatchNumber,
+            _l2MessageIndex,
+            _l2TxNumberInBatch,
+            _merkleProof
+        );
+
         isBridged[_pid] = false;
         emit RevertFailedBridge(_pid);
     }
@@ -998,23 +1067,6 @@ contract SophonFarming is Upgradeable2Step, SophonFarmingState {
         return IsDAI(sDAI).deposit(_amount, address(this));
     }
 
-    // This is pending the launch of Sophon testnet
-    /**
-     * @notice Allows an admin to bridge booster proceeds
-     * @param _pid pid to bridge proceeds from
-     * @param _l2TxGasLimit l2TxGasLimit for the bridge txn
-     * @param _l2TxGasPerPubdataByte l2TxGasPerPubdataByte for the bridge txn
-     */
-    function bridgeProceeds(uint256 _pid, uint256 _l2TxGasLimit, uint256 _l2TxGasPerPubdataByte) external payable onlyOwner {
-        revert Unauthorized(); // NOTE: function not fully implemented, an upgrade will implement this later
-
-        uint256 _proceeds = heldProceeds[_pid];
-        heldProceeds[_pid] = 0;
-
-        // TODO: add bridging logic
-
-        emit BridgeProceeds(_pid, _proceeds);
-    }
 
     /**
      * @notice Returns the current block number

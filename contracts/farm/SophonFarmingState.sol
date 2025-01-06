@@ -1,19 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-interface BridgeLike {
-    function deposit(
-        address _l2Receiver,
-        address _l1Token,
-        uint256 _amount,
-        uint256 _l2TxGasLimit,
-        uint256 _l2TxGasPerPubdataByte,
-        address _refundRecipient
-    ) external payable returns (bytes32 l2TxHash);
-}
+import "./interfaces/bridge/IBridgehub.sol";
 
 contract SophonFarmingState {
 
@@ -74,8 +64,18 @@ contract SophonFarmingState {
 
     uint256 public endBlockForWithdrawals;
 
-    BridgeLike public bridge;
+    IBridgehub public bridge;
     mapping(uint256 => bool) public isBridged;
 
     mapping(address userAdmin => mapping(address user => bool inWhitelist)) public whitelist;
+
+    struct PoolValue {
+        uint256 lastValue;
+        uint256 emissionsMultiplier;
+    }
+    
+    mapping(uint256 pid => PoolValue) public poolValue;
+
+    // total USD value of all pools including all deposits, boosts, and emissionsMultipliers
+    uint256 public totalValue;
 }

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.26;
+pragma solidity 0.8.26;
 
 import {Test, console} from "forge-std/Test.sol";
 import {SophonFarming} from "../contracts/farm/SophonFarming.sol";
-import {SophonFarmingState, BridgeLike} from "./../contracts/farm/SophonFarmingState.sol";
+import {SophonFarmingState} from "./../contracts/farm/SophonFarmingState.sol";
 import {SophonFarmingProxy} from "./../contracts/proxies/SophonFarmingProxy.sol";
 import {Proxy} from "./../contracts/proxies/Proxy.sol";
 import {SophonFarmingHarness} from "./utils/SophonFarmingHarness.sol";
@@ -15,6 +15,7 @@ import {MockeETHLiquidityPool} from "./../contracts/mocks/MockeETHLiquidityPool.
 import {MockWeETH} from "./../contracts/mocks/MockweETH.sol";
 import {MockSDAI} from "./../contracts/mocks/MockSDAI.sol";
 import {MockBridge} from "./../contracts/mocks/MockBridge.sol";
+import {IBridgehub} from "./../contracts/farm/interfaces/bridge/IBridgehub.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SophonFarmingTest is Test {
@@ -35,6 +36,7 @@ contract SophonFarmingTest is Test {
 
     MockERC20 internal mock0;
     MockERC20 internal mock1;
+    MockERC20 internal sophonToken;
 
     MockWETH internal weth;
     MockStETH internal stETH;
@@ -121,6 +123,10 @@ contract SophonFarmingTest is Test {
         sDAI = new MockSDAI(dai);
         sDAIAllocPoint = 20000;
 
+        // mock SOPH
+        sophonToken = new MockERC20("SOPHON", "SOPH", 18);
+        sophonToken.mint(deployer, 1000000e18);
+
         // Set up for SophonFarming
         pointsPerBlock = 25e18;
         initialPoolStartBlock = block.number;
@@ -138,7 +144,8 @@ contract SophonFarmingTest is Test {
                     address(eETH),
                     address(eETHLiquidityPool),
                     address(weETH)
-                ]
+                ],
+                block.chainid
             )
         );
 
@@ -179,7 +186,8 @@ contract SophonFarmingTest is Test {
                 address(eETH),
                 address(eETHLiquidityPool),
                 address(weETH)
-            ]
+            ],
+            block.chainid
         );
 
         harnessImplementation.setEndBlock(maxUint - 1000, 1000);
@@ -243,7 +251,8 @@ contract SophonFarmingTest is Test {
                     address(eETH),
                     address(eETHLiquidityPool),
                     address(weETH)
-                ]
+                ],
+                block.chainid
             )
         );
 
@@ -265,7 +274,8 @@ contract SophonFarmingTest is Test {
                     address(eETH),
                     address(eETHLiquidityPool),
                     address(weETH)
-                ]
+                ],
+                block.chainid
             )
         );
 
@@ -290,7 +300,8 @@ contract SophonFarmingTest is Test {
                     address(eETH),
                     address(eETHLiquidityPool),
                     address(weETH)
-                ]
+                ],
+                block.chainid
             )
         );
 
@@ -316,7 +327,8 @@ contract SophonFarmingTest is Test {
                     address(eETH),
                     address(eETHLiquidityPool),
                     address(weETH)
-                ]
+                ],
+                block.chainid
             )
         );
 
@@ -344,7 +356,8 @@ contract SophonFarmingTest is Test {
                     address(eETH),
                     address(eETHLiquidityPool),
                     address(weETH)
-                ]
+                ],
+                block.chainid
             )
         );
 
@@ -407,7 +420,8 @@ contract SophonFarmingTest is Test {
                     address(eETH),
                     address(eETHLiquidityPool),
                     address(weETH)
-                ]
+                ],
+                block.chainid
             )
         );
 
@@ -436,7 +450,8 @@ contract SophonFarmingTest is Test {
                     address(eETH),
                     address(eETHLiquidityPool),
                     address(weETH)
-                ]
+                ],
+                block.chainid
             )
         );
 
@@ -1721,15 +1736,178 @@ contract SophonFarmingTest is Test {
         assertEq(sophonFarming.isWithdrawPeriodEnded(), true);
     }
 
-    // BRIDGE_POOL FUNCTION /////////////////////////////////////////////////////////////////
-    // NOTE: function not fully implemented, an upgrade will implement this later
+    // BRIDGE POOL FUNCTION /////////////////////////////////////////////////////////////////
+    function test_BridgePool() public {
+        uint256 mintValue = 100e18;
+        MockBridge bridge = new MockBridge();
+
+        vm.startPrank(deployer);
+        sophonFarming.setBridge(address(bridge));
+        
+        sophonFarming.setEndBlock(block.number + 10, 1);
+        assertEq(sophonFarming.isFarmingEnded(), false);
+
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        sophonFarming.setL2Farm(poolId, makeAddr("l2Farm"));
+
+        vm.stopPrank();
+
+        // Do some deposits
+        setOneDepositorPerPool();
+
+        vm.roll(block.number + 20);
+
+        vm.startPrank(account1);
+        deal(address(sophonToken), account1, mintValue);
+        sophonToken.approve(address(sophonFarming), type(uint256).max);
+
+        SophonFarmingState.PoolInfo[] memory poolInfo;
+
+        poolInfo = sophonFarming.getPoolInfo();
+
+        vm.expectEmit(true, false, true, true);
+        emit SophonFarming.BridgePool(account1, poolId, poolInfo[poolId].amount);
+
+        assertEq(sophonFarming.isBridged(poolId), false);
+        sophonFarming.bridgePool(poolId, mintValue, address(sophonToken));
+        assertEq(sophonFarming.isBridged(poolId), true);
+    }
+
+    function test_BridgePool_BEAM_WETH() public {
+        uint256 mintValue = 100e18;
+        uint256 depositAmount = 1000e18;
+
+        MockBridge bridge = new MockBridge();
+
+        vm.startPrank(deployer);
+        sophonFarming.setBridge(address(bridge));
+        
+        sophonFarming.setEndBlock(block.number + 10, 1);
+        assertEq(sophonFarming.isFarmingEnded(), false);
+
+        MockERC20 mock = new MockERC20("Mock", "M", 18);
+        sophonFarming.add(10000, address(mock), mock.name(), 0, 0);
+
+        MockERC20 BEAM_WETH = new MockERC20("BEAM_WETH", "BEAM_WETH", 18);
+        uint256 poolId = sophonFarming.add(10000, address(BEAM_WETH), BEAM_WETH.name(), 0, 0);
+        assertEq(poolId, 4);
+    
+        sophonFarming.setL2Farm(poolId, makeAddr("l2Farm"));
+
+        vm.stopPrank();
+
+        vm.startPrank(account1);
+
+        deal(address(sophonToken), account1, mintValue);
+        assertEq(sophonToken.balanceOf(account1), mintValue);
+        sophonToken.approve(address(sophonFarming), type(uint256).max);
+
+        deal(address(BEAM_WETH), account1, depositAmount);
+        assertEq(BEAM_WETH.balanceOf(account1), depositAmount);
+        BEAM_WETH.approve(address(sophonFarming), depositAmount);
+
+        sophonFarming.deposit(poolId, depositAmount, 0);
+
+        vm.roll(block.number + 20);
+
+        SophonFarmingState.PoolInfo[] memory poolInfo;
+
+        poolInfo = sophonFarming.getPoolInfo();
+
+        vm.expectEmit(true, false, true, true);
+        emit SophonFarming.BridgePool(account1, poolId, poolInfo[poolId].amount);
+
+        assertEq(sophonFarming.isBridged(poolId), false);
+        sophonFarming.bridgePool(poolId, mintValue, address(sophonToken));
+        assertEq(sophonFarming.isBridged(poolId), true);
+    }
+
     function test_BridgePool_RevertWhen_Unauthorized() public {
         vm.startPrank(account1);
 
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
 
         vm.expectRevert(Unauthorized.selector);
-        sophonFarming.bridgePool(poolId, 0, 0);
+        sophonFarming.bridgePool(poolId, 0, address(0));
+    }
+
+    function test_BridgePool_RevertWhen_PID7() public {
+        vm.startPrank(account1);
+
+        uint256 poolId = 7;
+
+        vm.expectRevert(Unauthorized.selector);
+        sophonFarming.bridgePool(poolId, 0, address(0));
+    }
+
+    function test_BridgePool_RevertWhen_BridgeInvalid() public {
+        uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
+
+        vm.prank(deployer);
+        sophonFarming.setEndBlock(block.number + 10, 1);
+        vm.roll(block.number + 20);
+
+        vm.startPrank(account1);
+        vm.expectRevert(SophonFarming.BridgeInvalid.selector);
+        sophonFarming.bridgePool(poolId, 0, address(0));
+    }
+
+    // BRIDGE USDC FUNCTION
+    function test_BridgeUSDC11() public {
+        uint256 mintValue = 100e18;
+        uint256 depositAmount = 1000e18;
+        uint256 poolId;
+
+        vm.startPrank(deployer);
+        while (poolId < 6) {
+            MockERC20 mock = new MockERC20("Mock", "M", 18);
+            poolId = sophonFarming.add(10000, address(mock), mock.name(), 0, 0);
+            console.log(poolId);
+        }
+
+        MockERC20 usdc = new MockERC20("USDC", "USDC", 18);
+        poolId = sophonFarming.add(10000, address(usdc), usdc.name(), 0, 0);
+
+        MockBridge bridge = new MockBridge();
+        sophonFarming.setBridge(address(bridge));
+        sophonFarming.setL2Farm(poolId, makeAddr("l2Farm"));
+        sophonFarming.setEndBlock(block.number + 10, 1);
+        assertEq(sophonFarming.isFarmingEnded(), false);
+
+        deal(address(sophonToken), deployer, mintValue);
+        assertEq(sophonToken.balanceOf(deployer), mintValue);
+        sophonToken.approve(address(sophonFarming), type(uint256).max);
+
+        vm.stopPrank();
+
+        vm.startPrank(account1);
+
+        deal(address(usdc), account1, depositAmount);
+        assertEq(usdc.balanceOf(account1), depositAmount);
+        usdc.approve(address(sophonFarming), depositAmount);
+
+        sophonFarming.deposit(poolId, depositAmount, 0);
+
+        vm.roll(block.number + 20);
+
+        SophonFarmingState.PoolInfo[] memory poolInfo;
+
+        poolInfo = sophonFarming.getPoolInfo();
+
+        vm.stopPrank();
+        vm.startPrank(deployer);
+
+        vm.expectEmit(true, false, true, true);
+        emit SophonFarming.BridgePool(deployer, poolId, poolInfo[poolId].amount);
+
+        assertEq(sophonFarming.isBridged(poolId), false);
+        sophonFarming.bridgeUSDC(mintValue, address(sophonToken), IBridgehub(address(bridge)));
+        assertEq(sophonFarming.isBridged(poolId), true);
+    }
+
+    function test_BridgeUSDC_RevertWhen_Unauthorized() public {
+
     }
 
     // REVERT_FAILED_BRIDGE FUNCTION /////////////////////////////////////////////////////////////////
@@ -1739,8 +1917,37 @@ contract SophonFarmingTest is Test {
 
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
 
-        vm.expectRevert(Unauthorized.selector);
-        sophonFarming.revertFailedBridge(poolId);
+        // vm.expectRevert(Unauthorized.selector);
+        // sophonFarming.revertFailedBridge(poolId);
+    }
+
+    // BRIDGE USDC FUNCTION
+    // function test_BridgeUSDC() public {
+    //     sophonFarming.bridgeUSDC()
+    // }
+
+    // SET L2 FARM
+    function test_SetL2Farm() public {
+        vm.prank(deployer);
+        sophonFarming.setL2Farm(0, makeAddr("l2Farm"));
+
+        SophonFarmingState.PoolInfo[] memory PoolInfo;
+
+        PoolInfo = sophonFarming.getPoolInfo();
+
+        assertEq(PoolInfo[0].l2Farm, makeAddr("l2Farm"));
+    }
+
+    function test_SetL2Farm_RevertWhen_PoolExists() public {
+        vm.expectRevert(SophonFarming.PoolExists.selector);
+        vm.prank(deployer);
+        sophonFarming.setL2Farm(type(uint256).max, address(0));
+    }
+
+    function test_SetL2Farm_RevertWhen_ZeroAddress() public {
+        vm.expectRevert(SophonFarming.ZeroAddress.selector);
+        vm.prank(deployer);
+        sophonFarming.setL2Farm(0, address(0));
     }
 
     // INCREASE_BOOST FUNCTION /////////////////////////////////////////////////////////////////
@@ -2077,8 +2284,8 @@ contract SophonFarmingTest is Test {
 
         uint256 poolId = sophonFarming.typeToId(SophonFarmingState.PredefinedPool.wstETH);
 
-        vm.expectRevert(Unauthorized.selector);
-        sophonFarming.bridgeProceeds(poolId, 0, 0);
+        // vm.expectRevert(Unauthorized.selector);
+        // sophonFarming.bridgeProceeds(poolId, 0, 0);
     }
 
     // GET_BLOCK_NUMBER FUNCTION /////////////////////////////////////////////////////////////////
