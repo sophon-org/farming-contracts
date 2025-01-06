@@ -36,10 +36,10 @@ with open(file_path, 'r', encoding='utf-8') as file:
         # userInfos.append((pool["amount"], pool["boostAmount"], pool["depositAmount"], pool["rewardSettled"], pool["rewardDebt"]))
         # proofs.append(pool["proof"])
         print(pool)
-        # MA.claim.transact(pool["user"], 
-        #                   pool["pid"], 
-        #                   (pool["amount"], pool["boostAmount"], pool["depositAmount"], pool["rewardSettled"], pool["rewardDebt"]), 
-        #                   pool["proof"], 
+        # MA.claim.transact(user["user"], 
+        #                   user["pid"], 
+        #                   (user["amount"], user["boostAmount"], user["depositAmount"], user["rewardSettled"], user["rewardDebt"]), 
+        #                   user["proof"], 
         #                   {"from": a, 'paymaster_address': "0x98546B226dbbA8230cf620635a1e4ab01F6A99B2"})
         # MA.unclaim("0xe749b7469A9911E451600CB31B5Ca180743183cE", pool["pid"], 
         #            {"from": deployer, 'paymaster_address': "0x98546B226dbbA8230cf620635a1e4ab01F6A99B2"})
