@@ -5,12 +5,13 @@ import json
 SEND_TO_MAINNET = False
 LAST_REWARD_BLOCK = 934000
 
-TECH_MULTISIG = "0xe52757064e04bB7ec756C3e91aAa3acA1fD88b08"
+TECH_MULTISIG = "0x902767c9e11188C985eB3494ee469E53f1b6de53"
 SAFE = BrownieSafe(TECH_MULTISIG)
 exec(open("./scripts/env/sophon-mainnet.py").read())
 
 replacements = dict([
-    ["0xe3bF2440cD0703Df2d545028799Ef1c42db414Fa",	"0x4bEb6B5deF547bb51a420F32C2D50C383F2D9887"],
+    ["0xAbC727Edf2aD943498C2175dD7e422a2d5C13703",	"0xAbC727Edf2aD943498C2175dD7e422a2d5C13703"],
+    ["0x4bC1AF5F0Cfee11E5B991e90E1542436eBfD8Bba",	"0x4bC1AF5F0Cfee11E5B991e90E1542436eBfD8Bba"],
 ])
 
 tx_list = []
@@ -37,8 +38,8 @@ with open(file_path, 'r', encoding='utf-8') as file:
                 c["amount"],
                 c["boostAmount"],
                 c["depositAmount"],
-                c["rewardDebt"],
                 c["rewardSettled"],
+                c["rewardDebt"],
             )
             proof = c["proof"]
             print(user, pid)
