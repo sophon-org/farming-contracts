@@ -92,49 +92,24 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         priceFeeds = IPriceFeeds(_priceFeeds);
     }
 
-    // Order is important
-    function addPool(
-        uint256 _pid,
-        IERC20 _lpToken,
-        address _l2Farm,
-        uint256 _amount,
-        uint256 _boostAmount,
-        uint256 _depositAmount,
-        uint256 _allocPoint,
-        uint256 _lastRewardBlock,
-        uint256 _accPointsPerShare,
-        uint256 _totalRewards,
-        string memory _description,
-        uint256 _heldProceeds
+    function activateLockedPools(
+        uint256 _pid_4_accPointsPerShare,
+        uint256 _pid_14_accPointsPerShare
     ) external onlyOwner {
-        require(_amount == _boostAmount + _depositAmount, "balances don't match");
 
-        PoolInfo memory newPool = PoolInfo({
-            lpToken: _lpToken,
-            l2Farm: _l2Farm,
-            amount: _amount,
-            boostAmount: _boostAmount,
-            depositAmount: _depositAmount,
-            allocPoint: 0,
-            lastRewardBlock: _lastRewardBlock,
-            accPointsPerShare: 0,
-            totalRewards: _totalRewards,
-            description: _description
-        });
+        massUpdatePools();
 
-        if (_pid < poolInfo.length) {
-            PoolInfo storage existingPool = poolInfo[_pid];
-            require(existingPool.lpToken == _lpToken, "Pool LP token mismatch");
-            // Update the pool
-            poolInfo[_pid] = newPool;
-        } else if (_pid == poolInfo.length) {
-            // Add new pool
-            poolInfo.push(newPool);
-        } else {
-            revert("wrong pid");
-        }
-        heldProceeds[_pid] = _heldProceeds;
-        poolExists[address(_lpToken)] = true;
+        PoolInfo storage pool4 = poolInfo[4];
+        require(pool4.lastRewardBlock == 10000934000 && pool4.accPointsPerShare == 0, "pool 4 already activated");
+
+        PoolInfo storage pool14 = poolInfo[14];
+        require(pool14.lastRewardBlock == 10000934000 && pool14.accPointsPerShare == 0, "pool 14 already activated");
+
+        pool4.accPointsPerShare = _pid_4_accPointsPerShare;
+        pool14.accPointsPerShare = _pid_14_accPointsPerShare;
+
+        pool4.lastRewardBlock = getBlockNumber();
+        pool14.lastRewardBlock = getBlockNumber();
     }
 
     /**
