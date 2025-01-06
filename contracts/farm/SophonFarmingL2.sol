@@ -76,6 +76,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     error BoostIsZero();
     error BridgeInvalid();
     error OnlyMerkle();
+    error CountMismatch();
 
     address public immutable MERKLE;
 
@@ -92,56 +93,31 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         priceFeeds = IPriceFeeds(_priceFeeds);
     }
 
-    // Order is important
-    function addPool(
-        uint256 _pid,
-        IERC20 _lpToken,
-        address _l2Farm,
-        uint256 _amount,
-        uint256 _boostAmount,
-        uint256 _depositAmount,
-        uint256 _allocPoint,
-        uint256 _lastRewardBlock,
-        uint256 _accPointsPerShare,
-        uint256 _totalRewards,
-        string memory _description,
-        uint256 _heldProceeds
+    function activateLockedPools(
+        uint256 _pool4_accPointsPerShare,
+        uint256 _pool14_accPointsPerShare
     ) external onlyOwner {
-        require(_amount == _boostAmount + _depositAmount, "balances don't match");
 
-        PoolInfo memory newPool = PoolInfo({
-            lpToken: _lpToken,
-            l2Farm: _l2Farm,
-            amount: _amount,
-            boostAmount: _boostAmount,
-            depositAmount: _depositAmount,
-            allocPoint: 0,
-            lastRewardBlock: _lastRewardBlock,
-            accPointsPerShare: 0,
-            totalRewards: _totalRewards,
-            description: _description
-        });
+        massUpdatePools();
 
-        if (_pid < poolInfo.length) {
-            PoolInfo storage existingPool = poolInfo[_pid];
-            require(existingPool.lpToken == _lpToken, "Pool LP token mismatch");
-            // Update the pool
-            poolInfo[_pid] = newPool;
-        } else if (_pid == poolInfo.length) {
-            // Add new pool
-            poolInfo.push(newPool);
-        } else {
-            revert("wrong pid");
-        }
-        heldProceeds[_pid] = _heldProceeds;
-        poolExists[address(_lpToken)] = true;
+        PoolInfo storage pool4 = poolInfo[4];
+        require(pool4.lastRewardBlock == 10000934000 && pool4.accPointsPerShare == 0, "pool 4 already activated");
+
+        PoolInfo storage pool14 = poolInfo[14];
+        require(pool14.lastRewardBlock == 10000934000 && pool14.accPointsPerShare == 0, "pool 14 already activated");
+
+        pool4.accPointsPerShare = _pool4_accPointsPerShare;
+        pool14.accPointsPerShare = _pool14_accPointsPerShare;
+
+        pool4.lastRewardBlock = getBlockNumber();
+        pool14.lastRewardBlock = getBlockNumber();
     }
 
-     /**
+    /**
      * @notice Withdraw heldProceeds for a given pool
      * @param _pid The pool ID to withdraw from
      * @param _to The address that will receive the tokens
-     */
+    */
     function withdrawHeldProceeds(uint256 _pid, address _to) external onlyOwner {
         if (_to == address(0)) revert ZeroAddress();
 
@@ -167,6 +143,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accPointsPerShare = poolInfo[_pid].accPointsPerShare;
 
+        user.amount = user.amount + _userFromClaim.amount;
+
+        // handles rewards for deposits before claims and for backdated rewards on claimed amounts
         user.rewardSettled =
             user.amount *
             accPointsPerShare /
@@ -177,7 +156,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         user.rewardSettled = user.rewardSettled + _userFromClaim.rewardSettled;
         user.boostAmount = user.boostAmount + _userFromClaim.boostAmount;
         user.depositAmount = user.depositAmount + _userFromClaim.depositAmount;
-        user.amount = user.amount + _userFromClaim.amount;
 
         user.rewardDebt = user.amount * accPointsPerShare / 1e18;
     }
@@ -818,6 +796,27 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             1e18;
 
         emit TransferPoints(_sender, _receiver, _pid, _transferAmount);
+    }
+
+    function batchAwardPoints(uint256 _pid, address[] memory _receivers, uint256[] memory _quantities) external onlyOwner {
+        if (_receivers.length != _quantities.length) {
+            revert CountMismatch();
+        }
+
+        PoolInfo storage pool = poolInfo[_pid];
+
+        if (address(pool.lpToken) == address(0)) {
+            revert PoolDoesNotExist();
+        }
+
+        uint256 _totalPoints;
+        for (uint256 i; i < _receivers.length; i++) {
+            UserInfo storage user = userInfo[_pid][_receivers[i]];
+            user.rewardSettled = user.rewardSettled + _quantities[i];
+            _totalPoints = _totalPoints + _quantities[i];
+        }
+
+        pool.totalRewards = pool.totalRewards + _totalPoints;
     }
 
     /**
