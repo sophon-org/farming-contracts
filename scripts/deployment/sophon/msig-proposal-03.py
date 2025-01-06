@@ -37,8 +37,8 @@ with open(file_path, 'r', encoding='utf-8') as file:
                 c["amount"],
                 c["boostAmount"],
                 c["depositAmount"],
-                c["rewardDebt"],
                 c["rewardSettled"],
+                c["rewardDebt"],
             )
             proof = c["proof"]
             print(user, pid)

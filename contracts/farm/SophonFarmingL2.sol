@@ -137,11 +137,11 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         poolExists[address(_lpToken)] = true;
     }
 
-     /**
+    /**
      * @notice Withdraw heldProceeds for a given pool
      * @param _pid The pool ID to withdraw from
      * @param _to The address that will receive the tokens
-     */
+    */
     function withdrawHeldProceeds(uint256 _pid, address _to) external onlyOwner {
         if (_to == address(0)) revert ZeroAddress();
 
@@ -167,6 +167,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accPointsPerShare = poolInfo[_pid].accPointsPerShare;
 
+        user.amount = user.amount + _userFromClaim.amount;
+
+        // handles rewards for deposits before claims and for backdated rewards on claimed amounts
         user.rewardSettled =
             user.amount *
             accPointsPerShare /
@@ -177,7 +180,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         user.rewardSettled = user.rewardSettled + _userFromClaim.rewardSettled;
         user.boostAmount = user.boostAmount + _userFromClaim.boostAmount;
         user.depositAmount = user.depositAmount + _userFromClaim.depositAmount;
-        user.amount = user.amount + _userFromClaim.amount;
 
         user.rewardDebt = user.amount * accPointsPerShare / 1e18;
     }
