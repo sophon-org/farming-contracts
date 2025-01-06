@@ -76,6 +76,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     error BoostIsZero();
     error BridgeInvalid();
     error OnlyMerkle();
+    error CountMismatch();
 
     address public immutable MERKLE;
 
@@ -795,6 +796,27 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             1e18;
 
         emit TransferPoints(_sender, _receiver, _pid, _transferAmount);
+    }
+
+    function batchAwardPoints(uint256 _pid, address[] memory _receivers, uint256[] memory _quantities) external onlyOwner {
+        if (_receivers.length != _quantities.length) {
+            revert CountMismatch();
+        }
+
+        PoolInfo storage pool = poolInfo[_pid];
+
+        if (address(pool.lpToken) == address(0)) {
+            revert PoolDoesNotExist();
+        }
+
+        uint256 _totalPoints;
+        for (uint256 i; i < _receivers.length; i++) {
+            UserInfo storage user = userInfo[_pid][_receivers[i]];
+            user.rewardSettled = user.rewardSettled + _quantities[i];
+            _totalPoints = _totalPoints + _quantities[i];
+        }
+
+        pool.totalRewards = pool.totalRewards + _totalPoints;
     }
 
     /**
