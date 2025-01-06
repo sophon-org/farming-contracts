@@ -141,11 +141,11 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         massUpdatePools();
 
         UserInfo storage user = userInfo[_pid][_user];
-        PoolInfo storage pool = poolInfo[_pid];
+        uint256 accPointsPerShare = poolInfo[_pid].accPointsPerShare;
 
-        uint256 accPointsPerShare = pool.accPointsPerShare;
+        user.amount = user.amount + _userFromClaim.amount;
 
-        // handles rewards for deposits before claims
+        // handles rewards for deposits before claims and for backdated rewards on claimed amounts
         user.rewardSettled =
             user.amount *
             accPointsPerShare /
@@ -153,18 +153,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             user.rewardSettled -
             user.rewardDebt;
 
-        // handles backdated rewards on claimed amounts
-        uint256 backdatedSettled =
-            _userFromClaim.amount *
-            accPointsPerShare /
-            1e18;
-
-        pool.totalRewards = pool.totalRewards + backdatedSettled;
-
-        user.rewardSettled = user.rewardSettled + backdatedSettled + _userFromClaim.rewardSettled;
+        user.rewardSettled = user.rewardSettled + _userFromClaim.rewardSettled;
         user.boostAmount = user.boostAmount + _userFromClaim.boostAmount;
         user.depositAmount = user.depositAmount + _userFromClaim.depositAmount;
-        user.amount = user.amount + _userFromClaim.amount;
 
         user.rewardDebt = user.amount * accPointsPerShare / 1e18;
     }
