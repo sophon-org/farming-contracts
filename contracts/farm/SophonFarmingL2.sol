@@ -93,11 +93,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         priceFeeds = IPriceFeeds(_priceFeeds);
     }
 
-    function activateLockedPools(
-        uint256 _pool4_accPointsPerShare,
-        uint256 _pool14_accPointsPerShare
-    ) external onlyOwner {
-
+    function activateLockedPools() external onlyOwner {
         massUpdatePools();
 
         PoolInfo storage pool4 = poolInfo[4];
@@ -106,11 +102,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         PoolInfo storage pool14 = poolInfo[14];
         require(pool14.lastRewardBlock == 10000934000 && pool14.accPointsPerShare == 0, "pool 14 already activated");
 
-        pool4.accPointsPerShare = _pool4_accPointsPerShare;
-        pool14.accPointsPerShare = _pool14_accPointsPerShare;
+        pool4.lastRewardBlock = 934000;
+        pool14.lastRewardBlock = 934000;
 
-        pool4.lastRewardBlock = getBlockNumber();
-        pool14.lastRewardBlock = getBlockNumber();
+        massUpdatePools();
     }
 
     /**
