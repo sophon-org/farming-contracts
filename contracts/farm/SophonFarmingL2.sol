@@ -64,7 +64,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     error TransferTooHigh(uint256 maxAllowed);
     error InvalidEndBlock();
     error InvalidDeposit();
-    error InvalidBooster();
     error InvalidPointsPerBlock();
     error InvalidTransfer();
     error WithdrawNotAllowed();
@@ -72,8 +71,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     error WithdrawIsZero();
     error NothingInPool();
     error NoEthSent();
-    error BoostTooHigh(uint256 maxAllowed);
-    error BoostIsZero();
     error BridgeInvalid();
     error OnlyMerkle();
     error CountMismatch();
@@ -91,21 +88,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
         if (_priceFeeds == address(0)) revert ZeroAddress();
         priceFeeds = IPriceFeeds(_priceFeeds);
-    }
-
-    function activateLockedPools() external onlyOwner {
-        massUpdatePools();
-
-        PoolInfo storage pool4 = poolInfo[4];
-        require(pool4.lastRewardBlock == 10000934000 && pool4.accPointsPerShare == 0, "pool 4 already activated");
-
-        PoolInfo storage pool14 = poolInfo[14];
-        require(pool14.lastRewardBlock == 10000934000 && pool14.accPointsPerShare == 0, "pool 14 already activated");
-
-        pool4.lastRewardBlock = 934000;
-        pool14.lastRewardBlock = 934000;
-
-        massUpdatePools();
     }
 
     /**
@@ -315,21 +297,6 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         massUpdatePools();
         emit SetPointsPerBlock(pointsPerBlock, _pointsPerBlock);
         pointsPerBlock = _pointsPerBlock;
-    }
-
-    /**
-     * @notice Set booster multiplier
-     * @param _boosterMultiplier booster multiplier to set
-     */
-    function setBoosterMultiplier(uint256 _boosterMultiplier) virtual external onlyOwner {
-        if (_boosterMultiplier < 1e18 || _boosterMultiplier > 10e18) {
-            revert InvalidBooster();
-        }
-        if (isFarmingEnded()) {
-            revert FarmingIsEnded();
-        }
-        massUpdatePools();
-        boosterMultiplier = _boosterMultiplier;
     }
 
     /**
@@ -558,9 +525,8 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         if (_depositAmount == 0) {
             revert InvalidDeposit();
         }
-        if (_boostAmount > _depositAmount) {
-            revert BoostTooHigh(_depositAmount);
-        }
+
+        _boostAmount; // unused
 
         massUpdatePools();
 
@@ -575,92 +541,21 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
             1e18 +
             user.rewardSettled -
             user.rewardDebt;
-
-        // booster purchase proceeds
-        heldProceeds[_pid] = heldProceeds[_pid] + _boostAmount;
-
-        // deposit amount is reduced by amount of the deposit to boost
-        _depositAmount = _depositAmount - _boostAmount;
 
         // set deposit amount
         user.depositAmount = user.depositAmount + _depositAmount;
         pool.depositAmount = pool.depositAmount + _depositAmount;
 
-        // apply the boost multiplier
-        _boostAmount = _boostAmount * boosterMultiplier / 1e18;
-
-        user.boostAmount = user.boostAmount + _boostAmount;
-        pool.boostAmount = pool.boostAmount + _boostAmount;
-
-        // userAmount is increased by remaining deposit amount + full boosted amount
-        userAmount = userAmount + _depositAmount + _boostAmount;
+        userAmount = userAmount + _depositAmount;
 
         user.amount = userAmount;
-        pool.amount = pool.amount + _depositAmount + _boostAmount;
+        pool.amount = pool.amount + _depositAmount;
 
         user.rewardDebt = userAmount *
             pool.accPointsPerShare /
             1e18;
 
-        emit Deposit(msg.sender, _pid, _depositAmount, _boostAmount);
-    }
-
-    /**
-     * @notice Increase boost from existing deposits
-     * @param _pid pid to pool
-     * @param _boostAmount amount to boost
-     */
-    function increaseBoost(uint256 _pid, uint256 _boostAmount) external {
-        if (isFarmingEnded()) {
-            revert FarmingIsEnded();
-        }
-        if (_boostAmount == 0) {
-            revert BoostIsZero();
-        }
-
-        uint256 maxAdditionalBoost = getMaxAdditionalBoost(msg.sender, _pid);
-        if (_boostAmount > maxAdditionalBoost) {
-            revert BoostTooHigh(maxAdditionalBoost);
-        }
-
-        massUpdatePools();
-
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
-
-        uint256 userAmount = user.amount;
-
-        user.rewardSettled =
-            userAmount *
-            pool.accPointsPerShare /
-            1e18 +
-            user.rewardSettled -
-            user.rewardDebt;
-
-        // booster purchase proceeds
-        heldProceeds[_pid] = heldProceeds[_pid] + _boostAmount;
-
-        // user's remaining deposit is reduced by amount of the deposit to boost
-        user.depositAmount = user.depositAmount - _boostAmount;
-        pool.depositAmount = pool.depositAmount - _boostAmount;
-
-        // apply the multiplier
-        uint256 finalBoostAmount = _boostAmount * boosterMultiplier / 1e18;
-
-        user.boostAmount = user.boostAmount + finalBoostAmount;
-        pool.boostAmount = pool.boostAmount + finalBoostAmount;
-
-        // user amount is increased by the full boosted amount - deposit amount used to boost
-        userAmount = userAmount + finalBoostAmount - _boostAmount;
-
-        user.amount = userAmount;
-        pool.amount = pool.amount + finalBoostAmount - _boostAmount;
-
-        user.rewardDebt = userAmount *
-            pool.accPointsPerShare /
-            1e18;
-
-        emit IncreaseBoost(msg.sender, _pid, finalBoostAmount);
+        emit Deposit(msg.sender, _pid, _depositAmount, 0);
     }
 
     /**
@@ -671,7 +566,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      * @return uint256 max additional boost
      */
     function getMaxAdditionalBoost(address _user, uint256 _pid) public view returns (uint256) {
-        return userInfo[_pid][_user].depositAmount;
+        return 0;
     }
 
     /**
