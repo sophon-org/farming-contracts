@@ -6,6 +6,11 @@ SEND_TO_MAINNET = False
 tx_list = []
 
 exec(open("./scripts/env/sophon-mainnet.py").read())
+
+TECH_MULTISIG = "0x902767c9e11188C985eB3494ee469E53f1b6de53"
+SAFE = BrownieSafe(TECH_MULTISIG)
+
+MULTICALL = "0x0408EF011960d02349d50286D20531229BCef773"
 compromisedWallets =  dict([
     ["0xcce7f482ffdbf4b7017c7b3a25707497e5c49d22",	"0x1671b500ee76f1b6d4db0128e47675603f0b4686"],
     ["0x1c6ac2177798fe78109818a9d5bb48d9161e70cb",	"0x6d4af8c9676596e7e5534898c622efc4b2140097"],
@@ -51,7 +56,7 @@ with open(file_path, 'r', encoding='utf-8') as file:
                 proof = c["proof"]
                 
                 hasClaimed = MA.hasClaimed(w, pid)
-                if (hasClaimed):
+                if not (hasClaimed):
                     print("to claim", user, pid, hasClaimed)
                     payload = MA.claim.encode_input(user, customReceiver, pid, userInfo, proof)
                     tx_list.append((MA.address, payload))
@@ -65,6 +70,9 @@ with open(file_path, 'r', encoding='utf-8') as file:
 #         if (hasClaimed):
 #             print(w[0], index, hasClaimed)
 
+# safe_tx = SAFE.multisend_from_receipts()
+
+# SAFE.preview(safe_tx, call_trace=True)
 
 if SEND_TO_MAINNET:
     for tx in tx_list:
