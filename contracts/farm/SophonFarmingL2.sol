@@ -79,6 +79,9 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
 
     IPriceFeeds public immutable priceFeeds;
 
+    //Blocks per day = 86,400/ 1 = 86,400 blocks (approximately).
+    uint256 public constant MIN_WITHDRAWAL_BLOCKS = 86400;
+
     /**
      * @notice Construct SophonFarming
      */
@@ -272,6 +275,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         if (_endBlock != 0) {
             if (getBlockNumber() > _endBlock) {
                 revert InvalidEndBlock();
+            }
+            // Enforce the minimum withdrawal period
+            if (_withdrawalBlocks < MIN_WITHDRAWAL_BLOCKS) {
+                revert InvalidEndBlock(); // Use a custom error or revert message for clarity
             }
             _endBlockForWithdrawals = _endBlock + _withdrawalBlocks;
         } else {
