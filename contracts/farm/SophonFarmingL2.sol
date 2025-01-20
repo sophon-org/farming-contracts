@@ -263,10 +263,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     }
 
     /**
-    * @notice Set the end block of the farm
-    * @param _endBlock the end block
-    * @param _withdrawalBlocks the last block that withdrawals are allowed
-    */
+     * @notice Set the end block of the farm
+     * @param _endBlock the end block
+     * @param _withdrawalBlocks the last block that withdrawals are allowed
+     */
     function setEndBlock(uint256 _endBlock, uint256 _withdrawalBlocks) external onlyOwner {
         if (isFarmingEnded()) {
             revert FarmingIsEnded();
