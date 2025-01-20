@@ -80,7 +80,7 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
     IPriceFeeds public immutable priceFeeds;
 
     //Blocks per day = 86,400/ 1 = 86,400 blocks (approximately).
-    uint256 public constant MIN_WITHDRAWAL_BLOCKS = 8400;
+    uint256 public constant MIN_WITHDRAWAL_BLOCKS = 86400;
 
     /**
      * @notice Construct SophonFarming
