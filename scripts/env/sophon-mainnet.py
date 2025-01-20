@@ -5,7 +5,7 @@ SF_L2 = Contract.from_abi("farmL2", "0x5753fBeC29De6E2b56F73f7d7786e9f0d34897bb"
 MA = Contract.from_abi("merkle", "0xa24F69fAA295426Bca2Cf610bf992CDc992CeEa0", MerkleAirdrop.abi)
 PF = Contract.from_abi("priceFeeds", "0x2eDf18b640A705F16947A7B95Fc338fde340Dd48", PriceFeeds.abi)
 STORK = Contract.from_abi("stork", "0x6a2ab154d7c5Ba9fdea6d8A0C79818A4463a63f9", interface.IStork.abi)
-
+MULTICALL = "0x0408EF011960d02349d50286D20531229BCef773"
 
 ATHUSD = '0x57744b683b8f4f907ef849039fc12760510242140bd5733e2fc9dc7557653f3e'
 AZURUSD = '0xcd4bc8c9ccfd4a5f6d4369d06be0094ea723b8275ac7156dabfd5c6454aee625'
