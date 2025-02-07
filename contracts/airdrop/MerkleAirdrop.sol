@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "contracts/token/LinearVestingWithPenalty.sol";
 import "interfaces/ISophonFarming.sol";
 
 contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
@@ -108,15 +107,15 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     }
 
     function _claim(address _user, address _customReceiver, uint256 _pid, ISophonFarming.UserInfo memory _userInfo, bytes32[] calldata _merkleProof) internal {
-        bool alreadyClaimed = hasClaimed[_user][_pid];
-        if (alreadyClaimed) revert AlreadyClaimed();
+        mapping(uint256 => bool) storage _userHasClaimed = hasClaimed[_user];
+        if (_userHasClaimed[_pid]) revert AlreadyClaimed();
 
         // Verify the Merkle proof.
         bytes32 leaf = keccak256(abi.encodePacked(_user, _pid, _userInfo.amount, _userInfo.boostAmount, _userInfo.depositAmount, _userInfo.rewardSettled, _userInfo.rewardDebt));
         if (!MerkleProof.verify(_merkleProof, merkleRoot, leaf)) revert InvalidMerkleProof();
 
         // Mark it claimed and update user info.
-        hasClaimed[_user][_pid] = true;
+        _userHasClaimed[_pid] = true;
 
         SF_L2.updateUserInfo(_customReceiver, _pid, _userInfo);
         emit Claimed(_user, _pid);
