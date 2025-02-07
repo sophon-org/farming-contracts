@@ -5,13 +5,8 @@ import json
 SEND_TO_MAINNET = False
 LAST_REWARD_BLOCK = 934000
 
-<<<<<<< Updated upstream
-OWNER_MULTISIG = "0xe52757064e04bB7ec756C3e91aAa3acA1fD88b08"
-SAFE = BrownieSafe(OWNER_MULTISIG)
-=======
 TECH_MULTISIG = "0xe52757064e04bB7ec756C3e91aAa3acA1fD88b08"
 SAFE = BrownieSafe(TECH_MULTISIG)
->>>>>>> Stashed changes
 exec(open("./scripts/env/sophon-mainnet.py").read())
 
 tx_list = []
