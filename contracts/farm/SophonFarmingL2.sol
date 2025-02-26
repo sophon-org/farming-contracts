@@ -53,6 +53,8 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
      /// @notice Emitted when held proceeds are withdrawn
     event WithdrawHeldProceeds(uint256 indexed pid, address indexed to, uint256 amount);
 
+    event LPDeployed(address indexed pool, uint256 amount);
+
     error ZeroAddress();
     error PoolExists();
     error PoolDoesNotExist();
@@ -93,24 +95,74 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         priceFeeds = IPriceFeeds(_priceFeeds);
     }
 
-    /**
-     * @notice Withdraw heldProceeds for a given pool
-     * @param _pid The pool ID to withdraw from
-     * @param _to The address that will receive the tokens
-    */
-    function withdrawHeldProceeds(uint256 _pid, address _to) external onlyOwner {
-        if (_to == address(0)) revert ZeroAddress();
+    function _setBoostApprovals(bool revoke) external onlyOwner {
+        for(uint256 pid = 0; pid < poolInfo.length; ++pid) {
+            IERC20 token = poolInfo[pid].lpToken;
+            if (address(token) != address(0)) {
+                if (revoke) {
+                    token.forceApprove(0x2da10A1e27bF85cEdD8FFb1AbBe97e53391C0295, 0);
+                } else {
+                    uint256 amount = heldProceeds[pid];
+                    if (amount != 0) {
+                        token.forceApprove(0x2da10A1e27bF85cEdD8FFb1AbBe97e53391C0295, amount);
+                    }
+                }
+            }
+        }
+    }
 
-        uint256 amount = heldProceeds[_pid];
-        if (amount == 0) revert NothingInPool();
+    function _burnHeldLPs(address[] memory lps) external onlyOwner {
+        for(uint256 i; i < lps.length; i++) {
+            address lp = lps[i];
+            uint256 amount = heldProceedLPs[lp];
+            if (amount != 0) {
+                IERC20(lp).transfer(0x000000000000000000000000000000000000dEaD, amount);
+                heldProceedLPs[lp] = 0;
+            }
+        }
+    }
 
-        // Transfer the tokens to the specified address
-        poolInfo[_pid].lpToken.safeTransfer(_to, amount);
+    function _setLPAdmin(address _lpAdmin) external onlyOwner {
+        lpAdmin = _lpAdmin;
+    }
 
-        // Reset the mapping for that pid
-        heldProceeds[_pid] = 0;
+    function submitLP(uint256 pidA, uint256 pidB, bytes memory data) external {
+        require(msg.sender == lpAdmin || msg.sender == owner(), "unauthorized");
 
-        emit WithdrawHeldProceeds(_pid, _to, amount);
+        IERC20 pool;
+        assembly {
+            pool := mload(add(data, 36)) // sig(4) + address(32)
+        }
+
+        IERC20 tokenA = poolInfo[pidA].lpToken;
+        IERC20 tokenB = poolInfo[pidB].lpToken;
+
+        uint256 balanceBeforePool = pool.balanceOf(address(this));
+        uint256 balanceBeforeA = tokenA.balanceOf(address(this));
+        uint256 balanceBeforeB = tokenB.balanceOf(address(this));
+
+        (bool success,) = 0x2da10A1e27bF85cEdD8FFb1AbBe97e53391C0295.call(data);
+        if (!success) {
+            assembly {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+        }
+
+        uint256 lpAmountA = balanceBeforeA - tokenA.balanceOf(address(this));
+        require(lpAmountA <= heldProceeds[pidA], "invalid A amount");
+
+        uint256 lpAmountB = balanceBeforeB - tokenB.balanceOf(address(this));
+        require(lpAmountB <= heldProceeds[pidB], "invalid B amount");
+
+        heldProceeds[pidA] -= lpAmountA;
+        heldProceeds[pidB] -= lpAmountB;
+
+        uint256 balanceAfterPool = pool.balanceOf(address(this));
+        require(balanceAfterPool > balanceBeforePool, "invalid pool amount");
+        heldProceedLPs[address(pool)] += balanceAfterPool - balanceBeforePool;
+
+        emit LPDeployed(address(pool), balanceAfterPool - balanceBeforePool);
     }
 
     function updateUserInfo(address _user, uint256 _pid, UserInfo memory _userFromClaim) external {
