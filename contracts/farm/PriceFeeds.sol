@@ -27,6 +27,18 @@ contract PriceFeeds is IPriceFeeds, Upgradeable2Step {
         }
     }
 
+    function getPrices(address[] memory poolTokens) external view returns (uint256[] memory prices) {
+        uint256 length = poolTokens.length;
+        prices = new uint256[](length);
+        StorkData storage token0Data;
+        for(uint256 i; i < length; i++) {
+            token0Data = storkData[poolTokens[i]];
+            if (token0Data.feedType == FeedType.Stork) {
+                prices[i] = getStorkPrice(token0Data.feedHash, token0Data.staleSeconds);
+            }
+        }
+    }
+
     function getStorkPrice(bytes32 feedHash_, uint256 staleSeconds_) public view returns (uint256) {
         if (feedHash_ == 0) {
             // price feed not set
@@ -46,6 +58,15 @@ contract PriceFeeds is IPriceFeeds, Upgradeable2Step {
         }
         
         return uint256(uint192(storkValue.quantizedValue));
+    }
+
+    function getStorkPrices(bytes32[] memory feedHashes, uint256[] memory staleSeconds) external view returns (uint256[] memory prices) {
+        uint256 length = feedHashes.length;
+        require(length == staleSeconds.length, "count mismatch");
+        prices = new uint256[](length);
+        for(uint256 i; i < length; i++) {
+            prices[i] = getStorkPrice(feedHashes[i], staleSeconds[i]);
+        }
     }
 
     // zero feedHash allowed, which would block updates to the pool
