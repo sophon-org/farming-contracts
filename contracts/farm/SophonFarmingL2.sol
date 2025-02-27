@@ -150,10 +150,10 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         }
 
         uint256 lpAmountA = balanceBeforeA - tokenA.balanceOf(address(this));
-        require(lpAmountA <= heldProceeds[pidA], "invalid A amount");
+        require(lpAmountA != 0 && lpAmountA <= heldProceeds[pidA], "invalid A amount");
 
         uint256 lpAmountB = balanceBeforeB - tokenB.balanceOf(address(this));
-        require(lpAmountB <= heldProceeds[pidB], "invalid B amount");
+        require(lpAmountB != 0 && lpAmountB <= heldProceeds[pidB], "invalid B amount");
 
         heldProceeds[pidA] -= lpAmountA;
         heldProceeds[pidB] -= lpAmountB;
