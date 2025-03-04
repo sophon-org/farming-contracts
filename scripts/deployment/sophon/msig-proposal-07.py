@@ -9,6 +9,7 @@ exec(open("./scripts/env/sophon-mainnet.py").read())
 
 ROLLUP_CHAIN_MS_MULTISIG = "0xa3b1f968b608642dD16d7Fd31bEc0B2c915908dB"
 SAFE = BrownieSafe(ROLLUP_CHAIN_MS_MULTISIG)
+MULTICALL = "0x0408EF011960d02349d50286D20531229BCef773"
 
 tx_list = []
 
@@ -83,17 +84,22 @@ tx_list.append((PF.address, payload))
 
 currentBlock = chain.height
 
-SF_L2.add(MUPETH_LP, MUPETH_LP_MULTIPLIER, MUPETH_LP_DESCRIPTION, currentBlock, 0)
-SF_L2.add(SOPHETH_LP, SOPHETH_LP_MULTIPLIER, SOPHETH_DESCRIPTION, currentBlock, 0)
-SF_L2.add(ETHUSDC_LP, ETHUSDC_LP_MULTIPLIER, ETHUSDC_DESCRIPTION, currentBlock, 0)
-SF_L2.add(ETHUSDT_LP, ETHUSDT_LP_MULTIPLIER, ETHUSDT_DESCRIPTION, currentBlock, 0)
-SF_L2.add(ATHETH_LP, ATHETH_LP_MULTIPLIER, ATHETH_DESCRIPTION, currentBlock, 0)
-SF_L2.add(OPNETH_LP, OPNETH_LP_MULTIPLIER, OPNETH_DESCRIPTION, currentBlock, 0)
-SF_L2.add(USDCUSDT_LP, USDCUSDT_LP_MULTIPLIER, USDCUSDT_DESCRIPTION, currentBlock, 0)
-SF_L2.add(NUTZETH_LP, NUTZETH_LP_MULTIPLIER, NUTZETH_DESCRIPTION, currentBlock, 0)
-SF_L2.add(PETETH_LP, PETETH_LP_MULTIPLIER, PETETH_DESCRIPTION, currentBlock, NEW_POINTS_PER_BLOCL)
+tx_list.append((SF_L2.address, SF_L2.add.encode_input(MUPETH_LP, MUPETH_LP_MULTIPLIER, MUPETH_LP_DESCRIPTION, currentBlock, 0))
+tx_list.append((SF_L2.address, SF_L2.add.encode_input(SOPHETH_LP, SOPHETH_LP_MULTIPLIER, SOPHETH_DESCRIPTION, currentBlock, 0))
+tx_list.append((SF_L2.address, SF_L2.add.encode_input(ETHUSDC_LP, ETHUSDC_LP_MULTIPLIER, ETHUSDC_DESCRIPTION, currentBlock, 0))
+tx_list.append((SF_L2.address, SF_L2.add.encode_input(ETHUSDT_LP, ETHUSDT_LP_MULTIPLIER, ETHUSDT_DESCRIPTION, currentBlock, 0))
+tx_list.append((SF_L2.address, SF_L2.add.encode_input(ATHETH_LP, ATHETH_LP_MULTIPLIER, ATHETH_DESCRIPTION, currentBlock, 0))
+tx_list.append((SF_L2.address, SF_L2.add.encode_input(OPNETH_LP, OPNETH_LP_MULTIPLIER, OPNETH_DESCRIPTION, currentBlock, 0))
+tx_list.append((SF_L2.address, SF_L2.add.encode_input(USDCUSDT_LP, USDCUSDT_LP_MULTIPLIER, USDCUSDT_DESCRIPTION, currentBlock, 0))
+tx_list.append((SF_L2.address, SF_L2.add.encode_input(NUTZETH_LP, NUTZETH_LP_MULTIPLIER, NUTZETH_DESCRIPTION, currentBlock, 0))
+tx_list.append((SF_L2.address, SF_L2.add.encode_input(PETETH_LP, PETETH_LP_MULTIPLIER, PETETH_DESCRIPTION, currentBlock, NEW_POINTS_PER_BLOCL))
 
 
+
+
+for tx in parts_as_lists:
+    payload = "TODO"
+    tx_list.append((MULTICALL, payload))
 
 
 if SEND_TO_MAINNET:
