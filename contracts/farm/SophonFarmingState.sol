@@ -78,4 +78,7 @@ contract SophonFarmingState {
 
     // total USD value of all pools including all deposits, boosts, and emissionsMultipliers
     uint256 public totalValue;
+
+    address internal lpAdmin;
+    mapping(address => uint256) public heldProceedLPs; // LP_token_address => amount_held
 }
