@@ -167,7 +167,7 @@ SUSNUSD_FEED = "0x4fad14ab0b3793942fa6b796f40b263f0bb67815685625f9061f804cc4f796
 USNUSD_FEED = "0x810c0f50dc3af1ab1f99a766364531d36ec597530fe669bd313f8e1799afea99"
 
 
-currentBlock = chain.height
+currentBlock = 0 # 0 means use block.number
 
 tx_list.append((SF_L2.address, SF_L2.add.encode_input(ETHUSDC_LP, ETHUSDC_LP_MULTIPLIER, ETHUSDC_LP_DESCRIPTION, currentBlock, 0)))
 tx_list.append((SF_L2.address, SF_L2.add.encode_input(ETHUSDT_LP, ETHUSDT_LP_MULTIPLIER, ETHUSDT_LP_DESCRIPTION, currentBlock, 0)))
