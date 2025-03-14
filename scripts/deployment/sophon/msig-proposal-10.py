@@ -6,13 +6,15 @@ from eth_utils import to_bytes
 
 exec(open("./scripts/env/sophon-mainnet.py").read())
 
-SEND_TO_MAINNET = False
-ROLLUP_CHAIN_MS_MULTISIG = "0xa3b1f968b608642dD16d7Fd31bEc0B2c915908dB"
-SAFE = BrownieSafe(ROLLUP_CHAIN_MS_MULTISIG)
-
 abbi = [{"inputs":[{"internalType":"bytes","name":"transactions","type":"bytes"}],"name":"multiSend","outputs":[],"stateMutability":"payable","type":"function"}]
 MULTICALL = "0x0408EF011960d02349d50286D20531229BCef773"
 MULTICALL = Contract.from_abi("M", MULTICALL, abi = abbi)
+
+
+SEND_TO_MAINNET = False
+ROLLUP_CHAIN_MS_MULTISIG = "0xa3b1f968b608642dD16d7Fd31bEc0B2c915908dB"
+SAFE = BrownieSafe(ROLLUP_CHAIN_MS_MULTISIG, multisend = MULTICALL.address)
+
 
 tx_list = []
 
@@ -157,7 +159,6 @@ msig_payload = MULTICALL.multiSend.encode_input(payload)
 
 
 if SEND_TO_MAINNET:
-    for tx in tx_list:
-        sTxn = SAFE.build_multisig_tx(MULTICALL.address, 0, msig_payload, SafeOperationEnum.DELEGATE_CALL.value, safe_nonce=SAFE.pending_nonce())
-        SAFE.sign_with_frame(sTxn)
-        SAFE.post_transaction(sTxn)
+    sTxn = SAFE.build_multisig_tx(MULTICALL.address, 0, msig_payload, SafeOperationEnum.DELEGATE_CALL.value, safe_nonce=SAFE.pending_nonce())
+    SAFE.sign_with_frame(sTxn)
+    SAFE.post_transaction(sTxn)
