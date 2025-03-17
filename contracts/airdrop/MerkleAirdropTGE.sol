@@ -28,7 +28,6 @@ contract MerkleAirdropTGE is Initializable, AccessControlUpgradeable {
     function initialize() external initializer {
         __AccessControl_init();
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
     }
 
