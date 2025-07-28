@@ -11,7 +11,7 @@ import json
 with open("./scripts/merkle-l2/TGE/merkletree_1.json") as f1, open("./scripts/merkle-l2/TGE/merkletree_2.json") as f2:
     data1 = json.load(f1)
     data2 = json.load(f2)
-combined = data1 + data2
+combined = sorted(data1 + data2, key=lambda x: int(x["merkleIndex"]))
 simplified = [{"address": entry["address"], "merkleIndex": entry["merkleIndex"]} for entry in combined]
 
 address_set = {entry["address"].lower() for entry in combined}
@@ -38,4 +38,4 @@ with open(file_path, 'r', encoding='utf-8') as file:
             merkleIndex = get_merkle_index(user)
             isClaimed = MC.isClaimed(merkleIndex)
             if not isClaimed:
-                print(index, user)
+                print(index, merkleIndex, user)
