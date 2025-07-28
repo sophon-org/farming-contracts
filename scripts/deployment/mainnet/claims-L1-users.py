@@ -12,9 +12,6 @@ with open("./scripts/merkle-l2/TGE/merkletree_1.json") as f1, open("./scripts/me
     data1 = json.load(f1)
     data2 = json.load(f2)
 combined = sorted(data1 + data2, key=lambda x: int(x["merkleIndex"]))
-simplified = [{"address": entry["address"], "merkleIndex": entry["merkleIndex"]} for entry in combined]
-
-address_set = {entry["address"].lower() for entry in combined}
 
 address_to_merkle = {
     entry["address"].lower(): entry["merkleIndex"]
@@ -26,7 +23,8 @@ def has_address(addr):
 def get_merkle_index(addr):
     return address_to_merkle.get(addr.lower())
 
-# Load data
+unclaimed = []
+
 file_path = './scripts/merkle-l2/output/5-proof.json'
 with open(file_path, 'r', encoding='utf-8') as file:
     data = json.load(file)
@@ -38,4 +36,14 @@ with open(file_path, 'r', encoding='utf-8') as file:
             merkleIndex = get_merkle_index(user)
             isClaimed = MC.isClaimed(merkleIndex)
             if not isClaimed:
-                print(index, merkleIndex, user)
+                u = {
+                    "index": index,
+                    "user": user,
+                    "merkleIndex": merkleIndex
+                }
+                print(u)
+                unclaimed.append(u)
+with open('./scripts/merkle-l2/output/unclaimed.json', 'w', encoding='utf-8') as out:
+    json.dump(unclaimed, out, indent=2)
+
+print("done")
