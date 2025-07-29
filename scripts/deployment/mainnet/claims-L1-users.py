@@ -1,3 +1,4 @@
+from brownie import *
 import json
 import csv
 
@@ -32,6 +33,8 @@ with open("scripts/merkle-l2/TGE/allocations.csv", "r", encoding="utf-8") as csv
             }
             print(entry)
             final_result.append(entry)
+        else:
+            print("skip", user, merkleIndex, amount)
 
 with open("scripts/merkle-l2/output/final_unclaimed_with_amounts.json", "w", encoding="utf-8") as out:
     json.dump(final_result, out, indent=2)
