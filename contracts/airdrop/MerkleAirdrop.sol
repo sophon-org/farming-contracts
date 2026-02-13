@@ -98,7 +98,6 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
         ISophonFarming.UserInfo[] calldata _userInfos,
         bytes32[][] calldata _merkleProofs
     ) external {
-        if (msg.sender != _user) revert NotAuthorized();
         if (_pids.length != _userInfos.length || _userInfos.length != _merkleProofs.length) revert InvalidInputLengths();
 
         for (uint256 i = 0; i < _pids.length; i++) {
