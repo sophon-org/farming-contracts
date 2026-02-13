@@ -86,8 +86,11 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     }
 
     /**
-    * @dev Allows users to claim multiple tokens if they are part of the Merkle tree.
-    * @param _user The address of the user that is participating.
+    * @dev Allows anyone to submit a batch claim on behalf of a user if they are part of the Merkle tree.
+    * This function is permissionless and can be called by any address. The claimed tokens are always 
+    * sent to `_user` (the receiver is forced to `_user`, unlike the admin `claim` function which 
+    * supports a custom receiver).
+    * @param _user The address of the user for whom the claim is being made. This address will receive the tokens.
     * @param _pids An array of pool IDs that the user is participating in.
     * @param _userInfos An array of `UserInfo` structs containing the user's info for each pool.
     * @param _merkleProofs An array of Merkle proofs to verify the user's inclusion in the tree for each pool.
