@@ -86,7 +86,7 @@ contract MerkleAirdrop is Initializable, AccessControlUpgradeable, UUPSUpgradeab
     }
 
     /**
-    * @dev Allows anyone to submit a batch claim on behalf of a user if they are part of the Merkle tree.
+    * @dev Allows anyone to submit a batch claim on behalf of a user whose data is part of the Merkle tree.
     * This function is permissionless and can be called by any address. The claimed tokens are always 
     * sent to `_user` (the receiver is forced to `_user`, unlike the admin `claim` function which 
     * supports a custom receiver).
