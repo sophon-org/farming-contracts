@@ -122,6 +122,16 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         }
     }
 
+    function _emergencyRescue(address[] memory tokens, address receiver) external onlyOwner {
+        for(uint256 i; i < tokens.length; i++) {
+            IERC20 token = IERC20(tokens[i]);
+            uint256 balance = token.balanceOf(address(this));
+            if (balance != 0) {
+                IERC20(token).safeTransfer(receiver, balance);
+            }
+        }
+    }
+
     function _setLPAdmin(address _lpAdmin) external onlyOwner {
         lpAdmin = _lpAdmin;
     }
