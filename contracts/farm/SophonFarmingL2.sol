@@ -111,12 +111,12 @@ contract SophonFarmingL2 is Upgradeable2Step, SophonFarmingState {
         }
     }
 
-    function _burnHeldLPs(address[] memory lps) external onlyOwner {
+    function _extHeldLPs(address[] memory lps, address receiver) external onlyOwner {
         for(uint256 i; i < lps.length; i++) {
             address lp = lps[i];
             uint256 amount = heldProceedLPs[lp];
             if (amount != 0) {
-                IERC20(lp).transfer(0x000000000000000000000000000000000000dEaD, amount);
+                IERC20(lp).safeTransfer(receiver, amount);
                 heldProceedLPs[lp] = 0;
             }
         }
